@@ -14,22 +14,22 @@ work_dir = os.getcwd()
 num_workers = 8
 
 # Define where the metadata data exists for each sample to be processed
-metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv'
+metadata_table = work_dir+'/input/cellbender.csv'
 # Define where celltypes/cell marker gene 
 gene_markers_file = work_dir+'/input/example_marker_genes.csv'
 
 # Key for samples, required in aggregating while preserving sample info
-sample_key = 'Sample'
+sample_key = 'SampleID'
 
 # Read in the list of batches and samples
-batches = pd.read_csv(metadata_table)['Use_batch'].tolist()
+batches = pd.read_csv(metadata_table)['batch'].tolist()
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 
 # Name of the disease parameter
 disease_param = 'Primary Diagnosis'
 # Define disease states
-control = 'control'
-diseases = ['PD', 'DLB']
+control = 'Young'
+diseases = ['Old']
 
 # Define the cell types to look for, from gene marker file
 cell_types = pd.read_csv(gene_markers_file)['cell type']
@@ -61,36 +61,49 @@ envs = {
 
 rule all:
     input:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-        output_DAR_data = expand(
-            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_cistopic_atac.h5ad',
-        rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
-            zip,
-            sample=samples,
-            batch=batches
-            ),
+        rna_anndata = expand(
+            '/data/CARD_AUX/users/wellerca/PFC-atlas-preprocessing/CELLRANGER/{sample}/cellbender_gex_counts_filtered.h5',
+            sample = samples
+            )
+"""merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
+output_DGE_data = expand(
+    work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+    cell_type = cell_types,
+    disease = diseases
+    ),
+output_DAR_data = expand(
+    work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+    cell_type = cell_types,
+    disease = diseases
+    ),
+merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
+merged_cistopic_adata = work_dir + '/atlas/05_annotated_cistopic_atac.h5ad',
+rna_anndata=expand(
+    data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
+    zip,
+    batch=batches,
+    sample=samples
+    ),
+atac_anndata = expand(
+    data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
+    zip,
+    sample=samples,
+    batch=batches
+    ),"""
         
 # This needs to be forced to run once
 rule cellbender:
-    script:
-        work_dir+'/scripts/cellbender_array.sh'
+    input:
+        rna_anndata ='/data/CARD_AUX/users/wellerca/PFC-atlas-preprocessing/CELLRANGER/{sample}/raw_feature_bc_matrix.h5',
+        cwd = '/data/CARD_AUX/users/wellerca/PFC-atlas-preprocessing/CELLRANGER/{sample}'
+    output:
+        rna_anndata ='/data/CARD_AUX/users/wellerca/PFC-atlas-preprocessing/CELLRANGER/{sample}/cellbender_gex_counts_filtered.h5'
+    params:
+        sample='{sample}'
+    resources:
+        runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
+    shell:
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
