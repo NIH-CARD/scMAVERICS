@@ -73,7 +73,7 @@ rule all:
             disease = diseases
             ),
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_cistopic_atac.h5ad',
+        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
         rna_anndata=expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
             zip,
@@ -87,10 +87,18 @@ rule all:
             batch=batches
             ),
         
-# This needs to be forced to run once
 rule cellbender:
-    script:
-        work_dir+'/scripts/cellbender_array.sh'
+    input:
+        rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
+        cwd = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/'
+    output:
+        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
+    params:
+        sample='{sample}'
+    resources:
+        runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
+    shell:
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
@@ -436,7 +444,7 @@ rule cistopic_merge_objects:
 
 rule atac_peaks_model:
     input:
-        merged_atac_anndata = work_dir+'/atlas/03_annotated_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
     output:
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
         atac_model_history = work_dir+'/model_elbo/atac_model_history.csv'
@@ -462,6 +470,7 @@ rule atac_peaks_annotate:
         runtime=240, mem_mb=300000
     script:
         'scripts/atac_annotate.py'
+
 rule DAR:
     input:
         atac_anndata = work_dir+'data/celltypes/{cell_type}/atac.h5ad'
