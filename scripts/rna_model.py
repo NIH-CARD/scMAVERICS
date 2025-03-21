@@ -18,13 +18,13 @@ print(sys.argv)
 adata = ad.read_h5ad(sys.argv[1])
 
 # Double check that no transcripts not found in cells are in the atlas
-sc.pp.filter_genes(adata, min_cells=1)
+sc.pp.filter_genes(adata, min_cells=3)
 
 # Select for the most variable genes
 sc.pp.highly_variable_genes(
     adata, 
     layer='log-norm',
-    n_top_genes=500, 
+    n_top_genes=10000, 
     batch_key=sys.argv[2])
 
 # Define mitochondria and ribosome genes to remove
@@ -36,15 +36,15 @@ filtered_adata = adata[:, (adata.var['highly_variable']) & ~(adata.var['mt']) & 
 
 # Setup SCVI on the data layer
 scvi.model.SCVI.setup_anndata(
-    adata, layer="log-norm", batch_key=sys.argv[2])
+    adata, layer="counts", batch_key=sys.argv[2])
 
 # Add the parameters of the model
 model = scvi.model.SCVI(
     adata, 
-    dispersion="gene-batch", 
+    dispersion="gene-cell", 
     n_layers=2, 
     n_latent=30, 
-    gene_likelihood="nb"
+    gene_likelihood="zinb"
 )
 
 # Train the model
