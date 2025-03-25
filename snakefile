@@ -62,16 +62,6 @@ envs = {
 rule all:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-        output_DAR_data = expand(
-            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
         merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
         rna_anndata=expand(
@@ -86,8 +76,18 @@ rule all:
             sample=samples,
             batch=batches
             ),
-        
-rule cellbender:
+"""output_DGE_data = expand(
+    work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+    cell_type = cell_types,
+    disease = diseases
+    ),
+output_DAR_data = expand(
+    work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+    cell_type = cell_types,
+    disease = diseases
+    ),"""
+
+"""rule cellbender:
     input:
         rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/'
@@ -98,7 +98,7 @@ rule cellbender:
     resources:
         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'"""
 
 rule rna_preprocess:
     input:
@@ -257,9 +257,9 @@ rule rna_model:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
-        model_history = work_dir+'/model_elbo/rna_model_history.csv'
+        model_history = work_dir+'/model_elbo/rna_model_history_v2.csv'
     params:
-        model = work_dir+'/data/models/rna/',
+        model = work_dir+'/data/models/rna_v2/',
         sample_key = sample_key
     threads:
         64
@@ -378,7 +378,7 @@ rule cistopic_pseudobulk:
     threads:
         64
     resources:
-        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
 
@@ -394,7 +394,7 @@ rule cistopic_call_peaks:
     singularity:
         envs['scenicplus']
     resources:
-        runtime=240, mem_mb=100000, disk_mb=500000
+        runtime=480, mem_mb=100000, disk_mb=500000
     script:
         'scripts/cistopic_call_peaks.py'
     
