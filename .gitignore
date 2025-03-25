@@ -21,7 +21,7 @@ old_pipelines
 
 # Ignore old scripts and logs
 scripts/logs
-scripts/old_scripts
+scripts/legacy_files
 
 # Plots should be ignored
 plots
