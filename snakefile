@@ -6,7 +6,7 @@ import os
 """========================================================================="""
 
 # Define the data directory, explicitly
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'
+data_dir = '/data/CARD_singlecell/Brain_atlas/PFC_Multiome/'
 # Define the working directory, explictly as the directory of this pipeline
 work_dir = os.getcwd()
 
@@ -19,10 +19,10 @@ metadata_table = work_dir+'/input/cellbender.csv'
 gene_markers_file = work_dir+'/input/example_marker_genes.csv'
 
 # Key for samples, required in aggregating while preserving sample info
-sample_key = 'SampleID'
+sample_key = 'IID'
 
 # Read in the list of batches and samples
-batches = pd.read_csv(metadata_table)['batch'].tolist()
+batches = pd.read_csv(metadata_table)['SequencingBatch'].tolist()
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 
 # Name of the disease parameter
