@@ -8,8 +8,15 @@ import pandas as pd
 adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
 # Create the DataFrame of canonical gene markers (This can be expanded)
-marker_genes = pd.read_csv(snakemake.input.gene_markers)
-marker_gene_df = pd.DataFrame(marker_genes)
+marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
+
+doublet_clusters = []
+for cluster in adata.obs['leiden'].drop_duplicates():
+    print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
+        doublet_clusters.append(cluster)
+
+adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
 
 # Run over-represenation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
