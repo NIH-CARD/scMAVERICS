@@ -61,22 +61,22 @@ envs = {
 
 rule all:
     input:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
-        rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
-            zip,
-            sample=samples,
-            batch=batches
-            ),
-"""output_DGE_data = expand(
+        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
+"""merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
+rna_anndata=expand(
+    data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
+    zip,
+    batch=batches,
+    sample=samples
+    ),
+atac_anndata = expand(
+    data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
+    zip,
+    sample=samples,
+    batch=batches
+    ),  
+output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
     cell_type = cell_types,
     disease = diseases
@@ -86,7 +86,6 @@ output_DAR_data = expand(
     cell_type = cell_types,
     disease = diseases
     ),"""
-
 """rule cellbender:
     input:
         rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
@@ -98,7 +97,7 @@ output_DAR_data = expand(
     resources:
         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'"""
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
@@ -257,7 +256,7 @@ rule rna_model:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
-        model_history = work_dir+'/model_elbo/rna_model_history_v2.csv'
+        model_history = work_dir+'/data/model_elbo/rna_model_history_v2.csv'
     params:
         model = work_dir+'/data/models/rna_v2/',
         sample_key = sample_key
@@ -282,9 +281,9 @@ rule annotate:
     script:
         'scripts/annotate.py'
 
-"""LEGACY BIN METHOD"""
+###LEGACY BIN METHOD
 
-"""rule atac_bins_model:
+rule atac_bins_model:
     input:
         cell_annotate = work_dir+'/data/rna_cell_annot.csv',
         metadata_table=metadata_table,
@@ -394,7 +393,7 @@ rule cistopic_call_peaks:
     singularity:
         envs['scenicplus']
     resources:
-        runtime=480, mem_mb=100000, disk_mb=500000
+        runtime=1440, mem_mb=100000, disk_mb=500000
     script:
         'scripts/cistopic_call_peaks.py'
     
@@ -411,7 +410,7 @@ rule cistopic_create_objects:
     params:
         sample='{sample}'
     resources:
-        runtime=240, mem_mb=200000
+        runtime=960, mem_mb=200000
     threads:
         16
     script:
@@ -434,7 +433,7 @@ rule cistopic_merge_objects:
             )
     output:
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     singularity:
         envs['scenicplus']
     resources:
@@ -463,7 +462,7 @@ rule atac_peaks_annotate:
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
         annot_csv = work_dir+'/data/rna_cell_annot.csv'
     output:
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad'
     singularity:
         envs['singlecell']
     resources:
@@ -493,7 +492,7 @@ rule DAR:
    
 rule multiome_output:
     input:
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'

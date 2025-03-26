@@ -12,7 +12,7 @@ module load snakemake/7.7.0
 git clone https://github.com/NIH-HPC/snakemake_profile.git
 
 # Pull the containers
-apptainer pull envs/single_cell_cpu.sif oras://quay.io/adamcatchingdti/single_cell_cpu:0.4
+apptainer pull envs/snapatac2.sif oras://quay.io/adamcatchingdti/snapatac2
 apptainer pull envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu:0.8
 apptainer pull envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.8
 
@@ -30,4 +30,4 @@ chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity
+snakemake --cores all --profile snakemake_profile --use-singularity 
