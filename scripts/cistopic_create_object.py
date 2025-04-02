@@ -13,8 +13,8 @@ cell_data = rna.obs
 
 # Add the sample_id variable
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
-cell_data['sample_id'] = cell_data['sample']
-sample_batch = cell_data[['sample', 'batch']].drop_duplicates()
+cell_data['sample_id'] = cell_data['Sample']
+sample_batch = cell_data[['Sample', 'Use_batch']].drop_duplicates()
 
 """Remnant of creating cisTopic objects all at once"""
 # Make sure list of samples is interpreted as strings
@@ -28,7 +28,7 @@ path_to_regions = snakemake.input.consensus_bed
 # Create cistopic object
 cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake.input.fragment_file,
                                                path_to_regions=path_to_regions,
-                                               valid_bc = cell_data[cell_data['sample'] == snakemake.params.sample]['barcode'].to_list(),
+                                               valid_bc = cell_data[cell_data['Sample'] == snakemake.params.sample]['barcode'].to_list(),
                                                n_cpu=32,
                                                project=snakemake.params.sample)
 

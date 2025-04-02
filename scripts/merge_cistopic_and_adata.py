@@ -23,7 +23,7 @@ rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 cell_data = rna.obs
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
 # Add the sample_id variable
-cell_data['sample_id'] = cell_data['sample']
+cell_data['sample_id'] = cell_data[snakemake.params.sample_key]
 
 # Test if sample can be exported
 pickle.dump(
@@ -61,4 +61,4 @@ for param in transfer_params[1:]:
     adata.obs[param] = [barcode2param[x] for x in adata.obs.index]
 
 # Write out sample
-adata.write_h5ad(snakemake.output.merged_cistopic_adata, compression='gzip')
+adata.write_h5ad(snakemake.output.merged_atac_anndata, compression='gzip')
