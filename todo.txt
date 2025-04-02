@@ -1,0 +1,3 @@
+copy over the atlas files from my data_dir
+
+also copy over inputs folder from multiome_pipeline folder

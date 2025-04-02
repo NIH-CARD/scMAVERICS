@@ -73,24 +73,31 @@ rule all:
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
         merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
         rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
             zip,
             batch=batches,
             sample=samples
-            )
-        
-rule cellbender:
-    input:
-        rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
-        cwd = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/'
-    output:
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
-    params:
-        sample='{sample}'
-    resources:
-        runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
-    shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+            ),
+        atac_anndata = expand(
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
+            zip,
+            sample=samples,
+            batch=batches
+            ),
+
+#! WARNING - run once, then comment out!
+# rule cellbender:
+#     input:
+#         rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
+#         cwd = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/'
+#     output:
+#         rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
+#     params:
+#         sample='{sample}'
+#     resources:
+#         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
+#     shell:
+#         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
@@ -134,8 +141,6 @@ rule plot_qc_rna:
         envs['singlecell']
     resources:
         runtime=960, mem_mb=500000, disk_mb=10000, slurm_partition='largemem' 
-    params:
-        sample_key=sample_key
     script:
         work_dir+'/scripts/plot_qc_metrics.py'
 
@@ -211,8 +216,6 @@ rule plot_qc_atac:
         envs['snapatac2']
     resources:
         runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem'
-    params:
-        sample_key=sample_key
     script:
         work_dir+'/scripts/atac_plot_qc.py'
 
