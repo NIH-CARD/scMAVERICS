@@ -377,7 +377,7 @@ rule cistopic_pseudobulk:
     threads:
         64
     resources:
-        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=960, mem_mb=1500000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
 
@@ -392,6 +392,8 @@ rule cistopic_call_peaks:
         MACS_dir = work_dir + '/data/pycisTopic/MACS'
     singularity:
         envs['scenicplus']
+    threads:
+        32
     resources:
         runtime=1440, mem_mb=100000, disk_mb=500000
     script:
@@ -410,7 +412,7 @@ rule cistopic_create_objects:
     params:
         sample='{sample}'
     resources:
-        runtime=960, mem_mb=200000
+        runtime=120, mem_mb=250000, slurm_partition='quick'
     threads:
         16
     script:
@@ -436,6 +438,8 @@ rule cistopic_merge_objects:
         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     singularity:
         envs['scenicplus']
+    params:
+        sample_key = sample_key
     resources:
         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
@@ -455,7 +459,7 @@ rule atac_peaks_model:
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/atac_model.sh {input.merged_rna_anndata} {params.sample_key} {output.atac_model_history} {output.merged_rna_anndata} {params.atac_model}'
+        'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 
 rule atac_peaks_annotate:
     input:
