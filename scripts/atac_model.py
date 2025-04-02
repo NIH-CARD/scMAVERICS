@@ -15,19 +15,19 @@ torch.set_float32_matmul_precision('high')
 # Read in AnnData atlas object
 adata = ad.read_h5ad(sys.argv[1])
 
-# Double check that only peaks with at least 3 reads are counted
-sc.pp.filter_genes(adata, min_cells=3)
+
 
 # Select for the most variable genes
 sc.pp.highly_variable_genes(
     adata, 
-    n_top_genes=25000, 
-    batch_key=sys.argv[2])
+    flavor='seurat_v3', 
+    n_top_genes=25000
+    )
 
 # Setup POISSONVI on the data layer
 scvi.external.POISSONVI.setup_anndata(
     adata, 
-    batch_key=sys.argv[2]) 
+    batch_key='sample_id') 
 
 # Add the parameters of the model
 model = scvi.external.POISSONVI(
