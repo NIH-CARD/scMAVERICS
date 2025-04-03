@@ -12,7 +12,7 @@ marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
 
 doublet_clusters = []
 for cluster in adata.obs['leiden'].drop_duplicates():
-    print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
     if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
         doublet_clusters.append(cluster)
 
