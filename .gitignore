@@ -1,61 +1,47 @@
-# Ignore notebooks
-#############################
-notebook
+############################################
+# OS generated files 
+############################################
 
-# Data that should not leave the cluster
-data/*.csv
-data/*.gtf
-data/*.xlsx
-data/old_data/*
-data
-atlas/*
-
-# Don't save the .snakemake logs
-.snakemake
-
-# Don't save the snakemake profile for Biowulf
-snakemake_profile
-
-# No need to save old pipelines (this is version control)
-old_pipelines
-
-# Ignore old scripts and logs
-scripts/logs
-scripts/old_scripts
-
-# Plots should be ignored
-plots
-
-# Ignore the actual files inside input
-input/old_files
-input/*.csv
-#? Q) Keep input folder? Ignore all files inside it?
-
-# No need to show my mistakes (logs) to the world
-logs
-
-# OS generated files #
-######################
-.DS_Store
-.DS_Store?
 ._*
+.DS_Store*
 .Spotlight-V100
 .Trashes
 
-######################
+############################################
+# FILES TO IGNORE    
+# *.extension = ignore all files with this particular extension
+############################################
 
-# FILES TO IGNORE
+*.ipynb
 slurm-*.out
 
-# Singularity Image Files
-envs
-!envs/*.def
-!envs/*.yml
-
+############################################
 # WHOLE FOLDERS TO IGNORE
-# * = ignore all files here (keeps an empty folder instead, which will skip the exclusions)
-.cache
+# my_folder/* = ignore all files inside my_folder 
+#   - but keeps an empty my_folder instead
+#   - which allows you to skip files listed in the `EXCLUSIONS` section
+#   - also prevents folder not found errors
+############################################
 
-# EXCLUSIONS
-# Anything from the whole folders being ignored that should be included
+.cache
+.snakemake
+atlas/*
+data/*
 figures
+envs/*
+input/*
+logs/*
+notebook/*
+old_pipelines
+plots/*
+scripts/logs
+scripts/old_scripts
+snakemake_profile/*
+
+############################################
+# EXCLUSIONS
+# !my/file/path.txt = use this to keep any files from the `WHOLE FOLDERS TO IGNORE` section
+#   - ie. README.md which should be kept in that folder
+############################################
+
+#? Q) Should we keep a figures folder? What about an output folder?
