@@ -30,4 +30,7 @@ chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity
+snakemake \
+    --cores all \
+    --profile snakemake_profile \
+    --use-singularity
