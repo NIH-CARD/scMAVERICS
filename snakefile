@@ -364,8 +364,7 @@ rule cistopic_pseudobulk:
             batch=batches
             )
     output:
-        bigwig_paths = work_dir + '/data/pycisTopic/pseudobulk_bigwig_files/bw_paths.tsv',
-        bed_paths = work_dir + '/data/pycisTopic/pseudobulk_bed_files/bed_paths.tsv'
+        bpseudo_fragment_files = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/{celltype}.fragments.tsv.gz'
     params:
         bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
         bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
@@ -381,7 +380,41 @@ rule cistopic_pseudobulk:
     script:
         'scripts/cistopic_pseudobulk.py'
 
-rule cistopic_call_peaks:
+rule MACS2_peak_call:
+    input:
+        pseudo_fragment_files = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/{celltype}.fragments.tsv.gz'
+    output: 
+        xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
+        narrow_peak = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/pycisTopic/MACS"#,cell_type = lambda wildcards, output: input[0].split("/")[-1].split('.')[0]
+    threads:
+        32
+    resources:
+        runtime=960, mem_mb=300000
+    singularity:
+        envs['scenicplus']
+    shell:
+        "macs2 callpeak --treatment ${input.pseudo_fragment_files} --name Astro --outdir ${params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.narrowPeak",
+            celltype = cell_types
+            )
+    output:
+        consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed'
+    singularity:
+        envs['scenicplus']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=100000, disk_mb=500000
+    script:
+        'scripts/MACS_consensus.py'
+
+"""rule cistopic_call_peaks:
     input:
         bigwig_paths = work_dir + '/data/pycisTopic/pseudobulk_bigwig_files/bw_paths.tsv',
         bed_paths = work_dir + '/data/pycisTopic/pseudobulk_bed_files/bed_paths.tsv'
@@ -397,7 +430,7 @@ rule cistopic_call_peaks:
     resources:
         runtime=1440, mem_mb=100000, disk_mb=500000
     script:
-        'scripts/cistopic_call_peaks.py'
+        'scripts/cistopic_call_peaks.py'"""
     
 rule cistopic_create_objects:
     input:
