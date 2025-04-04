@@ -1,9 +1,46 @@
+# Ignore notebooks
+#############################
+notebook
+
+# Data that should not leave the cluster
+data/*.csv
+data/*.gtf
+data/*.xlsx
+data/old_data/*
+data
+atlas/*
+
+# Don't save the .snakemake logs
+.snakemake
+
+# Don't save the snakemake profile for Biowulf
+snakemake_profile
+
+# No need to save old pipelines (this is version control)
+old_pipelines
+
+# Ignore old scripts and logs
+scripts/logs
+scripts/old_scripts
+
+# Plots should be ignored
+plots
+
+# Ignore the actual files inside input
+input/old_files
+input/*.csv
+#? Q) Keep input folder? Ignore all files inside it?
+#? A) Folder generation fixed, want example files to be kept tho
+
+# No need to show my mistakes (logs) to the world
+logs
+
 ############################################
 # OS generated files 
 ############################################
 
-._*
 .DS_Store*
+._*
 .Spotlight-V100
 .Trashes
 
@@ -12,8 +49,15 @@
 # *.extension = ignore all files with this particular extension
 ############################################
 
+*.h5ad
 *.ipynb
 slurm-*.out
+
+# Singularity Image Files
+*.sif 
+envs
+!envs/*.def
+!envs/*.yml
 
 ############################################
 # WHOLE FOLDERS TO IGNORE
@@ -24,24 +68,10 @@ slurm-*.out
 ############################################
 
 .cache
-.snakemake
-atlas/*
-data/*
 figures
-envs/*
-input/*
-logs/*
-notebook/*
-old_pipelines
-plots/*
-scripts/logs
-scripts/old_scripts
-snakemake_profile/*
 
 ############################################
 # EXCLUSIONS
 # !my/file/path.txt = use this to keep any files from the `WHOLE FOLDERS TO IGNORE` section
 #   - ie. README.md which should be kept in that folder
 ############################################
-
-#? Q) Should we keep a figures folder? What about an output folder?
