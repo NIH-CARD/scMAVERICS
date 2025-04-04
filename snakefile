@@ -1,5 +1,6 @@
-import pandas as pd
+#IMPORTS
 import os
+import pandas as pd
 
 """========================================================================="""
 """                                 Parameters                              """
@@ -7,16 +8,20 @@ import os
 
 # Define the data directory, explicitly
 data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'
+
 # Define the working directory, explictly as the directory of this pipeline
 work_dir = os.getcwd()
 
 # Number of threads to use when running the rules
 num_workers = 8
 
-# Define where the metadata data exists for each sample to be processed
-metadata_table = work_dir+'/input/example_metadata.csv'
-# Define where celltypes/cell marker gene 
-gene_markers_file = work_dir+'/input/example_marker_genes.csv'
+# # Define where the metadata data exists for each sample to be processed
+# metadata_table = work_dir+'/input/example_metadata.csv'
+metadata_table = work_dir+'/input/SN_control_samples-EF_fixed.csv'
+
+# # Define where celltypes/cell marker gene 
+# gene_markers_file = work_dir+'/input/example_marker_genes.csv'
+gene_markers_file = work_dir+'/input/marker_genes-EF.csv'
 
 # Key for samples, required in aggregating while preserving sample info
 sample_key = 'Sample'
@@ -25,11 +30,13 @@ sample_key = 'Sample'
 batches = pd.read_csv(metadata_table)['Use_batch'].tolist()
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 
+#* TODO - change this
+#* TODO - add my JNB age filtering as new rules
 # Name of the disease parameter
-disease_param = 'Primary Diagnosis'
+disease_param = 'age_bin'
 # Define disease states
-control = 'control'
-diseases = ['PD', 'DLB']
+control = 'young (< 57.9)'
+diseases = ['old (>= 57.9)']
 
 # Define the cell types to look for, from gene marker file
 cell_types = pd.read_csv(gene_markers_file)['cell type']
@@ -37,12 +44,12 @@ cell_types = pd.read_csv(gene_markers_file)['cell type']
 # Define RNA thresholds
 mito_percent_thresh = 15
 ribo_percent_thresh = 10
-doublet_thresh = 0.15
-min_genes_per_cell = 250
+doublet_thresh      = 0.15
+min_genes_per_cell  = 250
 
 # Define ATAC thresholds
-min_peak_counts = 250
-min_num_cell_by_counts = 10
+min_peak_counts         = 250
+min_num_cell_by_counts  = 10
 
 
 """========================================================================="""
@@ -51,44 +58,45 @@ min_num_cell_by_counts = 10
 
 # Singularity containers to be downloaded from Quay.io, done in snakemake.sh
 envs = {
-    'snapatac2': 'envs/snapatac2.sif',
+    'snapatac2' : 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler' : 'envs/decoupler.sif'
     }
 
 rule all:
     input:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-        output_DAR_data = expand(
-            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
-        rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
-            zip,
-            sample=samples,
-            batch=batches
-            ),
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+        # merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
+        # output_DGE_data = expand(
+        #     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+        #     cell_type = cell_types,
+        #     disease = diseases
+        #     ),
+        # output_DAR_data = expand(s
+        #     work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        #     cell_type = cell_types,
+        #     disease = diseases
+        #     ),
+        # merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
+        # merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
+        # rna_anndata=expand(
+        #     data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
+        #     zip,
+        #     batch=batches,
+        #     sample=samples
+        #     ),
+        # atac_anndata = expand(
+        #     data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad',
+        #     zip,
+        #     sample=samples,
+        #     batch=batches
+        #     ),
 
 #! WARNING - run once, then comment out!
 # rule cellbender:
 #     input:
-#         rna_anndata =data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
+#         rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
 #         cwd = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/'
 #     output:
 #         rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
@@ -101,7 +109,7 @@ rule all:
 
 rule rna_preprocess:
     input:
-        metadata_table=metadata_table,
+        metadata_table = metadata_table,
         rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
     output:
         rna_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
@@ -152,10 +160,10 @@ rule filter_rna:
     singularity:
         envs['singlecell']
     params:
-        mito_percent_thresh = mito_percent_thresh,
-        doublet_thresh = doublet_thresh,
-        min_genes_per_cell = min_genes_per_cell,
-        ribo_percent_thresh = ribo_percent_thresh
+        mito_percent_thresh     = mito_percent_thresh,
+        doublet_thresh          = doublet_thresh,
+        min_genes_per_cell      = min_genes_per_cell,
+        ribo_percent_thresh     = ribo_percent_thresh
     resources:
         runtime=120, mem_mb=100000, disk_mb=10000, slurm_partition='quick' 
     script: 
@@ -287,7 +295,7 @@ rule annotate:
 """rule atac_bins_model:
     input:
         cell_annotate = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table=metadata_table,
+        metadata_table = metadata_table,
         atac_anndata = expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
             zip,
@@ -339,8 +347,8 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + 'figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
+        celltype_pseudobulk = work_dir + '/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
     params:
         disease_param = disease_param,
         control = control,
@@ -359,10 +367,10 @@ rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
-            sample=samples,
-            batch=batches
+            sample = samples,
+            batch = batches
             )
     output:
         bigwig_paths = work_dir + '/data/pycisTopic/pseudobulk_bigwig_files/bw_paths.tsv',
@@ -371,7 +379,7 @@ rule cistopic_pseudobulk:
         bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
         bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
         pseudobulk_param = 'cell_type',
-        samples=samples,
+        samples = samples,
         sample_param_name = sample_key
     singularity:
         envs['scenicplus']
@@ -465,7 +473,7 @@ rule atac_peaks_annotate:
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
         annot_csv = work_dir+'/data/rna_cell_annot.csv'
     output:
-        merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad'
+        merged_cistopic_adata = work_dir+'/atlas/05_annotated_anndata_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
