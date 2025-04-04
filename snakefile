@@ -8,7 +8,7 @@ import os
 # Define the data directory, explicitly
 data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'
 # Define the working directory, explictly as the directory of this pipeline
-work_dir = os.getcwd()
+work_dir = '/data/CARD_singlecell/SN_atlas'
 
 # Number of threads to use when running the rules
 num_workers = 8
@@ -387,15 +387,13 @@ rule MACS2_peak_call:
         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
         narrow_peak = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/pycisTopic/MACS"#,cell_type = lambda wildcards, output: input[0].split("/")[-1].split('.')[0]
-    threads:
-        32
+        out_dir = work_dir + "/data/pycisTopic/MACS"
     resources:
-        runtime=960, mem_mb=300000
+        mem_mb=200000, runtime=960
     singularity:
         envs['scenicplus']
     shell:
-        "macs2 callpeak --treatment ${input.pseudo_fragment_files} --name Astro --outdir ${params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule consensus_peaks:
     input:
@@ -490,7 +488,7 @@ rule atac_peaks_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 
