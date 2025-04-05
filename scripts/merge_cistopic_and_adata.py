@@ -60,5 +60,7 @@ for param in transfer_params[1:]:
     barcode2param = cistopic_frag_data[param].to_dict()
     adata.obs[param] = [barcode2param[x] for x in adata.obs.index]
 
+adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
+
 # Write out sample
 adata.write_h5ad(snakemake.output.merged_atac_anndata, compression='gzip')

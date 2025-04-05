@@ -13,7 +13,7 @@ peak_files = snakemake.input.narrow_peaks
 cells = [x.split('/')[-1].split('_')[0] for x in peak_files]
 
 # Create narrow peak object
-narrow_dict = dict(zip(cells, [pyranges.read_bed(x) for x in peak_files]))
+narrow_peak_dict = dict(zip(cells, [pyranges.PyRanges(pyranges.read_bed(x).df.rename(columns={'ThickStart': 'FC_summit', 'ThickEnd': '-log10_pval', 'ItemRGB': '-log10_qval', 'BlockCount': 'Summit'}, copy=True)) for x in peak_files]))
 
 # Read in chromosome lengths
 chromsizes = pd.read_table(

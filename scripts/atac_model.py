@@ -15,7 +15,7 @@ torch.set_float32_matmul_precision('high')
 # Read in AnnData atlas object
 adata = ad.read_h5ad(sys.argv[1])
 
-
+adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
 
 # Select for the most variable genes
 sc.pp.highly_variable_genes(
@@ -33,8 +33,7 @@ scvi.external.POISSONVI.setup_anndata(
 model = scvi.external.POISSONVI(
     adata, 
     n_layers=2, 
-    n_latent=30, 
-    latent_distribution="ln") # type: ignore
+    n_latent=30)
 
 # Train the model
 model.train(
@@ -56,6 +55,7 @@ adata.obsm['X_poissonvi'] = model.get_latent_representation()
 # Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
 sc.pp.neighbors(adata, use_rep='X_poissonvi')
 sc.tl.umap(adata, min_dist=0.3)
+
 # Calculate the leiden distance from the nearest neighbors, use a couple resolutions
 sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
 sc.tl.leiden(adata, key_added='leiden')

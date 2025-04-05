@@ -405,10 +405,8 @@ rule consensus_peaks:
         consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed'
     singularity:
         envs['scenicplus']
-    threads:
-        32
     resources:
-        runtime=1440, mem_mb=100000, disk_mb=500000
+        runtime=960, mem_mb=100000
     script:
         'scripts/MACS_consensus.py'
 
