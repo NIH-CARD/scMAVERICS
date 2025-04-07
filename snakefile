@@ -331,7 +331,7 @@ rule atac_bins_annotate:
     resources:
         runtime=2880, disk_mb=500000, mem_mb=300000
     script:
-        'scripts/atac_bins_annotate.py'"""
+        'scripts/atac_bins_annotate.py'
 
 rule DGE:
     input:
@@ -410,7 +410,7 @@ rule consensus_peaks:
     script:
         'scripts/MACS_consensus.py'
 
-"""rule cistopic_call_peaks:
+rule cistopic_call_peaks:
     input:
         bigwig_paths = work_dir + '/data/pycisTopic/pseudobulk_bigwig_files/bw_paths.tsv',
         bed_paths = work_dir + '/data/pycisTopic/pseudobulk_bed_files/bed_paths.tsv'
@@ -426,7 +426,7 @@ rule consensus_peaks:
     resources:
         runtime=1440, mem_mb=100000, disk_mb=500000
     script:
-        'scripts/cistopic_call_peaks.py'"""
+        'scripts/cistopic_call_peaks.py'
     
 rule cistopic_create_objects:
     input:
@@ -473,7 +473,7 @@ rule cistopic_merge_objects:
         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/merge_cistopic_and_adata.py'
-
+"""
 rule atac_peaks_model:
     input:
         merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
@@ -486,7 +486,7 @@ rule atac_peaks_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 

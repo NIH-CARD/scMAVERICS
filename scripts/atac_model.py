@@ -17,23 +17,30 @@ adata = ad.read_h5ad(sys.argv[1])
 
 adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
 
-# Select for the most variable genes
+"""# Select for the most variable genes
 sc.pp.highly_variable_genes(
     adata, 
     flavor='seurat_v3', 
-    n_top_genes=25000
+    n_top_genes=10000
     )
+filtered_adata = adata[:, (adata.var['highly_variable'])].copy()"""
+
+print("# regions before filtering:", adata.shape[-1])
+
+filtered_adata = adata.copy()
+# compute the threshold: 5% of the cells
+min_cells = int(filtered_adata.shape[0] * 0.05)
+# in-place filtering of regions
+sc.pp.filter_genes(filtered_adata, min_cells=min_cells)
+
+print("# regions after filtering:", filtered_adata.shape[-1])
 
 # Setup POISSONVI on the data layer
 scvi.external.POISSONVI.setup_anndata(
-    adata, 
-    batch_key='sample_id') 
+    filtered_adata,) 
 
 # Add the parameters of the model
-model = scvi.external.POISSONVI(
-    adata, 
-    n_layers=2, 
-    n_latent=30)
+model = scvi.external.POISSONVI(filtered_adata)
 
 # Train the model
 model.train(
