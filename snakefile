@@ -508,7 +508,7 @@ rule DAR:
         atac_anndata = work_dir+'data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg'
     params:
         disease_param = disease_param,
         control = control,

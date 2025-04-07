@@ -17,13 +17,6 @@ adata = ad.read_h5ad(sys.argv[1])
 
 adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
 
-"""# Select for the most variable genes
-sc.pp.highly_variable_genes(
-    adata, 
-    flavor='seurat_v3', 
-    n_top_genes=10000
-    )
-filtered_adata = adata[:, (adata.var['highly_variable'])].copy()"""
 
 print("# regions before filtering:", adata.shape[-1])
 
