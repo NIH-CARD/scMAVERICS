@@ -29,6 +29,7 @@ module load singularity/4.1.5
 chmod 777 scripts/rna_model.sh
 chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
+chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity -n
+snakemake --cores all --profile snakemake_profile --use-singularity
