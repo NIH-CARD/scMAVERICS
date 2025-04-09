@@ -72,10 +72,10 @@ output_DAR_data = expand(
 
 rule cellbender:
     input:
-        rna_anndata =data_dir+'batch{batch}/Multiome/{sample}/outs/raw_feature_bc_matrix.h5',
-        cwd = data_dir+'batch{batch}/Multiome/{sample}/outs/'
+        rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
+        cwd = data_dir+'{sample}/'
     output:
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}'
     resources:
@@ -86,9 +86,9 @@ rule cellbender:
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
     output:
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -102,7 +102,7 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_rna.h5ad', 
+            data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -143,9 +143,9 @@ rule plot_qc_rna:
 
 rule filter_rna:
     input:        
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
     output:
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad'
+        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -161,7 +161,7 @@ rule filter_rna:
 rule merge_filtered_rna:
     input:
         rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -179,9 +179,9 @@ rule merge_filtered_rna:
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'batch{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz'
+        fragment_file=data_dir+'{sample}/atac_fragments.tsv.gz'
     output:
-        atac_anndata=data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -192,7 +192,7 @@ rule atac_preprocess:
 rule merge_unfiltered_atac:
     input:
         rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
+            data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -208,7 +208,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata=data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
+        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -220,11 +220,11 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad',
+        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     output:
-        atac_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_object_atac.h5ad',
-        rna_anndata = data_dir+'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad'
+        atac_anndata = data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad',
+        rna_anndata = data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -235,7 +235,7 @@ rule filter_atac:
 rule merge_multiome_rna:
     input:
         rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -360,7 +360,7 @@ rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+            data_dir+'{sample}/atac_fragments.tsv.gz',
             zip,
             sample=samples,
             batch=batches
@@ -433,11 +433,11 @@ rule cistopic_call_peaks:
 rule cistopic_create_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
-        fragment_file = data_dir+'batch{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+        fragment_file = data_dir+'{sample}/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed'
     output:
-        cistopic_object = data_dir + 'batch{batch}/Multiome/{sample}/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata = data_dir + 'batch{batch}/Multiome/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+        cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
@@ -456,13 +456,13 @@ rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         cistopic_objects = expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/04_{sample}_cistopic_obj.pkl',
+            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
             zip,
             sample=samples,
             batch=batches
             ),
         rna_anndata=expand(
-            data_dir + 'batch{batch}/Multiome/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad', 
+            data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad', 
             zip,
             sample=samples,
             batch=batches
@@ -532,8 +532,8 @@ rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
-        celltype_atac = work_dir+'data/celltypes/{cell_type}/atac.h5ad',
-        celltype_rna = work_dir+'data/celltypes/{cell_type}/rna.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
