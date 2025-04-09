@@ -61,8 +61,11 @@ envs = {
 
 rule all:
     input:
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
+        output_DAR_data = expand(
+            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+            cell_type = cell_types,
+            disease = diseases
+            )
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 rna_anndata=expand(
     data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
@@ -479,7 +482,7 @@ rule atac_peaks_model:
         merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
     output:
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        atac_model_history = work_dir+'/model_elbo/atac_model_history.csv'
+        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
     params:
         atac_model = work_dir+'/data/models/atac/',
         sample_key = sample_key
@@ -489,19 +492,6 @@ rule atac_peaks_model:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
-
-rule atac_peaks_annotate:
-    input:
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        annot_csv = work_dir+'/data/rna_cell_annot.csv'
-    output:
-        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad'
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=240, mem_mb=300000
-    script:
-        'scripts/atac_annotate.py'
 
 rule DAR:
     input:
@@ -525,12 +515,14 @@ rule DAR:
    
 rule multiome_output:
     input:
-        merged_atac_anndata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     singularity:
         envs['singlecell']
+    resources:
+        runtime=120, mem_mb=300000, slurm_partition='quick' 
     script:
         'scripts/merge_muon.py'
 

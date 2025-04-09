@@ -47,7 +47,7 @@ cell_type_diff_df['adjusted p-value'] = cell_type_diff_df['adjusted p-value'].as
 cell_type_diff_df['-log10(p-value)'] = -np.log10(cell_type_diff_df['adjusted p-value'])
 
 # File save location
-file_save = snakemake.output.output_data
+file_save = snakemake.output.output_DAR_data
 cell_type_diff_df.to_csv(file_save)
 
 # File save location
