@@ -43,7 +43,11 @@ envs = {
 
 rule all:
     input:
-        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png
+        output_DAR_data = expand(
+            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+            cell_type = cell_types,
+            disease = diseases
+            ) # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
 # Uncomment when you have verified QC metrics
