@@ -35,7 +35,7 @@ In addition, the `snakefile` requires modifications to fit your project. The top
 - Preprocessed and QC-filtered AnnData objects for each sample
 
 #### Current version:
-- Uses Singularity images for reproducible runs (scVI modeling will be slow until a GPU-enabled image is created)
+- Uses Singularity images for reproducible runs (scVI and poissonVI modeling will be fast utilizing a GPU-enabled environment)
 - Snakemake runs steps until all output files are created
 - Genes used for celltyping are input from `input/example_marker_genes.csv`
 - Both RNA and ATAC processing has to be done to run this pipeline 
