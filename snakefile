@@ -26,8 +26,8 @@ mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitoch
 ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be ribosomal
 doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
-
 min_peak_counts = 500 # Minimum number of fragments per cell
+
 
 """========================================================================="""
 """                                  Workflow                               """
