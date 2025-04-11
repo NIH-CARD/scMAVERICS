@@ -11,16 +11,16 @@ adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 marker_genes = pd.read_csv(snakemake.input.gene_markers)
 marker_gene_df = pd.DataFrame(marker_genes)
 
-# Run over-represenation analysis based on cell markers
+# Run over-representation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
 dc.run_ora(
-    mat=adata,
-    net=marker_gene_df,
-    source='cell type',
-    target='official gene symbol',
-    min_n=1,
-    verbose=True,
-    use_raw=False
+    mat     = adata,
+    net     = marker_gene_df,
+    source  = 'cell type',
+    target  = 'official gene symbol',
+    min_n   = 1,
+    verbose = True,
+    use_raw = False
 )
 
 # Create a mini AnnData object with the over-represenation
@@ -34,9 +34,9 @@ max_e = np.nanmax(acts_v[np.isfinite(acts_v)])
 acts.X[~np.isfinite(acts.X)] = max_e
 df = dc.rank_sources_groups(
     acts, 
-    groupby='leiden_2', 
-    reference='rest', 
-    method='t-test_overestim_var'
+    groupby     = 'leiden_2', 
+    reference   = 'rest', 
+    method      = 't-test_overestim_var'
     )
 
 # Apply the best ranked cell type to a cluster-celltype dictionary
