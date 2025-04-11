@@ -466,7 +466,7 @@ rule cistopic_merge_objects:
             batch=batches
             ),
         rna_anndata=expand(
-            data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad', 
+            data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
             zip,
             sample=samples,
             batch=batches
