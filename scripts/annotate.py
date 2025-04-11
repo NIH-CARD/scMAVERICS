@@ -11,6 +11,16 @@ adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 marker_genes = pd.read_csv(snakemake.input.gene_markers)
 marker_gene_df = pd.DataFrame(marker_genes)
 
+# FILTER - by median doublet score w/in leiden_2 clusters
+doublet_clusters = []
+
+for cluster in adata.obs['leiden_2'].drop_duplicates():
+    
+    if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .05:
+        doublet_clusters.append(cluster)
+ 
+adata = adata[~adata.obs['leiden_2'].isin(doublet_clusters)].copy()
+
 # Run over-representation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
 dc.run_ora(
