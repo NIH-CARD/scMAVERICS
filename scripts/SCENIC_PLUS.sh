@@ -4,7 +4,7 @@
 #SBATCH --ntasks=8
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=multinode
-#SBATCH --time 24:00:00
+#SBATCH --time 48:00:00
 #SBATCH --output=logs/SCENICPLUS-%j.out
 
 module load bedtools/2.30.0 
