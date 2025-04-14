@@ -22,7 +22,8 @@ disease_param = snakemake.params.disease_param
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     adata,
-    sample_col='sample',
+    sample_col=snakemake.params.sample_key,
+    groups_col=None,
     layer='counts',
     mode='sum',
     min_cells=10,
@@ -70,7 +71,7 @@ inference = DefaultInference(n_cpus=64)
 
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=[disease_param, 'batch'],
+    design_factors=[disease_param, snakemake.params.seq_batch_key],
     refit_cooks=True,
     inference=inference,
 )
@@ -91,7 +92,7 @@ stat_res.summary()
 # Extract results
 DGE_results_df = stat_res.results_df
 DGE_results_df['-log10_padj'] = -np.log10(DGE_results_df['padj'])
-DGE_results_df.to_csv(snakemake.output.output_figure)
+DGE_results_df.to_csv(snakemake.output.output_DGE_data)
 
 # Plot 
 dc.plot_volcano_df(
