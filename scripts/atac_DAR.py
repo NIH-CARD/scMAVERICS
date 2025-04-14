@@ -27,6 +27,7 @@ cell_type_diff_bins = snap.tl.diff_test(
     cell_type_atac,
     cell_group1 = cell_type_control,
     cell_group2 = cell_type_disease,
+    covariates=['Age']
     direction = 'both',
     min_log_fc = 0
 )

@@ -5,6 +5,7 @@ import pickle
 import os
 import anndata as ad
 import scanpy as sc
+import scipy
 from pycisTopic.cistopic_class import *
 
 # Merge cistopic objects
@@ -24,6 +25,7 @@ cell_data = rna.obs
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
 # Add the sample_id variable
 cell_data['sample_id'] = cell_data[snakemake.params.sample_key]
+cell_data.index = cell_data['sample_id']
 
 # Test if sample can be exported
 pickle.dump(
@@ -49,7 +51,8 @@ transfer_params = [
     'sample_id',
     'barcode',
     'cell_type', 
-    'Primary Diagnosis']
+    'Primary Diagnosis',
+    'Age']
 
 # Create DataFrame of cisTopic sample parameters
 cistopic_frag_data = cistopic_obj.cell_data[transfer_params].reset_index()
@@ -57,7 +60,7 @@ cistopic_frag_data.index = cistopic_frag_data['atlas_identifier']
 
 # Add sample, barcode, cell type, and Primary diagnosis, number of fragments, and unique fragments to the anndata object
 for param in transfer_params[1:]:
-    barcode2param = cistopic_frag_data[param].to_dict()
+    barcode2param = cell_data[param].to_dict()
     adata.obs[param] = [barcode2param[x] for x in adata.obs.index]
 
 adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
