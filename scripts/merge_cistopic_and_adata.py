@@ -44,24 +44,40 @@ adata.var['start'] = [x.split(':')[1].split('-')[0] for x in adata.var.index]
 adata.var['end'] = [x.split(':')[1].split('-')[1] for x in adata.var.index]
 adata.var['peak length'] = [int(x.split(':')[1].split('-')[1]) - int(x.split(':')[1].split('-')[0]) for x in adata.var.index]
 
-transfer_params = [
+cistopic_transfer_params = [
     'atlas_identifier', 
     'Unique_nr_frag', 
     'cisTopic_nr_frag',
     'sample_id',
-    'barcode',
+    'barcode']
+
+anndata_transfer_params = [
+    'atlas_identifier',
     'cell_type', 
     'Primary Diagnosis',
-    'Age']
+    'Age',
+    'PMI',
+    'Sex',
+    'Ethnicity'
+]
 
 # Create DataFrame of cisTopic sample parameters
 cistopic_frag_data = cistopic_obj.cell_data[transfer_params].reset_index()
 cistopic_frag_data.index = cistopic_frag_data['atlas_identifier']
 
 # Add sample, barcode, cell type, and Primary diagnosis, number of fragments, and unique fragments to the anndata object
-for param in transfer_params[1:]:
+for param in cistopic_transfer_params[1:]:
     barcode2param = cell_data[param].to_dict()
-    adata.obs[param] = [barcode2param[x] for x in adata.obs.index]
+    adata.obs[param] = [barcode2param[x] for x in cistopic_frag_data.obs.index]
+
+# Create DataFrame of Anndatda sample parameters
+anndata_data = cell_data[anndata_transfer_params].reset_index()
+anndata_data.index = anndata_data['atlas_identifier']
+
+# Add sample, barcode, cell type, and Primary diagnosis, number of fragments, and unique fragments to the anndata object
+for param in anndata_transfer_params[1:]:
+    barcode2param = cell_data[param].to_dict()
+    adata.obs[param] = [barcode2param[x] for x in anndata_data.obs.index]
 
 adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
 
