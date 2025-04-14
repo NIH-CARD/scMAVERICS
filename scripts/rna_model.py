@@ -31,37 +31,23 @@ model = scvi.model.SCVI(
 print('Starting modeling')
 # Train the model
 model.train(
-    max_epochs=1000,  
     early_stopping=True,
     accelerator='gpu',
-    early_stopping_patience=20
+    early_stopping_patience=40
 )
 
-# Done modeling
 print('Done modeling')
-model.save(sys.argv[5], overwrite=True)
 
-# Save the anndata object
-filtered_adata.write_h5ad(sys.argv[4], compression='gzip')
-
-"""# Extract the elbo plot of the model and save the values
+# Extract the elbo plot of the model and save the values
 elbo = model.history['elbo_train']
 elbo['elbo_validation'] = model.history['elbo_validation']
 elbo.to_csv(sys.argv[3], index=False)
 
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
-adata.obs['atlas_identifier'] = adata.obs.index.to_list()
-adata.obsm['X_scvi'] = model.get_latent_representation()
-
-# Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
-sc.pp.neighbors(adata, use_rep='X_scvi')
-sc.tl.umap(adata, min_dist=0.3)
-# Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
-sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
+filtered_adata.obsm['X_scvi'] = model.get_latent_representation()
 
 # Save the anndata object
-adata.write_h5ad(sys.argv[4], compression='gzip')
+filtered_adata.write_h5ad(sys.argv[4], compression='gzip')
 
-model.save(sys.argv[5], overwrite=True)"""
+# Done modeling
+model.save(sys.argv[5], overwrite=True)

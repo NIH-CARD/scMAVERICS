@@ -61,7 +61,7 @@ envs = {
 rule all:
     input:
         genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
-        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h54ad'
        
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 output_DGE_data = expand(
@@ -272,7 +272,7 @@ rule feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'/atlas/04_hvg_anndata_rna.h5ad'
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
         envs['singlecell']
     resources:
@@ -282,9 +282,9 @@ rule feature_selection:
 
 rule rna_model:
     input:
-        merged_rna_anndata = work_dir+'/atlas/04_hvg_anndata_rna.h5ad'
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
+        hvg_rna_anndata = work_dir+'/atlas/04_modeled_hvg_anndata_rna.h5ad',
         model_history = work_dir+'/data/model_elbo/rna_model_history.csv'
     params:
         model = work_dir+'/data/models/rna/',
@@ -292,9 +292,20 @@ rule rna_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/rna_model.sh {input.merged_rna_anndata} {params.sample_key} {output.model_history} {output.merged_rna_anndata} {params.model}'
+
+rule UMAP:
+    input:
+        merged_rna_anndata = work_dir + '/atlas/03_filtered_anndata_rna.h5ad',
+        hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
+    output:
+        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h54ad'
+    resources:
+        runtime=360, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/scVI_to_UMAP.py'
 
 rule annotate:
     input:
@@ -308,7 +319,7 @@ rule annotate:
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/annotate.py'
+        work_dir+'scripts/annotate.py'
 
 ###LEGACY BIN METHOD
 
@@ -360,7 +371,7 @@ rule atac_bins_annotate:
     resources:
         runtime=2880, disk_mb=500000, mem_mb=300000
     script:
-        'scripts/atac_bins_annotate.py'
+        work_dir+'scripts/atac_bins_annotate.py'
 
 rule DGE:
     input:
@@ -381,7 +392,7 @@ rule DGE:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/rna_DGE.py'
+        work_dir+'scripts/rna_DGE.py'
 
 rule cistopic_pseudobulk:
     input:
@@ -407,7 +418,7 @@ rule cistopic_pseudobulk:
     resources:
         runtime=960, mem_mb=1500000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/cistopic_pseudobulk.py'
+        work_dir+'scripts/cistopic_pseudobulk.py'
 
 rule MACS2_peak_call:
     input:
@@ -437,7 +448,7 @@ rule consensus_peaks:
     resources:
         runtime=960, mem_mb=100000
     script:
-        'scripts/MACS_consensus.py'
+        work_dir+'scripts/MACS_consensus.py'
     
 rule cistopic_create_objects:
     input:
@@ -456,7 +467,7 @@ rule cistopic_create_objects:
     threads:
         16
     script:
-        'scripts/cistopic_create_object.py'
+        work_dir+'scripts/cistopic_create_object.py'
 
 rule cistopic_merge_objects:
     input:
@@ -483,7 +494,7 @@ rule cistopic_merge_objects:
     resources:
         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
-        'scripts/merge_cistopic_and_adata.py'
+        work_dir+'scripts/merge_cistopic_and_adata.py'
 
 rule atac_peaks_model:
     input:
@@ -519,7 +530,7 @@ rule DAR:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DAR.py'
+        work_dir+'scripts/atac_DAR.py'
    
 rule multiome_output:
     input:
@@ -532,7 +543,7 @@ rule multiome_output:
     resources:
         runtime=120, mem_mb=300000, slurm_partition='quick' 
     script:
-        'scripts/merge_muon.py'
+        work_dir+'scripts/merge_muon.py'
 
 rule export_celltypes:
     input:
@@ -549,7 +560,7 @@ rule export_celltypes:
     resources:
         runtime=120, mem_mb=300000
     script:
-        'scripts/export_celltype.py'
+        work_dir+'scripts/export_celltype.py'
 
 rule atac_coaccessibilty:
     input:
@@ -565,4 +576,4 @@ rule atac_coaccessibilty:
     resources:
         runtime=2880, mem_mb=300000
     script:
-        'scripts/circe_by_celltype.py'
+        work_dir+'scripts/circe_by_celltype.py'
