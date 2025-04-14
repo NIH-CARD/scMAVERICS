@@ -65,7 +65,12 @@ rule all:
             work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
             cell_type = cell_types,
             disease = diseases
-            )
+            ),
+        celltype_atacs =  expand(
+            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+            cell_type = cell_types
+        ),
+        cistopic_model = work_dir + '/data/models/cistopic/models.pkl'
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 rna_anndata=expand(
     data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
@@ -449,7 +454,7 @@ rule cistopic_create_objects:
         16
     script:
         'scripts/cistopic_create_object.py'
-
+"""
 rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
@@ -476,7 +481,7 @@ rule cistopic_merge_objects:
         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/merge_cistopic_and_adata.py'
-"""
+
 rule atac_peaks_model:
     input:
         merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
@@ -495,7 +500,7 @@ rule atac_peaks_model:
 
 rule DAR:
     input:
-        atac_anndata = work_dir+'data/celltypes/{cell_type}/atac.h5ad'
+        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
         output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg'
@@ -530,8 +535,8 @@ rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
-        celltype_atac = work_dir+'data/celltypes/{cell_type}/atac.h5ad',
-        celltype_rna = work_dir+'data/celltypes/{cell_type}/rna.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
@@ -543,3 +548,33 @@ rule export_celltypes:
     script:
         'scripts/export_celltype.py'
 
+rule atac_coaccessibilty:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+    params:
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    singularity:
+        envs['scenicplus']
+    threads:
+        8
+    resources:
+        runtime=2880, mem_mb=300000
+    script:
+        'scripts/circe_by_celltype.py'
+
+rule cistopic_model:
+    input:
+        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl'
+    output:
+        cistopic_model = work_dir + '/data/models/cistopic/models.pkl',
+        merged_cistopic_object = work_dir + '/data/pycisTopic/modeled_cistopic_object.pkl'
+    singularity:
+        envs['scenicplus']
+    threads:
+        16
+    resources:
+        runtime=2880, mem_mb=300000
+    script:
+        'scripts/cistopic_model.py'
