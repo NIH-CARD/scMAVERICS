@@ -26,4 +26,4 @@ adata.var['rb'] = adata.var_names.str.startswith(('RPL', 'RPS'))
 filtered_adata = adata[:, (adata.var['highly_variable']) & ~(adata.var['mt']) & ~(adata.var['rb'])].copy()
 
 # Save the anndata object
-filtered_adata.write_h5ad(snakemake.output.merged_rna_anndata, compression='gzip')
+filtered_adata.write_h5ad(snakemake.output.hvg_rna_anndata, compression='gzip')
