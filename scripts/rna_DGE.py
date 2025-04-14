@@ -42,12 +42,12 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 
-# Abreviate diagnosis
+# Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
 
 dc.get_metadata_associations(
     pdata,
-    obs_keys = [disease_param, 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
+    obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
     obsm_key='X_pca',  # Where the PCs are stored
     uns_key='pca_anova',  # Where the results are stored
     inplace=True,
@@ -58,7 +58,7 @@ pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
 
 pdata_genes = dc.filter_by_expr(
     pdata, 
-    group=disease_param, 
+    group='comparison', 
     min_count=10, 
     min_total_count=15
     )
@@ -71,7 +71,7 @@ inference = DefaultInference(n_cpus=64)
 
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=[disease_param, snakemake.params.seq_batch_key],
+    design_factors=['comparison', snakemake.params.seq_batch_key],
     refit_cooks=True,
     inference=inference,
 )
@@ -82,7 +82,7 @@ dds.deseq2()
 # Extract contrast between control and disease states
 stat_res = DeseqStats(
     dds,
-    contrast=[disease_param, disease_name, control_name],
+    contrast=['comparison', disease_name, control_name],
     inference=inference,
 )
 
