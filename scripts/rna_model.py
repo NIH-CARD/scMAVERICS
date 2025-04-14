@@ -12,14 +12,12 @@ print(torch.cuda.is_available())
 scvi.settings.seed = 0
 torch.set_float32_matmul_precision('high')
 
-print(sys.argv)
-
 # Read in AnnData atlas object
 filtered_adata = ad.read_h5ad(sys.argv[1])
 
 # Setup SCVI on the data layer
 scvi.model.SCVI.setup_anndata(
-    filtered_adata, layer="log-norm", batch_key=sys.argv[2])
+    filtered_adata, layer="counts", batch_key=sys.argv[2])
 
 # Add the parameters of the model
 model = scvi.model.SCVI(
@@ -30,13 +28,17 @@ model = scvi.model.SCVI(
     gene_likelihood="nb"
 )
 
+print('Starting modeling')
 # Train the model
 model.train(
     max_epochs=1000,  
     early_stopping=True,
+    accelerator='gpu',
     early_stopping_patience=20
 )
 
+# Done modeling
+print('Done modeling')
 model.save(sys.argv[5], overwrite=True)
 
 # Save the anndata object
