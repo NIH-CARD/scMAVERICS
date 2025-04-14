@@ -15,32 +15,15 @@ torch.set_float32_matmul_precision('high')
 print(sys.argv)
 
 # Read in AnnData atlas object
-adata = ad.read_h5ad(sys.argv[1])
-
-# Double check that no transcripts not found in cells are in the atlas
-sc.pp.filter_genes(adata, min_cells=1)
-
-# Select for the most variable genes
-sc.pp.highly_variable_genes(
-    adata, 
-    layer='log-norm',
-    n_top_genes=500, 
-    batch_key=sys.argv[2])
-
-# Define mitochondria and ribosome genes to remove
-adata.var['mt'] = adata.var_names.str.startswith('MT-')
-adata.var['rb'] = adata.var_names.str.startswith(('RPL', 'RPS'))
-
-# Make a copy of the AnnData atlas that only contains variable genes
-filtered_adata = adata[:, (adata.var['highly_variable']) & ~(adata.var['mt']) & ~(adata.var['rb'])].copy()
+filtered_adata = ad.read_h5ad(sys.argv[1])
 
 # Setup SCVI on the data layer
 scvi.model.SCVI.setup_anndata(
-    adata, layer="log-norm", batch_key=sys.argv[2])
+    filtered_adata, layer="log-norm", batch_key=sys.argv[2])
 
 # Add the parameters of the model
 model = scvi.model.SCVI(
-    adata, 
+    filtered_adata, 
     dispersion="gene-batch", 
     n_layers=2, 
     n_latent=30, 
@@ -49,13 +32,17 @@ model = scvi.model.SCVI(
 
 # Train the model
 model.train(
-    max_epochs=1000,
-    accelerator='gpu',  
+    max_epochs=1000,  
     early_stopping=True,
     early_stopping_patience=20
 )
 
-# Extract the elbo plot of the model and save the values
+model.save(sys.argv[5], overwrite=True)
+
+# Save the anndata object
+filtered_adata.write_h5ad(sys.argv[4], compression='gzip')
+
+"""# Extract the elbo plot of the model and save the values
 elbo = model.history['elbo_train']
 elbo['elbo_validation'] = model.history['elbo_validation']
 elbo.to_csv(sys.argv[3], index=False)
@@ -75,4 +62,4 @@ sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
 # Save the anndata object
 adata.write_h5ad(sys.argv[4], compression='gzip')
 
-model.save(sys.argv[5], overwrite=True)
+model.save(sys.argv[5], overwrite=True)"""
