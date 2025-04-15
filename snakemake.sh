@@ -8,7 +8,7 @@
 module purge
 module load apptainer
 module load snakemake/7.7.0
-module load singularity/4.1.5
+module load singularity
 
 # Pull profile, this will only run once, and is required for running on Biowulf
 git clone https://github.com/NIH-HPC/snakemake_profile.git
@@ -34,4 +34,5 @@ snakemake \
     --cores all \
     --profile snakemake_profile \
     --use-singularity annotate
+    #-n
     #--unlock
