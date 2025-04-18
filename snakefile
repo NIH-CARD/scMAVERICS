@@ -21,7 +21,8 @@ metadata_table = work_dir+'/input/SN_control_samples-EF_fixed.csv'
 
 # # Define where celltypes/cell marker gene 
 # gene_markers_file = work_dir+'/input/example_marker_genes.csv'
-gene_markers_file = work_dir+'/input/marker_genes-EF.csv'
+# gene_markers_file = work_dir+'/input/marker_genes-EF.csv'
+gene_markers_file = work_dir+'/input/celltype_markers_dict_reduced.csv'
 
 # Key for samples, required in aggregating while preserving sample info
 sample_key = 'Sample'
@@ -30,8 +31,6 @@ sample_key = 'Sample'
 batches = pd.read_csv(metadata_table)['Use_batch'].tolist()
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 
-#* TODO - change this
-#* TODO - add my JNB age filtering as new rules
 # Name of the disease parameter
 disease_param = 'age_bin'
 # Define disease states
@@ -66,13 +65,13 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+        # merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
         # merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
-        # output_DGE_data = expand(
-        #     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        #     cell_type = cell_types,
-        #     disease = diseases
-        #     ),
+        output_DGE_data = expand(
+            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+            cell_type = cell_types,
+            disease = diseases
+            ),
         # output_DAR_data = expand(s
         #     work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
         #     cell_type = cell_types,
@@ -347,7 +346,7 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.png',
         celltype_pseudobulk = work_dir + '/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
     params:
         disease_param = disease_param,

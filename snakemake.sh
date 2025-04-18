@@ -33,6 +33,7 @@ chmod 777 scripts/atac_model.sh
 snakemake \
     --cores all \
     --profile snakemake_profile \
-    --use-singularity annotate
+    --use-singularity
+    # --use-singularity annotate 
     #-n
     #--unlock
