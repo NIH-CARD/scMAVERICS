@@ -27,7 +27,9 @@ narrow_peak_dict = peak_calling(
     shift = 73,
     ext_size = 146,
     keep_dup = 'all',
-    q_value = 0.05,
+    q_value = 0.01,
+    nolambda = False,
+    skip_empty_peaks=True,
     _temp_dir = snakemake.resources.tmpdir
 )
 

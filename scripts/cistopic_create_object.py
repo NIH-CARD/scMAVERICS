@@ -13,22 +13,15 @@ cell_data = rna.obs
 
 # Add the sample_id variable
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
-cell_data['sample_id'] = cell_data['sample']
-sample_batch = cell_data[['sample', 'batch']].drop_duplicates()
-
-"""Remnant of creating cisTopic objects all at once"""
-# Make sure list of samples is interpreted as strings
-#samples = [str(x) for x in snakemake.params.samples]
-#batches = sample_batch['batch'].to_list()
-#fragment_files = [f'/data/CARD_singlecell/Brain_atlas/SN_Multiome/batch{batches[i]}/Multiome/{samples[i]}-ARC/outs/atac_fragments.tsv.gz' for i in range(len(samples))]
-#fragments_dict = dict(zip(samples, fragment_files)]
+cell_data['sample_id'] = cell_data[snakemake.params.sample_key]
+sample_batch = cell_data[[snakemake.params.sample_key, snakemake.params.seq_batch_key]].drop_duplicates()
 
 # Path to regions
 path_to_regions = snakemake.input.consensus_bed
 # Create cistopic object
 cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake.input.fragment_file,
                                                path_to_regions=path_to_regions,
-                                               valid_bc = cell_data[cell_data['sample'] == snakemake.params.sample]['barcode'].to_list(),
+                                               valid_bc = cell_data[cell_data['Sample'] == snakemake.params.sample]['barcode'].to_list(),
                                                n_cpu=32,
                                                project=snakemake.params.sample)
 
@@ -36,10 +29,10 @@ cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake
 cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][i] + '_' + cistopic_obj.cell_data['sample_id'][i] for i in range(len(cistopic_obj.cell_data))]
 
 barcode2celltype = cell_data['cell_type'].to_dict()
-barcode2disease = cell_data['Primary Diagnosis'].to_dict()
+barcode2disease = cell_data[snakemake.params.disease_param].to_dict()
 
 cistopic_obj.cell_data['cell_type'] = [barcode2celltype[x] for x in cistopic_obj.cell_data['atlas_identifier']]
-cistopic_obj.cell_data['Primary Diagnosis'] = [barcode2disease[x] for x in cistopic_obj.cell_data['atlas_identifier']]
+cistopic_obj.cell_data[snakemake.params.disease_param] = [barcode2disease[x] for x in cistopic_obj.cell_data['atlas_identifier']]
 
 # Export sample
 pickle.dump(
@@ -66,7 +59,7 @@ transfer_params = [
     'sample_id',
     'barcode',
     'cell_type', 
-    'Primary Diagnosis']
+    snakemake.params.disease_param]
 
 # Convert variable metadata to DataFrame to be transfered 
 cistopic_frag_data = cistopic_obj.cell_data[transfer_params].reset_index()

@@ -44,15 +44,6 @@ bw_paths, bed_paths = export_pseudobulk(
     bigwig_path = snakemake.params.bigwig_file_locs,
     path_to_fragments = fragments_dict,
     n_cpu = snakemake.threads,
-    normalize_bigwig = True,
+    normalize_bigwig = False,
     temp_dir = snakemake.resources.tmpdir
     )
-
-with open(snakemake.output.bigwig_paths, "wt") as f:
-    for v in bw_paths:
-        _ = f.write(f"{v}\t{bw_paths[v]}\n")
-
-with open(snakemake.output.bed_paths, "wt") as f:
-    for v in bed_paths:
-        _ = f.write(f"{v}\t{bed_paths[v]}\n")
-

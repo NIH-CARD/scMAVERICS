@@ -14,12 +14,14 @@ module load singularity
 git clone https://github.com/NIH-HPC/snakemake_profile.git
 
 # Pull the containers
-# - Public 
-apptainer pull envs/snapatac2.sif oras://quay.io/adamcatchingdti/snapatac2
-apptainer pull envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu:0.8
-apptainer pull envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.8
-# - Personal
-apptainer pull envs/scenicplus.sif docker://litd/docker-scenicplus:latest
+apptainer pull --disable-cache envs/snapatac2.sif oras://quay.io/adamcatchingdti/snapatac2
+apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu:0.8
+apptainer pull --disable-cache envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.9
+
+apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
+
+# Load singularity
+module load singularity
 
 # Bind external directories on Biowulf
 . /usr/local/current/singularity/app_conf/sing_binds
