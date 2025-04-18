@@ -11,13 +11,13 @@ adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 marker_genes = pd.read_csv(snakemake.input.gene_markers)
 marker_gene_df = pd.DataFrame(marker_genes)
 
-# Keep clusters with median doublet score below given threshold
-doublet_clusters = []
-for cluster in adata.obs['leiden'].drop_duplicates():
-    if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
-        doublet_clusters.append(cluster)
+# # Keep clusters with median doublet score below given threshold
+# doublet_clusters = []
+# for cluster in adata.obs['leiden'].drop_duplicates():
+#     if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
+#         doublet_clusters.append(cluster)
 
-adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
+# adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
 
 # FILTER - by median doublet score w/in leiden_2 clusters
 doublet_clusters = []
