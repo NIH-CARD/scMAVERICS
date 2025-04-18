@@ -42,8 +42,9 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 
-# Abbreviate diagnosis to avoid space syntax error
-pdata.obs['comparison'] = pdata.obs[disease_param]
+# # Abbreviate diagnosis to avoid space syntax error
+# pdata.obs['comparison'] = pdata.obs[disease_param]
+pdata.obs['comparison'] = pdata.obs[disease_param].astype(str)  # Ensure all values are strings
 
 dc.get_metadata_associations(
     pdata,
@@ -53,8 +54,8 @@ dc.get_metadata_associations(
     inplace=True,
 )
 
-# Export pseudobulk
-pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
+# # Export pseudobulk
+# pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
 
 pdata_genes = dc.filter_by_expr(
     pdata, 
