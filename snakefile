@@ -7,27 +7,27 @@ import pandas as pd
 """========================================================================="""
 
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = os.getcwd() # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/SN_control_samples-EF_fixed.csv' # Define where the metadata data exists for each sample to be processed
-gene_markers_file = work_dir+'/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
+data_dir            = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'      # Define the data directory, explicitly
+work_dir            = os.getcwd()                                           # Define the working directory, explictly as the directory of this pipeline
+metadata_table      = work_dir + '/input/SN_control_samples-EF_fixed.csv'   # Define where the metadata data exists for each sample to be processed
+gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
-seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
-sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
-batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
-samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'age_bin' # Name of the disease parameter
-control = 'young (< 57.9)' # Define disease states
-diseases = ['old (>= 57.9)'] # Disease states to compare, keep as list of strings, unnecessary 
-cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
+seq_batch_key       = 'Use_batch'                                           # Key for sequencing batch, used for directory search
+sample_key          = 'Sample'                                              # Key for samples, required in aggregating while preserving sample info
+batches             = pd.read_csv(metadata_table)[seq_batch_key].tolist()   # Read in the list of batches and samples
+samples             = pd.read_csv(metadata_table)[sample_key].tolist()
+disease_param       = 'age_bin'                                             # Name of the disease parameter
+control             = 'young (< 57.9)'                                      # Define disease states
+diseases            = ['old (>= 57.9)']                                     # Disease states to compare, keep as list of strings, unnecessary 
+cell_types          = pd.read_csv(gene_markers_file)['cell type']           # Define the cell types to look for, from gene marker file
 
 """Quality control thresholds"""
-mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
-ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be ribosomal
-doublet_thresh      = 0.15 # Maximum doublet score for a cell, computed by scrublet
-min_genes_per_cell  = 250 # Minimum number of unique genes in a cell
-min_peak_counts     = 500 # Minimum number of fragments per cell
+mito_percent_thresh = 15                                                    # Maximum percent of genes in a cell that can be mitochondrial
+ribo_percent_thresh = 10                                                    # Maximum percent of genes in a cell that can be ribosomal
+doublet_thresh      = 0.15                                                  # Maximum doublet score for a cell, computed by scrublet
+min_genes_per_cell  = 250                                                   # Minimum number of unique genes in a cell
+min_peak_counts     = 500                                                   # Minimum number of fragments per cell
 
 
 """========================================================================="""
@@ -60,16 +60,16 @@ rule all:
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
 # Uncomment when you have verified QC metrics
 """rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir + 'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
             zip,
-            batch=batches,
-            sample=samples
+            batch = batches,
+            sample = samples
             ),"""
 # Uncomment when you want to model rna data
-"""merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'"""
+"""merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'"""
 # Uncomment when you want to model ATAC-peak data
 """merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
-merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',"""
+merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',"""
 """
 output_DAR_data = expand(
     work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
@@ -80,23 +80,23 @@ output_DAR_data = expand(
 # #! WARNING - run once, then comment out!
 # rule cellbender:
 #     input:
-#         rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
-#         cwd = data_dir+'{sample}/'
+#         rna_anndata = data_dir+'{sample}/raw_feature_bc_matrix.h5',
+#         cwd = data_dir + '{sample}/'
 #     output:
-#         rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+#         rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
 #     params:
-#         sample='{sample}'
+#         sample = '{sample}'
 #     resources:
 #         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
 #     shell:
-#         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+#         work_dir + '/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 # rule rna_preprocess:
 #     input:
-#         metadata_table=metadata_table,
-#         rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+#         metadata_table = metadata_table,
+#         rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
 #     output:
-#         rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+#         rna_anndata = data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad'
 #     singularity:
 #         envs['singlecell']
 #     params:
@@ -110,17 +110,17 @@ output_DAR_data = expand(
 # rule merge_unfiltered:
 #     input:
 #         rna_anndata=expand(
-#             data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad', 
+#             data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad', 
 #             zip,
-#             batch=batches,
-#             sample=samples
+#             batch = batches,
+#             sample = samples
 #         )
 #     output:
-#         merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
+#         merged_rna_anndata = work_dir + '/atlas/01_merged_anndata_rna.h5ad'
 #     singularity:
 #         envs['singlecell']
 #     params:
-#         samples=samples
+#         samples = samples
 #     resources:
 #         runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
 #     script:
