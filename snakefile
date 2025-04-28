@@ -336,60 +336,44 @@ rule cluster_based_QC:
     script:
         work_dir + '/scripts/cluster_based_QC.py'
 
-rule rna_remodel:
+rule filtered_feature_selection:
     input:
-
-###LEGACY BIN METHOD
-
-rule atac_bins_model:
-    input:
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table=metadata_table,
-        atac_anndata = expand(
-            data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            )
+        merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad'
     output:
-        umap_data = work_dir+'/data/atac_umap.csv',
-        var_data = work_dir+'/data/atac_var_selected.csv',
-        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
-    params:
-        samples = samples,
-        sample_key = sample_key
+        hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
     singularity:
         envs['singlecell']
     resources:
-        runtime=2880, mem_mb=3000000, slurm_partition='largemem'
-    threads:
-        64
+        runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/merge_atac.py' 
+        work_dir+'/scripts/feature_selection.py'
 
-rule atac_bins_annotate:
+rule filtered_UMAP:
     input:
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        umap_csv = work_dir+'/data/atac_umap.csv',
-        var_csv = work_dir+'/data/atac_var_selected.csv',
-        annot_csv = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table = metadata_table
+        merged_rna_anndata = work_dir + '/atlas/05_polished_anndata_rna.h5ad',
+        hvg_rna_anndata = work_dir + '/atlas/05_hvg_anndata_rna.h5ad'
     output:
-        atac_anndata = work_dir+'/atlas/04_filtered_anndata_atac.h5ad',
-        merged_atac_anndata = work_dir+'/atlas/05_annotated_anndata_atac.h5ad'
-    params:
-        samples=samples
+        merged_rna_anndata = work_dir + '/atlas/06_modeled_anndata_rna.h5ad'
     singularity:
         envs['singlecell']
     resources:
-        runtime=2880, disk_mb=500000, mem_mb=300000
+        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/atac_bins_annotate.py'
+        work_dir+'/scripts/scVI_to_UMAP.py'
+
+rule second_pass_annotate:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad',
+        gene_markers = gene_markers_file
+    output:
+        merged_rna_anndata = work_dir+'/atlas/07_annotated_anndata_rna.h5ad',
+        cell_annotate = work_dir+'/data/example_marker_genes.csv'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=240, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/annotate.py'
 
 rule DGE:
     input:
