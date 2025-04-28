@@ -8,6 +8,6 @@ merged_atac_anndata=$4
 atac_model=$5
 
 # Load module
-module load singularity/4.1.5
+module load singularity
 # Run 
-singularity run --nv --bind "$PWD" envs/single_cell_gpu_1.sif python scripts/atac_model.py "${input_file}" "${sample_key}" "${atac_model_history}" "${merged_atac_anndata}" "${atac_model}"
+singularity run --nv --bind "$PWD" envs/single_cell_gpu.sif python scripts/atac_model.py "${input_file}" "${sample_key}" "${atac_model_history}" "${merged_atac_anndata}" "${atac_model}"

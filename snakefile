@@ -347,8 +347,8 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
-        # celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.png',
+        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
     params:
         disease_param = disease_param,
         control = control,
@@ -381,7 +381,8 @@ rule cistopic_pseudobulk:
         bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
         bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
         pseudobulk_param = 'cell_type',
-        samples = samples,
+        cell_type = lambda wildcards: wildcards.celltype,
+        samples=samples,
         sample_param_name = sample_key
     singularity:
         envs['scenicplus']
@@ -462,32 +463,33 @@ rule cistopic_pseudobulk:
 #     script:
 #         'scripts/cistopic_create_object.py'
 
-# rule cistopic_merge_objects:
-#     input:
-#         merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
-#         cistopic_objects = expand(
-#             data_dir + '{sample}/04_{sample}_cistopic_obj.pkl',
-#             zip,
-#             sample = samples,
-#             batch = batches
-#             ),
-#         rna_anndata=expand(
-#             data_dir + '{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
-#             zip,
-#             sample = samples,
-#             batch = batches
-#             )
-#     output:
-#         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-#         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample_key = sample_key
-#     resources:
-#         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
-#     script:
-#         'scripts/merge_cistopic_and_adata.py'
+rule cistopic_merge_objects:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+        cistopic_objects = expand(
+            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+            zip,
+            sample=samples,
+            batch=batches
+            ),
+        rna_anndata=expand(
+            data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample_key = sample_key,
+        disease_param = disease_param
+    resources:
+        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
+    script:
+        'scripts/merge_cistopic_and_adata.py'
 
 # rule atac_peaks_model:
 #     input:
@@ -505,25 +507,25 @@ rule cistopic_pseudobulk:
 #     shell:
 #         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 
-# rule DAR:
-#     input:
-#         atac_anndata = work_dir + 'data/celltypes/{cell_type}/atac.h5ad'
-#     output:
-#         output_DAR_data = work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-#         output_figure = work_dir + '/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
-#     params:
-#         disease_param   = disease_param,
-#         control         = control,
-#         disease         = lambda wildcards, output: output[0].split("_")[-2],
-#         cell_type       = lambda wildcards, output: output[0].split("_")[-3]
-#     singularity:
-#         envs['singlecell']
-#     threads:
-#         64
-#     resources:
-#         runtime=1440, disk_mb=200000, mem_mb=200000
-#     script:
-#         'scripts/atac_DAR.py'
+rule DAR:
+    input:
+        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3]
+    singularity:
+        envs['singlecell']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/atac_DAR.py'
    
 # rule multiome_output:
 #     input:
