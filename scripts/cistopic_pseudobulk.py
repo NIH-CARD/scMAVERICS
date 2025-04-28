@@ -22,6 +22,10 @@ cell_data = cell_data[cell_data['sample_id'].isin(samples)]
 # Subset cell data to only cells of the cell type
 cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 
+# Remove samples with only 1 cell of cell type
+counts = cell_data.groupby('sample_id').size()
+samples = counts[counts > 1].index.to_list()
+
 # Load chromosome sizes
 chromsizes = pd.read_table(
     "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes",
