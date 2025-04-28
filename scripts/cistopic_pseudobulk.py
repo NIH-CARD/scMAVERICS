@@ -19,6 +19,9 @@ samples = [str(x) for x in snakemake.params.samples]
 # Subset metadata to just samples in dataset 
 cell_data = cell_data[cell_data['sample_id'].isin(samples)]
 
+# Subset cell data to only cells of the cell type
+cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
+
 # Load chromosome sizes
 chromsizes = pd.read_table(
     "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes",

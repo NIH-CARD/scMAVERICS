@@ -377,6 +377,7 @@ rule cistopic_pseudobulk:
         bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
         bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
         pseudobulk_param = 'cell_type',
+        cell_type = lambda wildcards: wildcards.celltype,
         samples=samples,
         sample_param_name = sample_key
     singularity:
