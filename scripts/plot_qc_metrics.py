@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scanpy as sc
+import anndata as ad
 import numpy as np
 
 # Keep consistent font sizes
@@ -41,7 +42,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
     # Make plot directory
     try:
-        os.mkdir(f'plots/{sample}')
+        os.mkdir(f'figures/plots/{sample}')
     except FileExistsError:
         print('Already there')
 
@@ -168,7 +169,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 # Plot summary mitochondria, ribosome, and scrublet scores
 
 # Mitochondria QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
     adata.obs.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
@@ -181,7 +182,7 @@ plt.title('Percent mitochondria per cell')
 plt.savefig(snakemake.output.mito_figure, dpi=300)
 
 # Ribosome QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         adata.obs['pct_counts_rb'], 
         bins=int(np.sqrt(adata.n_obs))
         )
@@ -194,7 +195,7 @@ plt.title('Percent ribosome genes per cell')
 plt.savefig(snakemake.output.ribo_figure, dpi=300)
 
 # Number of genes
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         adata.obs['n_genes_by_counts'], 
         bins=int(np.sqrt(adata.n_obs))
         )
@@ -206,7 +207,7 @@ plt.title('Number of genes per cell')
 plt.savefig(snakemake.output.gene_counts_figure, dpi=300)
 
 # Doublet QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         doublet_adata.obs['doublet_score'], 
         bins=int(doublet_adata.n_obs))
 plt.plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')

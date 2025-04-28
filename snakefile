@@ -60,8 +60,7 @@ envs = {
 
 rule all:
     input:
-        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
-        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h54ad'
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
        
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 output_DGE_data = expand(
@@ -150,7 +149,7 @@ rule plot_qc_rna:
     singularity:
         envs['singlecell']
     resources:
-        runtime=960, mem_mb=500000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=960, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
     params:
         mito_percent_thresh = mito_percent_thresh,
         doublet_thresh = doublet_thresh,
@@ -292,34 +291,53 @@ rule rna_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
     shell:
-        'scripts/rna_model.sh {input.merged_rna_anndata} {params.sample_key} {output.model_history} {output.merged_rna_anndata} {params.model}'
+        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
 
 rule UMAP:
     input:
         merged_rna_anndata = work_dir + '/atlas/03_filtered_anndata_rna.h5ad',
         hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h54ad'
+        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
+    singularity:
+        envs['singlecell']
     resources:
-        runtime=360, mem_mb=1000000, slurm_partition='largemem'
+        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-rule annotate:
+rule first_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
         gene_markers = gene_markers_file
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+        cell_annotate = work_dir+'/data/first_pass_genes.csv'
     singularity:
         envs['singlecell']
     resources:
-        runtime=240, mem_mb=500000, slurm_partition='largemem'
+        runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/annotate.py'
+        work_dir+'/scripts/annotate.py'
+
+rule cluster_based_QC:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad'
+    output:
+        merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad',
+        course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
+        course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=240, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir + '/scripts/cluster_based_QC.py'
+
+rule rna_remodel:
+    input:
 
 ###LEGACY BIN METHOD
 
@@ -545,6 +563,8 @@ rule multiome_output:
     script:
         work_dir+'scripts/merge_muon.py'
 
+
+"""
 rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
@@ -561,7 +581,7 @@ rule export_celltypes:
         runtime=120, mem_mb=300000
     script:
         work_dir+'scripts/export_celltype.py'
-
+"""
 rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
