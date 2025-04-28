@@ -21,7 +21,7 @@ path_to_regions = snakemake.input.consensus_bed
 # Create cistopic object
 cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake.input.fragment_file,
                                                path_to_regions=path_to_regions,
-                                               valid_bc = cell_data[cell_data['Sample'] == snakemake.params.sample]['barcode'].to_list(),
+                                               valid_bc = cell_data[cell_data['sample_id'] == snakemake.params.sample]['barcode'].to_list(),
                                                n_cpu=32,
                                                project=snakemake.params.sample)
 

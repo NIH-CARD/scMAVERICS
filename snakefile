@@ -344,7 +344,7 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.png',
         celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
     params:
         disease_param = disease_param,
@@ -377,6 +377,7 @@ rule cistopic_pseudobulk:
         bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
         bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
         pseudobulk_param = 'cell_type',
+        cell_type = lambda wildcards: wildcards.celltype,
         samples=samples,
         sample_param_name = sample_key
     singularity:
@@ -479,7 +480,8 @@ rule cistopic_merge_objects:
     singularity:
         envs['scenicplus']
     params:
-        sample_key = sample_key
+        sample_key = sample_key,
+        disease_param = disease_param
     resources:
         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
@@ -503,7 +505,7 @@ rule atac_peaks_model:
 
 rule DAR:
     input:
-        atac_anndata = work_dir+'data/celltypes/{cell_type}/atac.h5ad'
+        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
         output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
