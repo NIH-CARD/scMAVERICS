@@ -34,7 +34,7 @@ chmod 777 scripts/atac_model.sh
 snakemake \
     --cores all \
     --profile snakemake_profile \
-    --use-singularity
+    --use-singularity cistopic_pseudobulk -n
     # --use-singularity annotate 
     #-n
     #--unlock
