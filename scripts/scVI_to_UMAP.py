@@ -1,9 +1,5 @@
-import anndata as ad
-import scvi
 import scanpy as sc
-import torch
 import pandas as pd
-import scipy
 import numpy as np
 import sys
 

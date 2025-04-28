@@ -13,7 +13,7 @@ adata = ad.read_h5ad(snakemake.input.merged_rna_anndata)
 sc.pp.highly_variable_genes(
     adata, 
     layer='log-norm',
-    n_top_genes=5000)
+    n_top_genes=2000)
 
 # Double check that no transcripts not found in cells are in the atlas
 sc.pp.filter_genes(adata, min_cells=10)
