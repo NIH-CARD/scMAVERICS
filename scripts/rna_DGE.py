@@ -46,18 +46,23 @@ pdata.obs['comparison'] = pdata.obs[disease_param]
 
 dc.get_metadata_associations(
     pdata,
-    obs_keys = [disease_param, 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
+    obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
     obsm_key='X_pca',  # Where the PCs are stored
     uns_key='pca_anova',  # Where the results are stored
     inplace=True,
 )
 
-# Export pseudobulk
-pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
+# CSV pseudobulk
+adata_df = pd.DataFrame(pdata.X)
+sample_cell = pdata.obs[['sample_id', 'cell_type', disease_param]]
+adata_df.columns = pdata.var_names.to_list()
+adata_df.index = sample_cell.index
+adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
+adata_df.to_csv(snakemake.output.celltype_pseudobulk, index=False)
 
 pdata_genes = dc.filter_by_expr(
     pdata, 
-    group=disease_param, 
+    group='comparison', 
     min_count=10, 
     min_total_count=15
     )
@@ -70,7 +75,7 @@ inference = DefaultInference(n_cpus=64)
 
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=[disease_param, 'batch'],
+    design_factors=['comparison', 'batch'],
     refit_cooks=True,
     inference=inference,
 )
@@ -81,7 +86,7 @@ dds.deseq2()
 # Extract contrast between control and disease states
 stat_res = DeseqStats(
     dds,
-    contrast=[disease_param, disease_name, control_name],
+    contrast=['comparison', disease_name, control_name],
     inference=inference,
 )
 
