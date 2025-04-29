@@ -1,13 +1,27 @@
+import anndata as ad
+import scipy
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import scanpy as sc
+import decoupler as dc
 from pydeseq2.dds import DeseqDataSet, DefaultInference
 from pydeseq2.ds import DeseqStats
 
 # Read in annotated ATAC data
-atac = sc.read_h5ad('/data/CARD_singlecell/SN_atlas/atlas/04_modeled_anndata_atac.h5ad')
+atac = sc.read_h5ad(snakemake.input.atac_anndata)
+
+# Read in parameters
+cell_type = snakemake.params.cell_type
+disease_name = snakemake.params.disease
+control_name = snakemake.params.control
+disease_param = snakemake.params.disease_param
 
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
-    sample_col='sample_id',
+    sample_col=cell_type,
     groups_col='cell_type',
     mode='sum',
     min_cells=10,
@@ -19,25 +33,30 @@ adata_df = pd.DataFrame(pdata.X)
 sample_cell = pdata.obs[['sample_id']]
 adata_df.columns = pdata.var_names.to_list()
 adata_df.index = sample_cell.index
-adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
-adata_df.to_csv('/data/CARD_AUX/SN_PFC_MULTIOME/SN/SN_RNA_atlas/snATAC_pseudobulk.csv', index=False)
+adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
 
 # Store raw counts in layers
 pdata.layers['counts'] = pdata.X.copy()
 
 # Abreviate diagnosis
-pdata.obs['diagnosis'] = pdata.obs['Primary Diagnosis']
+pdata.obs['diagnosis'] = pdata.obs[disease_param]
 
-# Select Astrocytes profiles
-astrocytes = pdata[pdata.obs['cell_type'] == 'Astro'].copy()
-astrocyte_genes = dc.filter_by_expr(astrocytes, group='diagnosis', min_count=10, min_total_count=15)
-astrocytes = astrocytes[:, astrocyte_genes].copy()
+# Center and normalize age to remove as covariate (remove for other analysis)
+pdata.obs['Age'] = pdata.obs.Age.astype('float')
+ages = pdata.obs.Age
+pdata.obs['normalage'] = (ages-np.min(ages))/(np.max(ages)-np.min(ages))-.5
 
+# Select gene specific profiles
+pdata_genes = dc.filter_by_expr(pdata, group='diagnosis', min_count=10, min_total_count=15)
+pdata = pdata[:, pdata_genes].copy()
+
+# Include inference
 inference = DefaultInference(n_cpus=32)
 
+# Design the differential expression analysis with covariates
 dds = DeseqDataSet(
-    adata=astrocytes,
-    design_factors=['normalage', 'diagnosis'],
+    adata=pdata,
+    design_factors=snakemake.params.design_factors,
     inference=inference,
 )
 
@@ -47,7 +66,7 @@ dds.deseq2()
 # Extract contrast between normal and DLB
 stat_res = DeseqStats(
     dds,
-    contrast=["diagnosis", 'DLB', 'control'],
+    contrast=["diagnosis", disease_name, control_name],
     inference=inference,
 )
 
@@ -55,10 +74,13 @@ stat_res = DeseqStats(
 stat_res.summary()
 
 # Extract results
-astrocyte_DLB_results_df = stat_res.results_df
+deseq2_results_df = stat_res.results_df
+
+# Export results
+deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
 
 dc.plot_volcano_df(
-    astrocyte_DLB_results_df,
+    deseq2_results_df,
     x='log2FoldChange',
     y='padj',
     top=20,
@@ -66,8 +88,8 @@ dc.plot_volcano_df(
     sign_thr=1e-2,
     figsize=(4, 4)
 )
-plt.title('Control vs. DLB in Astrocytes')
+plt.title(f'Control vs. {disease_name} in {cell_type}')
 plt.tight_layout()
-plt.savefig('/data/CARD_singlecell/SN_atlas/figures/Astro/DLB_DAR_volcano.svg', dpi=300)
+plt.savefig(snakemake.output.output_figure, dpi=300)
 
 # Write out dataframe containing DARs
