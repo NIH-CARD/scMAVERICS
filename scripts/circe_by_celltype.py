@@ -8,8 +8,11 @@ adata.var['start'] = adata.var['start'].astype(int)
 adata.var['end'] = adata.var['end'].astype(int)
 adata.var['chr'] = adata.var['chromosome']
 
-# Compute metacells
-metacells = ci.metacells.compute_metacells(adata)
+adata = ci.metacells.compute_metacells(
+    adata, 
+    method='sum', 
+    k=25, 
+)
 
 # Get co-accessibility scores
 final_score = ci.sliding_graphical_lasso(
@@ -19,5 +22,7 @@ final_score = ci.sliding_graphical_lasso(
     max_alpha_iteration=500,
     verbose=True
 )
+
+adata.varp['atac_network'] = final_score
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
