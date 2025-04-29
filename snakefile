@@ -467,7 +467,7 @@ rule multiome_output:
         'scripts/merge_muon.py'
 
 # This needs to be changed to reflect the bins of each region
-
+"""
 rule celltype_bed:
     input:
         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
@@ -475,7 +475,7 @@ rule celltype_bed:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     script:
         work_dir+'/MACS_to_bed.py'
-"""
+
 rule annotate_bed:
     input:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
@@ -514,7 +514,7 @@ rule export_atac_cell:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/consensus_peaks_atac.h5ad',
         celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]

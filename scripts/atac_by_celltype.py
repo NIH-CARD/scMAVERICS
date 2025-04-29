@@ -43,7 +43,7 @@ for sample, fragment_file in cell_type_fragments.items():
     adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
     adata.obs = pd.merge(
         left=cistopic_obj.cell_data,
-        right=cell_data[cell_data['Sample_ID'] == samples[i]][['Primary Diagnosis', 'Age', 'Use_batch', 'PMI', 'atlas_identifier']],
+        right=cell_data[cell_data['Sample_ID'] == sample][['Primary Diagnosis', 'Age', 'Use_batch', 'PMI', 'atlas_identifier']],
         left_on='atlas_identifier',
         right_on='atlas_identifier')
     adata.var.index = cistopic_obj.region_names
@@ -52,7 +52,7 @@ for sample, fragment_file in cell_type_fragments.items():
     adata.var['end'] = [x.split(':')[1].split('-')[1] for x in adata.var.index]
     adata.var['peak length'] = [int(x.split(':')[1].split('-')[1]) - int(x.split(':')[1].split('-')[0]) for x in adata.var.index]
     adatas.append(adata)
-    print(f"Done with sample {i}")
+    print(f"Done with sample {sample}")
 
 adata = ad.concat(join='outer', adatas=adatas)
 
