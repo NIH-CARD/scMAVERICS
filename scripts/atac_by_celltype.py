@@ -33,7 +33,7 @@ adatas = []
 print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
     cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
-                                               path_to_regions=snakemake.input.cell_annotated_bedfile,
+                                               path_to_regions=snakemake.input.cell_bedfile,
                                                valid_bc = cell_data[cell_data['Sample'] == sample]['barcode'].to_list(),
                                                n_cpu=1,
                                                project=sample
