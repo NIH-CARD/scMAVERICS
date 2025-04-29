@@ -22,6 +22,7 @@ old_pipelines
 # Ignore old scripts and logs
 scripts/logs
 scripts/legacy_files
+scripts/pygenometracks
 
 # Plots should be ignored
 plots
