@@ -12,6 +12,7 @@ work_dir            = os.getcwd()                                           # De
 metadata_table      = work_dir + '/input/SN_control_samples-EF_fixed.csv'   # Define where the metadata data exists for each sample to be processed
 gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
 
+
 """Metadata parameters"""
 seq_batch_key       = 'Use_batch'                                           # Key for sequencing batch, used for directory search
 sample_key          = 'Sample'                                              # Key for samples, required in aggregating while preserving sample info
@@ -370,7 +371,7 @@ rule cistopic_pseudobulk:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         fragment_file=expand(
             data_dir+'{sample}/atac_fragments.tsv.gz',
-            data_dir+'{sample}/atac_fragments.tsv.gz',
+            # data_dir+'{sample}/atac_fragments.tsv.gz',
             zip,
             sample = samples,
             batch = batches
@@ -506,47 +507,68 @@ rule cistopic_merge_objects:
 #         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
 #     shell:
 #         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
-
-rule DAR:
-    input:
-        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
-    output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png',
-        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
-    params:
-        disease_param = disease_param,
-        control = control,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = [seq_batch_key]
-    singularity:
-        envs['singlecell']
-    threads:
-        64
-    resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
-    script:
-        'scripts/atac_DAR.py'
    
-rule multiome_output:
-    input:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
-    output:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=120, mem_mb=300000, slurm_partition='quick' 
-    script:
-        'scripts/merge_muon.py'
+# rule multiome_output:
+#     input:
+#         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+#         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+#     output:
+#         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+#     singularity:
+#         envs['singlecell']
+#     resources:
+#         runtime=120, mem_mb=300000, slurm_partition='quick' 
+#     script:
+#         'scripts/merge_muon.py'
 
-rule export_celltypes:
+# rule celltype_bed:
+#     input:
+#         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
+#     output:
+#         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+#     script:
+#         work_dir+'/MACS_to_bed.py'
+
+# rule annotate_bed:
+#     input:
+#         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+#     output:
+#         cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'
+#     resources:
+#         runtime=30, mem_mb=50000, 
+#     shell:
+#         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
+
+# rule export_atac_cell:
+#     input:
+#         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+#         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+#         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
+#         fragment_files=expand(
+#             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+#             zip,
+#             sample=samples,
+#             batch=batches
+#             )
+#     output:
+#         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+#     singularity:
+#         envs['scenicplus']
+#     params:
+#         samples=samples,
+#         cell_type = lambda wildcards, output: output[0].split('/')[-2]
+#     threads:
+#         8
+#     resources:
+#         runtime=2880, mem_mb=400000, slurm_partition='largemem'
+#     script:
+#         'scripts/atac_by_celltype.py'
+
+"""rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/consensus_peaks_atac.h5ad',
         celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
@@ -558,3 +580,42 @@ rule export_celltypes:
         runtime=120, mem_mb=300000
     script:
         'scripts/export_celltype.py'
+"""
+
+rule DAR:
+    input:
+        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = ['normalage', 'diagnosis']
+    singularity:
+        envs['singlecell']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/atac_DARs.py'
+   
+rule atac_coaccessibilty:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+    params:
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    singularity:
+        envs['circe']
+    threads:
+        8
+    resources:
+        runtime=2880, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
