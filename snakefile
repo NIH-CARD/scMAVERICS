@@ -508,12 +508,14 @@ rule DAR:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3]
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = [seq_batch_key]
     singularity:
         envs['singlecell']
     threads:
