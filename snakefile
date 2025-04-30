@@ -541,7 +541,7 @@ rule celltype_bed:
     input:
         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
     singularity:
-        envs['circe']
+        envs['scenicplus']
     output:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     script:
