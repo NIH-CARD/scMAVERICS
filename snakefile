@@ -512,12 +512,14 @@ rule DAR:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png'
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3]
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = [seq_batch_key]
     singularity:
         envs['singlecell']
     threads:
@@ -527,32 +529,32 @@ rule DAR:
     script:
         'scripts/atac_DAR.py'
    
-# rule multiome_output:
-#     input:
-#         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-#         merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
-#     output:
-#         merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu'
-#     singularity:
-#         envs['singlecell']
-#     resources:
-#         runtime=120, mem_mb=300000, slurm_partition='quick' 
-#     script:
-#         'scripts/merge_muon.py'
+rule multiome_output:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=120, mem_mb=300000, slurm_partition='quick' 
+    script:
+        'scripts/merge_muon.py'
 
-# rule export_celltypes:
-#     input:
-#         merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu'
-#     output:
-#         celltype_atac = work_dir + '/data/celltypes/{cell_type}/atac.h5ad',
-#         celltype_rna = work_dir + '/data/celltypes/{cell_type}/rna.h5ad'
-#     params:
-#         cell_type = lambda wildcards, output: output[0].split('/')[-2]
-#     singularity:
-#         envs['singlecell']
-#     threads:
-#         8
-#     resources:
-#         runtime=120, mem_mb=300000
-#     script:
-#         'scripts/export_celltype.py'
+rule export_celltypes:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
+    params:
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    singularity:
+        envs['singlecell']
+    threads:
+        8
+    resources:
+        runtime=120, mem_mb=300000
+    script:
+        'scripts/export_celltype.py'
