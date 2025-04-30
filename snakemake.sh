@@ -30,11 +30,14 @@ chmod 777 scripts/rna_model.sh
 chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
 
+# UNLOCK
+snakemake --unlock 
+
 # RUN SCRIPT
 snakemake \
     --cores all \
     --profile snakemake_profile \
-    --use-singularity cistopic_pseudobulk -n
-    # --use-singularity annotate 
+    --use-singularity -n
+    #--use-singularity annotate 
     #-n
     #--unlock
