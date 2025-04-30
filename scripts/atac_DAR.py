@@ -51,7 +51,7 @@ inference = DefaultInference(n_cpus=1)
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=snakemake.params.design_factors,
+    design_factors=snakemake.params.design_factors + ['diagnosis'],
     inference=inference,
 )
 
