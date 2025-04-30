@@ -540,6 +540,8 @@ rule multiome_output:
 rule celltype_bed:
     input:
         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
+    singularity:
+        envs['circe']
     output:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     script:
@@ -549,7 +551,7 @@ rule annotate_bed:
     input:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'\
     resources:
         runtime=30, mem_mb=50000, 
     shell:
