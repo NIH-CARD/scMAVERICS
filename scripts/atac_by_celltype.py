@@ -12,8 +12,6 @@ rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 cell_data = rna.obs
 print(rna.n_obs)
 
-all_samples = cell_data['Sample'].drop_duplicates()
-
 # Get Astrocyte cell barcodes
 cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 
