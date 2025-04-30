@@ -1,4 +1,3 @@
-import snapatac2 as snap
 import anndata as ad
 import scipy
 import pandas as pd
@@ -6,11 +5,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import scanpy as sc
-import episcanpy as epi
 import decoupler as dc
+from pydeseq2.dds import DeseqDataSet, DefaultInference
+from pydeseq2.ds import DeseqStats
 
-# Load in the celltype atac object
-cell_type_atac = sc.read_h5ad(snakemake.input.atac_anndata)
+# Read in annotated ATAC data
+atac = sc.read_h5ad(snakemake.input.atac_anndata)
 
 # Read in parameters
 cell_type = snakemake.params.cell_type
@@ -18,51 +18,71 @@ disease_name = snakemake.params.disease
 control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
-# Get the list of cells enriched for disease state
-cell_type_control = cell_type_atac.obs[disease_param] == control_name
-cell_type_disease = cell_type_atac.obs[disease_param] == disease_name
+# Get pseudo-bulk profile
+pdata = dc.get_pseudobulk(
+    atac,
+    sample_col='sample_id',
+    groups_col=disease_param,
+    mode='sum',
+    min_cells=10,
+    min_counts=10
+    )
 
-# Run differential expression test on all of the bins between control and given disease state
-cell_type_diff_bins = snap.tl.diff_test(
-    cell_type_atac,
-    cell_group1 = cell_type_control,
-    cell_group2 = cell_type_disease,
-    direction = 'both',
-    min_log_fc = 0
+# CSV pseudobulk
+adata_df = pd.DataFrame(pdata.X)
+sample_cell = pdata.obs[['sample_id']]
+adata_df.columns = pdata.var_names.to_list()
+adata_df.index = sample_cell.index
+adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
+
+# Store raw counts in layers
+pdata.layers['counts'] = pdata.X.copy()
+
+# Abreviate diagnosis
+pdata.obs['diagnosis'] = pdata.obs[disease_param]
+
+# Select gene specific profiles
+pdata_genes = dc.filter_by_expr(pdata, group='diagnosis', min_count=10, min_total_count=15)
+pdata = pdata[:, pdata_genes].copy()
+
+# Include inference
+inference = DefaultInference(n_cpus=1)
+
+# Design the differential expression analysis with covariates
+dds = DeseqDataSet(
+    adata=pdata,
+    design_factors=snakemake.params.design_factors,
+    inference=inference,
 )
 
-# Change the results to a DataFrame
-cell_type_diff_df = pd.DataFrame(cell_type_diff_bins)
-# Define the column names, reindex
-cell_type_diff_df.columns = ['feature name','log2(fold_change)','p-value','adjusted p-value']
-cell_type_diff_df.index = cell_type_diff_df['feature name']
+# Compute LFCs
+dds.deseq2()
 
-# Define the chromosome as well as starts and stops
-cell_type_diff_df['chr'] = [x.split(':')[0] for x in cell_type_diff_df['feature name']]
-cell_type_diff_df['start'] = [int(x.split(':')[1].split('-')[0]) for x in cell_type_diff_df['feature name']]
-cell_type_diff_df['end'] = [int(x.split(':')[1].split('-')[1]) for x in cell_type_diff_df['feature name']]
+# Extract contrast between control and disease state
+stat_res = DeseqStats(
+    dds,
+    contrast=["diagnosis", disease_name, control_name],
+    inference=inference,
+)
 
-# Make sure the adjusted p-values are float types and log adjusted
-cell_type_diff_df['adjusted p-value'] = cell_type_diff_df['adjusted p-value'].astype(float)
-cell_type_diff_df['-log10(p-value)'] = -np.log10(cell_type_diff_df['adjusted p-value'])
+# Compute Wald test
+stat_res.summary()
 
-# File save location
-file_save = snakemake.output.output_DAR_data
-cell_type_diff_df.to_csv(file_save)
+# Extract results
+deseq2_results_df = stat_res.results_df
 
-# File save location
-image_save = snakemake.output.output_figure
+# Export results
+deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
 
-# Plot the volcano plot
 dc.plot_volcano_df(
-    cell_type_diff_df,
-    x = 'log2(fold_change)',
-    y = 'adjusted p-value',
-    top = 20,
-    lFCs_thr = .5,
-    sign_thr = 1e-2,
-    figsize = (4, 4),
-    dpi = 600,
-    return_fig = False,
-    save = image_save
+    deseq2_results_df,
+    x='log2FoldChange',
+    y='padj',
+    top=20,
+    lFCs_thr=1,
+    sign_thr=1e-2,
+    figsize=(4, 4)
 )
+plt.title(f'Control vs. {disease_name} in {cell_type}')
+plt.tight_layout()
+plt.savefig(snakemake.output.output_figure, dpi=300)
