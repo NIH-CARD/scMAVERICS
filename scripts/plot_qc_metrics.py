@@ -30,7 +30,8 @@ sns.set_context('paper')
 sample_key = snakemake.params.sample_key
 
 # Open the AnnData object
-adata = sc.read_h5ad(snakemake.input.merged_rna_anndata) 
+adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
+sc.pp.filter_cells(adata, min_genes=1, inplace=True)
 
 # Check for plots directory and create if not there
 os.makedirs('figures/plots', exist_ok=True)

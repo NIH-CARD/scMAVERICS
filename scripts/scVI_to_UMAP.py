@@ -18,9 +18,8 @@ sc.pp.neighbors(adata, use_rep='X_scvi')
 sc.tl.umap(adata, min_dist=0.3)
 
 # Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
-sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
+sc.tl.leiden(adata, resolution=2, key_added='leiden_2', flavor="igraph")
+sc.tl.leiden(adata, key_added='leiden', flavor="igraph")
 
 # Save the anndata object
 adata.write_h5ad(snakemake.output.merged_rna_anndata, compression='gzip')
