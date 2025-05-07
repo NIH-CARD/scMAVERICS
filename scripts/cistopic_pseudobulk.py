@@ -9,18 +9,18 @@ rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
 # Port cell data from final RNA atlas to cisTopic pseudobulked
 cell_data = rna.obs
+# Subset cell data to only cells of the cell type
+cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 # Add the sample_id and barcode variables to match required cisTopic input
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
 cell_data['sample_id'] = cell_data[snakemake.params.sample_param_name]
-
+# Subset cell data to only cells of the cell type
+cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 # Make sure list of samples is interpreted as strings
 samples = [str(x) for x in snakemake.params.samples]
 
 # Subset metadata to just samples in dataset 
 cell_data = cell_data[cell_data['sample_id'].isin(samples)]
-
-# Subset cell data to only cells of the cell type
-cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 
 # Remove samples with only 1 cell of cell type
 counts = cell_data.groupby('sample_id').size()
@@ -34,9 +34,20 @@ chromsizes = pd.read_table(
 )
 chromsizes.insert(1, "Start", 0)
 
-# Input the fragment files with the same input
-fragments_dict = dict(zip(samples, snakemake.input.fragment_file))
+# # Input the fragment files with the same input
+# fragments_dict = dict(zip(samples, snakemake.input.fragment_file))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# TEST
+fragments_dict_path = '/vf/users/CARD_singlecell/SN_control_atlas/scMAVERICS/input/fragments_dict.txt'
 
+# READ - file, convert to a dictionary
+with open(fragments_dict_path, 'r') as file:
+    fragments_dict = eval(file.read())
+
+# TEST - CHECK
+print("fragments_dict.keys()", fragments_dict.keys())
+print("cell_data['sample_id'].unique()", cell_data['sample_id'].unique())
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Create folds for pseudobulked samples
 os.makedirs(snakemake.params.bed_file_locs, exist_ok=True)
