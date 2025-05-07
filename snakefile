@@ -378,7 +378,6 @@ rule cistopic_pseudobulk:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         fragment_file=expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
-            # data_dir+'{sample}/atac_fragments.tsv.gz',
             zip,
             sample = samples,
             batch = batches
