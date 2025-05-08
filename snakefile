@@ -373,8 +373,8 @@ rule cistopic_pseudobulk:
             )
     output:
         pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
-            cell_types)
+            work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
+            cell_types=cell_types)
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
