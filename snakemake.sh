@@ -38,7 +38,7 @@ snakemake --unlock
 snakemake \
     --cores all \
     --profile snakemake_profile \
-    --use-singularity
+    --use-singularity -n
     #--use-singularity annotate 
     #-n
     #--unlock
