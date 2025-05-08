@@ -546,7 +546,7 @@ rule annotate_bed:
     input:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'\
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'
     resources:
         runtime=30, mem_mb=50000, 
     shell:
