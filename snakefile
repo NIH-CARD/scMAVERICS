@@ -375,7 +375,7 @@ rule DGE:
 
 rule cistopic_pseudobulk:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad',
         fragment_file=expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
@@ -383,167 +383,174 @@ rule cistopic_pseudobulk:
             batch = batches
             )
     output:
-        bpseudo_fragment_files = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/{celltype}.fragments.tsv.gz'
+        pseudo_fragment_files = expand(
+            work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
+            cell_types=cell_types)
     params:
-        bigwig_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bigwig_files/',
-        bed_file_locs = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/',
         pseudobulk_param = 'cell_type',
-        cell_type = lambda wildcards: wildcards.celltype,
         samples=samples,
-        sample_param_name = sample_key
+        sample_param_name = sample_key,
+        cell_types = cell_types
     singularity:
         envs['scenicplus']
     threads:
         64
     resources:
-        runtime=960, mem_mb=1500000, disk_mb=500000, slurm_partition='largemem'
+        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
 
-# rule MACS2_peak_call:
-#     input:
-#         pseudo_fragment_files = work_dir + '/data/pycisTopic/pseudobulk_cell_bed_files/{celltype}.fragments.tsv.gz'
-#     output: 
-#         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
-#         narrow_peak = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.narrowPeak"
-#     params:
-#         out_dir = work_dir + "/data/pycisTopic/MACS"
-#     resources:
-#         mem_mb=200000, runtime=960
-#     singularity:
-#         envs['scenicplus']
-#     shell:
-#         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+rule MACS2_peak_call:
+    input:
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+    output: 
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/pycisTopic/MACS"
+    resources:
+        mem_mb=200000, runtime=960
+    singularity:
+        envs['scenicplus']
+    shell:
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
-# rule consensus_peaks:
-#     input:
-#         narrow_peaks = expand(
-#             work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.narrowPeak",
-#             celltype = cell_types
-#             )
-#     output:
-#         consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed'
-#     singularity:
-#         envs['scenicplus']
-#     resources:
-#         runtime=960, mem_mb=100000
-#     script:
-#         'scripts/MACS_consensus.py'
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            cell_type = cell_types
+            )
+    output:
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
+    singularity:
+        envs['scenicplus']
+    resources:
+        runtime=960, mem_mb=100000
+    script:
+        'scripts/MACS_consensus.py'
 
-# rule cistopic_call_peaks:
-#     input:
-#         bigwig_paths = work_dir + '/data/pycisTopic/pseudobulk_bigwig_files/bw_paths.tsv',
-#         bed_paths = work_dir + '/data/pycisTopic/pseudobulk_bed_files/bed_paths.tsv'
-#     output:
-#         consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed',
-#         peak_dict = work_dir + '/data/pycisTopic/MACS/narrow_peaks_dict.pkl'
-#     params:
-#         MACS_dir = work_dir + '/data/pycisTopic/MACS'
-#     singularity:
-#         envs['scenicplus']
-#     threads:
-#         32
-#     resources:
-#         runtime=1440, mem_mb=100000, disk_mb=500000
-#     script:
-#         'scripts/cistopic_call_peaks.py'
-    
-# rule cistopic_create_objects:
-#     input:
-#         merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
-#         fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
-#         consensus_bed = work_dir + '/data/pycisTopic/consensus_regions.bed'
-#     output:
-#         cistopic_object = data_dir +'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-#         cistopic_adata = data_dir +'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample          = '{sample}',
-#         seq_batch_key   = seq_batch_key,
-#         sample_key      = sample_key,
-#         disease_param   = disease_param
-#     resources:
-#         runtime=120, mem_mb=250000, slurm_partition='quick'
-#     threads:
-#         16
-#     script:
-#         'scripts/cistopic_create_object.py'
+# NOTE: might need to add '-ARC/outs/' to the paths 
+# ex: fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',   
+rule cistopic_create_objects:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+        fragment_file = data_dir+'{sample}/atac_fragments.tsv.gz',
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
+    output:
+        cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+        cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample='{sample}',
+        seq_batch_key = seq_batch_key,
+        sample_key = sample_key,
+        disease_param = disease_param
+    resources:
+        runtime=120, mem_mb=250000, slurm_partition='quick'
+    threads:
+        16
+    script:
+        'scripts/cistopic_create_object.py'
 
-# rule cistopic_merge_objects:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
-#         cistopic_objects = expand(
-#             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             ),
-#         rna_anndata=expand(
-#             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad', 
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             )
-#     output:
-#         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-#         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample_key = sample_key,
-#         disease_param = disease_param
-#     resources:
-#         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
-#     script:
-#         'scripts/merge_cistopic_and_adata.py'
+rule cistopic_merge_objects:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+        cistopic_objects = expand(
+            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+            zip,
+            sample=samples,
+            batch=batches
+            ),
+        rna_anndata=expand(
+            data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample_key = sample_key,
+        disease_param = disease_param
+    resources:
+        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
+    script:
+        'scripts/merge_cistopic_and_adata.py'
 
-# rule atac_peaks_model:
-#     input:
-#         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-#     output:
-#         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-#         atac_model_history = work_dir + '/data/model_elbo/atac_model_history.csv'
-#     params:
-#         atac_model = work_dir + '/data/models/atac/',
-#         sample_key = sample_key
-#     threads:
-#         64
-#     resources:
-#         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
-#     shell:
-#         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
+rule atac_peaks_model:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
+    params:
+        atac_model = work_dir+'/data/models/atac/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
+
+rule DAR:
+    input:
+        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.png',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = [seq_batch_key]
+    singularity:
+        envs['singlecell']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/atac_DAR.py'
    
-# rule multiome_output:
-#     input:
-#         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-#         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
-#     output:
-#         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-#     singularity:
-#         envs['singlecell']
-#     resources:
-#         runtime=120, mem_mb=300000, slurm_partition='quick' 
-#     script:
-#         'scripts/merge_muon.py'
+rule multiome_output:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=120, mem_mb=300000, slurm_partition='quick' 
+    script:
+        'scripts/merge_muon.py'
+rule celltype_bed:
+    input:
+        xls = work_dir + "/data/celltypes/{celltype}/{celltype}_peaks.xls",
+    singularity:
+        envs['scenicplus']
+    output:
+        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+    script:
+        work_dir+'/MACS_to_bed.py'
 
-# rule celltype_bed:
-#     input:
-#         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
-#     output:
-#         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
-#     script:
-#         work_dir+'/MACS_to_bed.py'
-
-# rule annotate_bed:
-#     input:
-#         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
-#     output:
-#         cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'
-#     resources:
-#         runtime=30, mem_mb=50000, 
-#     shell:
-#         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
+rule annotate_bed:
+    input:
+        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+    output:
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'\
+    resources:
+        runtime=30, mem_mb=50000, 
+    shell:
+        'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
 # rule export_atac_cell:
 #     input:
