@@ -35,4 +35,4 @@ chmod 777 envs/*.sif
 module load snakemake/7.7.0
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity 
+snakemake --cores all --profile snakemake_profile --use-singularity

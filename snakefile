@@ -15,7 +15,7 @@ work_dir = os.getcwd()
 num_workers = 8
 
 # Define where the metadata data exists for each sample to be processed
-metadata_table = work_dir+'/input/cellbender.csv'
+metadata_table = work_dir+'/input/metadata.csv'
 # Define where celltypes/cell marker gene 
 gene_markers_file = work_dir+'/input/first_pass_genes.csv'
 
@@ -55,16 +55,16 @@ envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
     'snapatac': 'envs/snapATAC2.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler': 'envs/decoupler.sif',
+    'circe': 'envs/circe.sif'
     }
 
 rule all:
     input:
-        celltype_atac = expand(
-            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-            cell_type = cell_types 
-        ),
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+        cell_specific_regression = expand(
+            work_dir+'/data/celltypes/{cell_type}/peak_age_regression.csv',
+            cell_type=cell_types),
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
        
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 output_DGE_data = expand(
@@ -105,7 +105,7 @@ atac_anndata = expand(
         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
-"""
+
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
@@ -405,12 +405,14 @@ rule cistopic_pseudobulk:
             batch=batches
             )
     output:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudo_fragment_files = expand(
+            work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
+            cell_types=cell_types)
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
         sample_param_name = sample_key,
-        cell_type = lambda wildcards, output: output[0].split('/')[-1].split("_")[0],
+        cell_types = cell_types
     singularity:
         envs['scenicplus']
     threads:
@@ -419,17 +421,17 @@ rule cistopic_pseudobulk:
         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
-
+"""
 rule MACS2_peak_call:
     input:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/fragments.bed'
     output: 
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
         narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
     params:
         out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
-        mem_mb=200000, runtime=960
+        mem_mb=200000, runtime=2880
     singularity:
         envs['scenicplus']
     shell:
@@ -463,7 +465,7 @@ rule cistopic_create_objects:
     params:
         sample='{sample}'
     resources:
-        runtime=120, mem_mb=250000, slurm_partition='quick'
+        runtime=120, mem_mb=350000
     threads:
         16
     script:
@@ -472,27 +474,20 @@ rule cistopic_create_objects:
 rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad',
-        cistopic_objects = expand(
-            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
-            zip,
-            sample=samples,
-            batch=batches
-            ),
-        rna_anndata=expand(
+        atac_anndata=expand(
             data_dir + '{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
             zip,
             sample=samples,
             batch=batches
             )
     output:
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
         sample_key = sample_key
     resources:
-        runtime=960, mem_mb=300000
+        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/merge_cistopic_and_adata.py'
 
@@ -530,8 +525,10 @@ rule celltype_bed:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
     output:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+    singularity:
+        envs['scenicplus']
     script:
-        work_dir+'/MACS_to_bed.py'
+        'scripts/MACS_to_bed.py'
 
 rule annotate_bed:
     input:
@@ -545,7 +542,7 @@ rule annotate_bed:
 
 rule export_atac_cell:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
@@ -564,7 +561,7 @@ rule export_atac_cell:
     threads:
         8
     resources:
-        runtime=2880, mem_mb=400000, slurm_partition='largemem'
+        runtime=2880, mem_mb=800000, slurm_partition='largemem'
     script:
         'scripts/atac_by_celltype.py'
 
@@ -586,9 +583,9 @@ rule export_atac_cell:
         'scripts/export_celltype.py'
 """
 
-rule DAR:
+"""rule DAR:
     input:
-        atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
         output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg',
@@ -606,7 +603,25 @@ rule DAR:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DARs.py'
+        'scripts/atac_DARs.py'"""
+
+rule DAR:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        covariates = '/data/CARD_singlecell/PFC_atlas/data/covariates.csv'
+    output:
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_pseudobulk.csv',
+        cell_specific_regression = work_dir+'/data/celltypes/{cell_type}/peak_age_regression.csv'
+    params:
+        cell_type = lambda wildcards, output: output[0].split("_")[-2],
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/linear_regression_peaks.py'
    
 rule atac_coaccessibilty:
     input:
@@ -616,7 +631,7 @@ rule atac_coaccessibilty:
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
-        envs['singlecell']
+        envs['circe']
     threads:
         8
     resources:
