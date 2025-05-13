@@ -13,45 +13,28 @@ cell_df = rna.obs
 # Metadata specific column names
 sample_value = snakemake.params.sample_param_name
 
-# Initiate polars dataframe
-pseudo_fragments = pl.DataFrame()
-
-# Filter for only the cell type data
-cell_type_df = cell_df[cell_df[snakemake.params.pseudobulk_param] == snakemake.params.cell_type]
-
 # Get sample list
 samples = snakemake.params.samples
-#batches = cell_type_df[[sample_value, batch_value]].drop_duplicates()[batch_value]
 
 # For sample in samples
 for i, sample in enumerate(samples):
-    # Define fragment
+    # Define fragment file
     bed_location = snakemake.input.fragment_file[i]
     # Load fragment with polars
     print(f'Loading sample {sample} fragments')
-    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=32)
-    pl_fragment.columns = ['chr', 'start', 'end', 'barcode', 'count']
+    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
+    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
     # Get list of sample and cell type specific barcodes
-    cell_type_barcodes = cell_type_df[(cell_type_df[sample_value] == sample)]['cell_barcode'].to_list()
+    cell_type_barcodes = {cell_type: cell_df[(cell_df['cell_type']== cell_type) & (cell_df[sample_value] == sample)]['cell_barcode'].to_list() for cell_type in snakemake.params.cell_types}
     # Filter on the cell type barcodes
-    pl_fragment = pl_fragment.filter(pl_fragment['barcode'].is_in(cell_type_barcodes))
+    cell_fragment = {cell_type: pl_fragment.filter(pl_fragment['name'].is_in(cell_type_barcodes[cell_type])) for cell_type in snakemake.params.cell_types}
     # Add the filtered barcodes to the fragments
-    pseudo_fragments = pl.concat([pseudo_fragments, pl_fragment])
+    print(f'Writing sample {sample}')
+    for j, cell_type in enumerate(snakemake.params.cell_types):
+        with open(snakemake.output.pseudo_fragment_files[j], mode='a') as f:
+            cell_fragment[cell_type].write_csv(f, include_header=False, separator='\t')
+            f.close()
     print(f'Sample {sample} has been added')
-    # Remove old dataframe
-    del pl_fragment
-
-# Filter only for chromosomes
-filtered_fragments = pseudo_fragments.filter(pseudo_fragments['chr'].is_in(pr.data.chromsizes().df['Chromosome'].to_list()))
-# Convert to pyranges
-combined_bed = pr.PyRanges(
-    chromosomes = filtered_fragments['chr'],
-    starts=filtered_fragments['start'],
-    ends=filtered_fragments['end']
-    )
-
-bed_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{snakemake.params.cell_type}_test.bed'
-combined_bed.to_bed(bed_path, keep=False)
 
 # Uncomment once singularity image is updated
 #bigwig_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{cell_type}_test.bw'
