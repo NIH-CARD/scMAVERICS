@@ -19,8 +19,8 @@ sample_key          = 'Sample'                                              # Ke
 batches             = pd.read_csv(metadata_table)[seq_batch_key].tolist()   # Read in the list of batches and samples
 samples             = pd.read_csv(metadata_table)[sample_key].tolist()
 disease_param       = 'age_bin'                                             # Name of the disease parameter
-control             = 'young (< 57.9)'                                      # Define disease states
-diseases            = ['old (>= 57.9)']                                     # Disease states to compare, keep as list of strings, unnecessary 
+control             = 'young'                                      # Define disease states
+diseases            = ['old']                                     # Disease states to compare, keep as list of strings, unnecessary 
 cell_types          = pd.read_csv(gene_markers_file)['cell type']           # Define the cell types to look for, from gene marker file
 
 """Quality control thresholds"""
