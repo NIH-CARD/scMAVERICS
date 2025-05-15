@@ -421,7 +421,7 @@ rule cistopic_pseudobulk:
         sample_param_name = sample_key,
         cell_types = cell_types
     singularity:
-        envs['scenicplus']
+        envs['atac_fragment']
     threads:
         64
     resources:
@@ -440,7 +440,7 @@ rule MACS2_peak_call:
     resources:
         mem_mb=200000, runtime=960
     singularity:
-        envs['scenicplus']
+        envs['atac_fragment']
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
@@ -468,7 +468,7 @@ rule cistopic_create_objects:
         cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
         cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
-        envs['scenicplus']
+        envs['atac_fragment']
     params:
         sample='{sample}',
         seq_batch_key = seq_batch_key,
@@ -538,11 +538,24 @@ rule multiome_output:
     script:
         'scripts/merge_muon.py'
 
+rule create_bigwig:
+    input:
+        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_types}_fragments.bed'
+    output:
+        celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
+    resources:
+        mem_mb=300000, runtime=180, slurm_partition='quick'
+    singularity:
+        envs['atac_fragment']
+    script:
+        'scripts/atac_bigwig.py'
+
 rule celltype_bed:
     input:
         xls = work_dir + "/data/celltypes/{celltype}/{celltype}_peaks.xls",
     singularity:
-        envs['scenicplus']
+        envs['atac_fragment']
     output:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
     script:
