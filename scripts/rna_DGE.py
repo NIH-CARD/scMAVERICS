@@ -54,10 +54,13 @@ dc.get_metadata_associations(
     inplace=True,
 )
 
-# # Export pseudobulk
-# pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
-#! EF TEST
-pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
+# CSV pseudobulk
+adata_df = pd.DataFrame(pdata.X)
+sample_cell = pdata.obs[[snakemake.params.sample_key, 'cell_type', disease_param]]
+adata_df.columns = pdata.var_names.to_list()
+adata_df.index = sample_cell.index
+adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
+adata_df.to_csv(snakemake.output.celltype_pseudobulk, index=False)
 
 pdata_genes = dc.filter_by_expr(
     pdata, 
