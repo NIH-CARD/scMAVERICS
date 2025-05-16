@@ -41,7 +41,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
     # Make plot directory
     try:
-        os.mkdir(f'plots/{sample}')
+        os.mkdir(f'figures/plots/{sample}')
     except FileExistsError:
         print('Already there')
 
