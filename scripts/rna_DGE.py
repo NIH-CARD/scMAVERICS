@@ -56,6 +56,8 @@ dc.get_metadata_associations(
 
 # # Export pseudobulk
 # pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
+#! EF TEST
+pdata.write_h5ad(snakemake.output.celltype_pseudobulk)
 
 pdata_genes = dc.filter_by_expr(
     pdata, 
