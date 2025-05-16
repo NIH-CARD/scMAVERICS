@@ -19,8 +19,8 @@ sample_key          = 'Sample'                                              # Ke
 batches             = pd.read_csv(metadata_table)[seq_batch_key].tolist()   # Read in the list of batches and samples
 samples             = pd.read_csv(metadata_table)[sample_key].tolist()
 disease_param       = 'age_bin'                                             # Name of the disease parameter
-control             = 'young'                                      # Define disease states
-diseases            = ['old']                                     # Disease states to compare, keep as list of strings, unnecessary 
+control             = 'young'                                               # Define disease states
+diseases            = ['old']                                               # Disease states to compare, keep as list of strings, unnecessary 
 cell_types          = pd.read_csv(gene_markers_file)['cell type']           # Define the cell types to look for, from gene marker file
 
 """Quality control thresholds"""
@@ -45,12 +45,23 @@ envs = {
 
 rule all:
     input:
-        # Uncomment when you want to run DGE/DAR analysis
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
+        # Uncomment to view QC data
+        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
+        # Uncomment when you have verified QC metrics
+        rna_anndata=expand(
+                    data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad', 
+                    zip,
+                    batch = batches,
+                    sample = samples
+                    ),
+
+# # Uncomment when you want to run DGE/DAR analysis
+# output_DGE_data = expand(
+#     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+#     cell_type = cell_types,
+#     disease = diseases
+#     ),
+
 # # Uncomment when you want to model rna data
 # merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
 # # EF - WIP
@@ -78,26 +89,22 @@ rule all:
 #     cell_type = cell_types,
 #     disease = diseases
 #     ) # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
-# Uncomment to view QC data
-"""genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
-# Uncomment when you have verified QC metrics
-"""rna_anndata=expand(
-            data_dir + 'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
-            zip,
-            batch = batches,
-            sample = samples
-            ),"""
 
 
-# #! WARNING - run once, then comment out!
+
+# # #! WARNING - run once, then comment out!
 # rule cellbender:
 #     input:
-#         rna_anndata = data_dir+'{sample}/raw_feature_bc_matrix.h5',
-#         cwd = data_dir + '{sample}/'
+#         # rna_anndata = data_dir+'{sample}/raw_feature_bc_matrix.h5',
+#         # cwd = data_dir + '{sample}/'
+#         rna_anndata = data_dir+'{batch}/Multiome/{sample}-ARC/raw_feature_bc_matrix.h5',
+#         cwd = data_dir + '{batch}/Multiome/{sample}-ARC/'
 #     output:
-#         rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
+#         # rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
+#         rna_anndata = data_dir + '{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
 #     params:
-#         sample = '{sample}'
+#         sample = '{sample}',
+#         batch = '{batch}'
 #     resources:
 #         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
 #     shell:
@@ -106,14 +113,17 @@ rule all:
 rule rna_preprocess:
     input:
         metadata_table = metadata_table,
-        rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
+        # rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir + '{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
     output:
-        rna_anndata = data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
+        # rna_anndata = data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
         sample = '{sample}',
-        sample_key = sample_key
+        sample_key = sample_key,
+        batch = '{batch}'
     resources:
         runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
     script:
@@ -122,7 +132,9 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata = expand(
-            data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad', 
+            # data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad', 
+            # data_dir + '{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad', 
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad', 
             zip,
             batch = batches,
             sample = samples
