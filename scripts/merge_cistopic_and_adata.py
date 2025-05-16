@@ -6,16 +6,11 @@ import os
 import anndata as ad
 import scanpy as sc
 
-# Read in rna observation data
-rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
-cell_data = rna.obs
-# Add the sample_id variable
 
-samples = cell_data['SampleID'].to_list()
+# Load samples matched to 
+sample_loc = dict(zip(snakemake.params.samples, snakemake.input.atac_anndata))
 
-sample_loc = dict(zip(samples, snakemake.input.atac_anndata))
-
-adatas = {key: sc.read_h5ad(sample_loc[key]) for key in samples}
+adatas = {key: sc.read_h5ad(sample_loc[key]) for key in sample_loc.keys()}
 
 adata = ad.concat(
     merge='same', index_unique='_', join='outer',

@@ -65,12 +65,10 @@ rule all:
         celltype_bigwig = expand(
             work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
             cell_type=cell_types),
-        cell_specific_regression = expand(
-            work_dir + '/data/celltypes/{cell_type}/peak_age_regression.csv',
-            cell_type=cell_types),
-"""celltype_atac = expand(
-    work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-    cell_type=cell_types)"""
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        celltype_atac = expand(
+            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+            cell_type=cell_types)
        
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 output_DGE_data = expand(
@@ -443,7 +441,7 @@ rule cistopic_pseudobulk:
         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
-    
+"""
 rule MACS2_peak_call:
     input:
         pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/fragments.bed'
@@ -511,7 +509,7 @@ rule cistopic_merge_objects:
     resources:
         runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
-        'scripts/merge_cistopic_and_adata.py'"""
+        'scripts/merge_cistopic_and_adata.py'
 
 rule atac_peaks_model:
     input:
@@ -549,7 +547,7 @@ rule create_bigwig:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
     resources:
-        mem_mb=500000, runtime=180, slurm_partition='largemem'
+        mem_mb=1000000, runtime=180, slurm_partition='largemem'
     singularity:
         envs['atac_fragment']
     script:
