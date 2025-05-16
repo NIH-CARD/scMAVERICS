@@ -21,8 +21,8 @@ disease_param = snakemake.params.disease_param
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
-    sample_col=cell_type,
-    groups_col='cell_type',
+    sample_col='sample_id',
+    groups_col=disease_param,
     mode='sum',
     min_cells=10,
     min_counts=10
@@ -51,7 +51,7 @@ pdata_genes = dc.filter_by_expr(pdata, group='diagnosis', min_count=10, min_tota
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
-inference = DefaultInference(n_cpus=32)
+inference = DefaultInference(n_cpus=1)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
@@ -63,7 +63,7 @@ dds = DeseqDataSet(
 # Compute LFCs
 dds.deseq2()
 
-# Extract contrast between normal and DLB
+# Extract contrast between control and disease state
 stat_res = DeseqStats(
     dds,
     contrast=["diagnosis", disease_name, control_name],
@@ -91,5 +91,3 @@ dc.plot_volcano_df(
 plt.title(f'Control vs. {disease_name} in {cell_type}')
 plt.tight_layout()
 plt.savefig(snakemake.output.output_figure, dpi=300)
-
-# Write out dataframe containing DARs

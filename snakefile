@@ -473,6 +473,8 @@ rule celltype_bed:
         xls = work_dir + "/data/pycisTopic/MACS/{celltype}_peaks.xls",
     output:
         cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+    singularity:
+        envs['scenicplus']
     script:
         work_dir+'/MACS_to_bed.py'
 
@@ -541,7 +543,7 @@ rule DAR:
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = ['normalage', 'diagnosis']
+        design_factors = ['Age']
     singularity:
         envs['singlecell']
     threads:
