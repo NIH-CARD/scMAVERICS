@@ -134,7 +134,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
     # Rerun scrublet
     sc.pp.scrublet(filtered_adata, expected_doublet_rate=(filtered_adata.n_obs / 1000) * 0.008, threshold=0.15, n_prin_comps=10)
     # Save the scrublet values to a new AnnData object
-    doublet_adata = ad.concat([doublet_adata, filtered_adata], join='outer')
+    doublet_adata = pd.concat([doublet_adata, filtered_adata], join='outer')
 
     # Violin plot in the first panel
     sc.pl.violin(filtered_adata, ['doublet_score'], jitter=0.5, ax=ax[0], show=False)
