@@ -19,7 +19,7 @@ adata.layers['counts'] = adata.X
 pdata = dc.get_pseudobulk(
     adata,
     sample_col='sample_id',
-    groups_col='cell_type',
+    groups_col=None,
     layer='counts',
     min_cells=1,
     min_counts=1
