@@ -160,6 +160,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
         adata[adata.obs[sample_key] == sample], 
         "total_counts", 
         "n_genes_by_counts", 
+        title=f"Sample {sample} pct_counts_mt",
         color="pct_counts_mt",
         show=False
         )
@@ -170,7 +171,8 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
 # Mitochondria QC
 y, x, _ = plt.hist(
-    adata.obs.obs['pct_counts_mt'], 
+    # adata.obs.obs['pct_counts_mt'], 
+    adata.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
 plt.yscale("log")
