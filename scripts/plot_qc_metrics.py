@@ -1,4 +1,5 @@
 import os
+import anndata as ad
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -134,7 +135,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
     # Rerun scrublet
     sc.pp.scrublet(filtered_adata, expected_doublet_rate=(filtered_adata.n_obs / 1000) * 0.008, threshold=0.15, n_prin_comps=10)
     # Save the scrublet values to a new AnnData object
-    doublet_adata = pd.concat([doublet_adata, filtered_adata], join='outer')
+    doublet_adata = ad.concat([doublet_adata, filtered_adata], join='outer')
 
     # Violin plot in the first panel
     sc.pl.violin(filtered_adata, ['doublet_score'], jitter=0.5, ax=ax[0], show=False)
@@ -145,7 +146,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
     # Histogram
     y, x, _ = ax[1].hist(
-        filtered_adata, 
+        filtered_adata.obs['doublet_score'], 
         bins=int(filtered_adata.n_obs))
     ax[1].plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')
     ax[1].set_ylim(0, y.max())
@@ -168,7 +169,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 # Plot summary mitochondria, ribosome, and scrublet scores
 
 # Mitochondria QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
     adata.obs.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
@@ -181,7 +182,7 @@ plt.title('Percent mitochondria per cell')
 plt.savefig(snakemake.output.mito_figure, dpi=300)
 
 # Ribosome QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         adata.obs['pct_counts_rb'], 
         bins=int(np.sqrt(adata.n_obs))
         )
@@ -194,7 +195,7 @@ plt.title('Percent ribosome genes per cell')
 plt.savefig(snakemake.output.ribo_figure, dpi=300)
 
 # Number of genes
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         adata.obs['n_genes_by_counts'], 
         bins=int(np.sqrt(adata.n_obs))
         )
