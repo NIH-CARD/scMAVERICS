@@ -209,7 +209,7 @@ plt.title('Number of genes per cell')
 plt.savefig(snakemake.output.gene_counts_figure, dpi=300)
 
 # Doublet QC
-y, x, _ = sns.hist(
+y, x, _ = plt.hist(
         doublet_adata, 
         bins=int(doublet_adata.n_obs))
 plt.plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')
