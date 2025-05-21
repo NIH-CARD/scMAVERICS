@@ -45,15 +45,17 @@ envs = {
 
 rule all:
     input:
-        # Uncomment when you want to run DGE/DAR analysis
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-
         # Uncomment when you want to model rna data
         merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
+
+# # Uncomment when you want to run DGE/DAR analysis
+# output_DGE_data = expand(
+#     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+#     cell_type = cell_types,
+#     disease = diseases
+#     ),
+
+
 
 # # Uncomment to view QC data
 # genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
@@ -160,7 +162,7 @@ rule plot_qc_rna:
         ribo_figure         = work_dir + '/figures/QC_ribo_pct.png',
         gene_counts_figure  = work_dir + '/figures/QC_gene_counts.png',
         doublet_figure      = work_dir + '/figures/QC_doublet.png',
-        genes_by_counts     = work_dir + 'figures/QC_genes_by_counts.png'
+        genes_by_counts     = work_dir + '/figures/QC_genes_by_counts.png'
     singularity:
         envs['singlecell']
     resources:
