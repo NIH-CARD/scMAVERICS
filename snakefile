@@ -650,6 +650,7 @@ rule atac_coaccessibilty:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+        circe_network = work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
