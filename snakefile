@@ -442,13 +442,13 @@ rule MACS2_peak_call:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
         narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/pycisTopic/MACS"
+        out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
         mem_mb=200000, runtime=960
     singularity:
         envs['scenicplus']
     shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule consensus_peaks:
     input:
@@ -559,19 +559,19 @@ rule create_bigwig:
 
 rule celltype_bed:
     input:
-        xls = work_dir + "/data/celltypes/{celltype}/{celltype}_peaks.xls",
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
     singularity:
         envs['atac_fragment']
     output:
-        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     script:
-        work_dir+'/MACS_to_bed.py'
+        'scripts/MACS_to_bed.py'
 
 rule annotate_bed:
     input:
-        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'\
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed'
     resources:
         runtime=30, mem_mb=50000, 
     shell:
@@ -635,7 +635,7 @@ rule DAR:
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = ['normalage', 'diagnosis']
+        design_factors = ['normalage']
     singularity:
         envs['decoupler']
     threads:
@@ -643,7 +643,7 @@ rule DAR:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DARs.py'
+        'scripts/atac_DAR.py'
    
 rule atac_coaccessibilty:
     input:
