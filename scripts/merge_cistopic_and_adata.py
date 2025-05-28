@@ -61,4 +61,4 @@ for param in transfer_params[1:]:
     adata.obs[param] = [barcode2param[x] for x in adata.obs.index]
 
 # Write out sample
-adata.write_h5ad(snakemake.output.merged_atac_adata, compression='gzip')
+adata.write_h5ad(snakemake.output.merged_atac_anndata, compression='gzip')

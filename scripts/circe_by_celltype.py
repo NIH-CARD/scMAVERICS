@@ -26,3 +26,15 @@ final_score = ci.sliding_graphical_lasso(
 adata.varp['atac_network'] = final_score
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
+
+# Compute the co-accessibility network
+atac = ci.add_region_infos(adata, sep=(':', '-'))
+ci.compute_atac_network(atac)
+
+# Extract the network and find CCANs modules
+circe_network = ci.extract_atac_links(atac)
+
+circe_network['Peak1'] = circe_network['Peak1'].str.replace(':', '_').str.replace('-', '_')
+circe_network['Peak2'] = circe_network['Peak2'].str.replace(':', '_').str.replace('-', '_')
+
+circe_network.to_csv(snakemake.output.circe_network, index=None)

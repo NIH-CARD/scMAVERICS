@@ -7,17 +7,21 @@ import scanpy as sc
 import anndata as ad
 import pyranges as pr
 
+sample_key = snakemake.params.sample_key
+seq_batch_key = snakemake.params.seq_batch_key
+disease_param = snakemake.params.disease_param
+
 # Read in rna observation data
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 cell_data = rna.obs
 print(rna.n_obs)
 
-# Get Astrocyte cell barcodes
+# Get cell barcodes of the given cell type
 cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
 
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
-cell_data['sample_id'] = cell_data['Sample']
-cell_sample_batch = cell_data[['sample_id', 'Use_batch']].drop_duplicates()
+cell_data['sample_id'] = cell_data[sample_key]
+cell_sample_batch = cell_data[['sample_id', seq_batch_key]].drop_duplicates()
 
 # Get fragment files and corresponding samples
 fragment_files = snakemake.input.fragment_files
@@ -32,7 +36,7 @@ print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
     cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
                                                path_to_regions=snakemake.input.cell_bedfile,
-                                               valid_bc = cell_data[cell_data['Sample'] == sample]['barcode'].to_list(),
+                                               valid_bc = cell_data[cell_data['sample_id'] == sample]['barcode'].to_list(),
                                                n_cpu=1,
                                                project=sample
                                                )
@@ -41,7 +45,7 @@ for sample, fragment_file in cell_type_fragments.items():
     adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
     adata.obs = pd.merge(
         left=cistopic_obj.cell_data,
-        right=cell_data[cell_data['Sample_ID'] == sample][['Primary Diagnosis', 'Age', 'Use_batch', 'PMI', 'atlas_identifier']],
+        right=cell_data[cell_data[sample_key] == sample][[disease_param, 'Age', seq_batch_key, 'PMI', 'atlas_identifier']],
         left_on='atlas_identifier',
         right_on='atlas_identifier')
     adata.var.index = cistopic_obj.region_names

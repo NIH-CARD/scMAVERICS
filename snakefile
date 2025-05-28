@@ -38,7 +38,9 @@ envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler': 'envs/decoupler.sif',
+    'circe': 'envs/circe.sif',
+    'atac_fragment': 'envs/atac_fragment.sif'
     }
 
 rule all:
@@ -303,6 +305,8 @@ rule first_pass_annotate:
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/first_pass_genes.csv'
+    params:
+        seq_batch_key = seq_batch_key
     singularity:
         envs['singlecell']
     resources:
@@ -372,6 +376,8 @@ rule second_pass_annotate:
     output:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+    params:
+        seq_batch_key = seq_batch_key
     singularity:
         envs['singlecell']
     resources:
@@ -436,13 +442,13 @@ rule MACS2_peak_call:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
         narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/pycisTopic/MACS"
+        out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
         mem_mb=200000, runtime=960
     singularity:
-        envs['atac_fragment']
+        envs['scenicplus']
     shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule consensus_peaks:
     input:
@@ -468,7 +474,7 @@ rule cistopic_create_objects:
         cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
         cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
-        envs['atac_fragment']
+        envs['scenicplus']
     params:
         sample='{sample}',
         seq_batch_key = seq_batch_key,
@@ -553,19 +559,19 @@ rule create_bigwig:
 
 rule celltype_bed:
     input:
-        xls = work_dir + "/data/celltypes/{celltype}/{celltype}_peaks.xls",
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
     singularity:
         envs['atac_fragment']
     output:
-        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     script:
-        work_dir+'/MACS_to_bed.py'
+        'scripts/MACS_to_bed.py'
 
 rule annotate_bed:
     input:
-        cell_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_peaks.bed'
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{celltype}/{celltype}_annotated_peaks.bed'\
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed'
     resources:
         runtime=30, mem_mb=50000, 
     shell:
@@ -587,6 +593,9 @@ rule export_atac_cell:
     singularity:
         envs['scenicplus']
     params:
+        sample_key = sample_key,
+        seq_batch_key = seq_batch_key,
+        disease_param = disease_param,
         samples=samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
@@ -626,21 +635,22 @@ rule DAR:
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = ['normalage', 'diagnosis']
+        design_factors = ['normalage']
     singularity:
-        envs['singlecell']
+        envs['decoupler']
     threads:
         64
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DARs.py'
+        'scripts/atac_DAR.py'
    
 rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+        circe_network = work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
