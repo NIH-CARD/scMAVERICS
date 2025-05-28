@@ -38,7 +38,9 @@ envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler': 'envs/decoupler.sif',
+    'circe': 'envs/circe.sif',
+    'atac_fragment': 'envs/atac_fragment.sif'
     }
 
 rule all:
@@ -444,7 +446,7 @@ rule MACS2_peak_call:
     resources:
         mem_mb=200000, runtime=960
     singularity:
-        envs['atac_fragment']
+        envs['scenicplus']
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.celltype} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
@@ -472,7 +474,7 @@ rule cistopic_create_objects:
         cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
         cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
-        envs['atac_fragment']
+        envs['scenicplus']
     params:
         sample='{sample}',
         seq_batch_key = seq_batch_key,
@@ -635,7 +637,7 @@ rule DAR:
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
         design_factors = ['normalage', 'diagnosis']
     singularity:
-        envs['singlecell']
+        envs['decoupler']
     threads:
         64
     resources:
