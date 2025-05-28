@@ -303,6 +303,8 @@ rule first_pass_annotate:
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/first_pass_genes.csv'
+    params:
+        seq_batch_key = seq_batch_key
     singularity:
         envs['singlecell']
     resources:
@@ -372,6 +374,8 @@ rule second_pass_annotate:
     output:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+    params:
+        seq_batch_key = seq_batch_key
     singularity:
         envs['singlecell']
     resources:
@@ -587,6 +591,9 @@ rule export_atac_cell:
     singularity:
         envs['scenicplus']
     params:
+        sample_key = sample_key,
+        seq_batch_key = seq_batch_key,
+        disease_param = disease_param,
         samples=samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
