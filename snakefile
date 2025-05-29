@@ -48,14 +48,12 @@ rule all:
         # Uncomment when you want to model rna data
         merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
 
-# # Uncomment when you want to run DGE/DAR analysis
+# Uncomment when you want to run DGE/DAR analysis
 # output_DGE_data = expand(
 #     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
 #     cell_type = cell_types,
 #     disease = diseases
 #     ),
-
-
 
 # # Uncomment to view QC data
 # genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
@@ -66,7 +64,6 @@ rule all:
 #             batch = batches,
 #             sample = samples
 #             ),
-
 
 # # EF - WIP
 # pseudo_fragment_files = expand(
@@ -329,7 +326,8 @@ rule UMAP:
 rule first_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
-        gene_markers = work_dir+'/input/first_pass_genes.csv'
+        # gene_markers = work_dir+'/input/first_pass_genes.csv'
+        gene_markers = work_dir+'/input/celltype_markers_dict_reduced.csv'
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/first_pass_genes.csv'
