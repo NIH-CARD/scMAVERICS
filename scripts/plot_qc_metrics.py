@@ -171,8 +171,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
 # Mitochondria QC
 y, x, _ = plt.hist(
-    # adata.obs.obs['pct_counts_mt'], 
-    adata.obs['pct_counts_mt'], 
+    adata.obs.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
 plt.yscale("log")
@@ -208,9 +207,8 @@ plt.ylabel('number of cells')
 plt.title('Number of genes per cell')
 plt.savefig(snakemake.output.gene_counts_figure, dpi=300)
 
-# # Doublet QC
-# y, x, _ = plt.hist(
-y, x, _ = sns.hist(
+# Doublet QC
+y, x, _ = plt.hist(
         doublet_adata, 
         bins=int(doublet_adata.n_obs))
 plt.plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')
