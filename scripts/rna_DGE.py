@@ -37,21 +37,12 @@ pdata.layers['counts'] = pdata.X.copy()
 sc.pp.normalize_total(pdata, target_sum=1e4)
 sc.pp.log1p(pdata)
 sc.pp.scale(pdata, max_value=10)
-sc.tl.pca(pdata)
 
 # Return raw counts to X
 dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
-
-dc.get_metadata_associations(
-    pdata,
-    obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
-    obsm_key='X_pca',  # Where the PCs are stored
-    uns_key='pca_anova',  # Where the results are stored
-    inplace=True,
-)
 
 # CSV pseudobulk
 adata_df = pd.DataFrame(pdata.X)
