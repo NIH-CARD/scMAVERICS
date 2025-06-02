@@ -76,7 +76,7 @@ inference = DefaultInference(n_cpus=64)
 
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=['comparison', snakemake.params.seq_batch_key],
+    design_factors=snakemake.params.design_factors + ['comparison'],
     refit_cooks=True,
     inference=inference,
 )

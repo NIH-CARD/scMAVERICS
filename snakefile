@@ -20,6 +20,7 @@ disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
+design_covariates = [seq_batch_key, 'Age', 'Sex'] # Design factors/covariates for DGEs and DARs
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -398,7 +399,7 @@ rule DGE:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
         sample_key=sample_key,
-        seq_batch_key = seq_batch_key
+        design_factors = design_covariates
     singularity:
         envs['decoupler']
     threads:
@@ -635,7 +636,7 @@ rule DAR:
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = ['normalage']
+        design_factors = design_covariates
     singularity:
         envs['decoupler']
     threads:
