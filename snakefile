@@ -391,7 +391,7 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.png',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
         celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
