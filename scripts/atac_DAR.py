@@ -1,5 +1,4 @@
 import anndata as ad
-import scipy
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -38,11 +37,18 @@ adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
 # Store raw counts in layers
 pdata.layers['counts'] = pdata.X.copy()
 
-# Abreviate diagnosis
-pdata.obs['diagnosis'] = pdata.obs[disease_param]
+# Abbreviate diagnosis to avoid space syntax error
+pdata.obs['comparison'] = pdata.obs[disease_param]
 
 # Select gene specific profiles
-pdata_genes = dc.filter_by_expr(pdata, group='diagnosis', min_count=10, min_total_count=15)
+pdata_genes = dc.filter_by_expr(
+    pdata, 
+    group='comparison', 
+    min_count=10, 
+    min_total_count=15
+    )
+
+# Subset valuable genes
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
@@ -51,7 +57,7 @@ inference = DefaultInference(n_cpus=1)
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=snakemake.params.design_factors + ['diagnosis'],
+    design_factors=snakemake.params.design_factors + ['comparison'],
     inference=inference,
 )
 
@@ -61,7 +67,7 @@ dds.deseq2()
 # Extract contrast between control and disease state
 stat_res = DeseqStats(
     dds,
-    contrast=["diagnosis", disease_name, control_name],
+    contrast=['comparison', disease_name, control_name],
     inference=inference,
 )
 
@@ -70,10 +76,10 @@ stat_res.summary()
 
 # Extract results
 deseq2_results_df = stat_res.results_df
-
-# Export results
+deseq2_results_df['-log10_padj'] = -np.log10(deseq2_results_df['padj'])
 deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
 
+# Plot
 dc.plot_volcano_df(
     deseq2_results_df,
     x='log2FoldChange',
