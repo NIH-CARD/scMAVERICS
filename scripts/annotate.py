@@ -10,7 +10,8 @@ adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 doublet_clusters = []
 for cluster in adata.obs['leiden_2'].drop_duplicates():
     #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
-    if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .05:
+    # if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .05:
+    if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .045:
         doublet_clusters.append(cluster)
 
 adata = adata[~adata.obs['leiden_2'].isin(doublet_clusters)].copy()
