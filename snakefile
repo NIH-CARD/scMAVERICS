@@ -48,30 +48,34 @@ envs = {
 
 rule all:
     input:
-        # EF - rule filtered_UMAP
-        merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad',
-
-        # Uncomment when you want to run DGE/DAR analysis
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
-
-# # Uncomment when you want to model rna data
-# merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
-
+        # Uncomment when you want to model rna data
+        merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
 
 
 # # Uncomment to view QC data
 # genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
-# # Uncomment when you have verified QC metrics
+# Uncomment when you have verified QC metrics
 # rna_anndata=expand(
 #             data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad', 
 #             zip,
 #             batch = batches,
 #             sample = samples
 #             ),
+
+# # EF - rule filtered_UMAP
+# merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad',
+
+# # Uncomment when you want to run DGE/DAR analysis
+# output_DGE_data = expand(
+#     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+#     cell_type = cell_types,
+#     disease = diseases
+#     ),
+
+
+
+
+
 
 # # EF - WIP
 # pseudo_fragment_files = expand(
@@ -350,7 +354,8 @@ rule first_pass_annotate:
 
 rule cluster_based_QC:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+        # merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna-EF_manual.h5ad'
     output:
         merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad',
         course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
@@ -683,7 +688,7 @@ rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
         circe_network = work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
