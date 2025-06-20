@@ -14,22 +14,22 @@ gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # De
 
 
 """Metadata parameters"""
-seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
-sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
-batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
+seq_batch_key = 'Use_batch'                                     # Key for sequencing batch, used for directory search
+sample_key = 'Sample'                                           # Key for samples, required in aggregating while preserving sample info
+batches = pd.read_csv(metadata_table)[seq_batch_key].tolist()   # Read in the list of batches and samples
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'Primary Diagnosis' # Name of the disease parameter
-control = 'control' # Define disease states
-diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
-cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-design_covariates = [seq_batch_key, 'Age', 'Sex'] # Design factors/covariates for DGEs and DARs
+disease_param = 'Primary Diagnosis'                             # Name of the disease parameter
+control = 'control'                                             # Define disease states
+diseases = ['PD', 'DLB']                                        # Disease states to compare, keep as list of strings, unnecessary 
+cell_types = pd.read_csv(gene_markers_file)['cell type']        # Define the cell types to look for, from gene marker file
+design_covariates = [seq_batch_key, 'Age', 'Sex']               # Design factors/covariates for DGEs and DARs
 
 """Quality control thresholds"""
-mito_percent_thresh = 15                                                    # Maximum percent of genes in a cell that can be mitochondrial
-ribo_percent_thresh = 10                                                    # Maximum percent of genes in a cell that can be ribosomal
-doublet_thresh      = 0.15                                                  # Maximum doublet score for a cell, computed by scrublet
-min_genes_per_cell  = 250                                                   # Minimum number of unique genes in a cell
-min_peak_counts     = 500                                                   # Minimum number of fragments per cell
+mito_percent_thresh = 15    # Maximum percent of genes in a cell that can be mitochondrial
+ribo_percent_thresh = 10    # Maximum percent of genes in a cell that can be ribosomal
+doublet_thresh      = 0.15  # Maximum doublet score for a cell, computed by scrublet
+min_genes_per_cell  = 250   # Minimum number of unique genes in a cell
+min_peak_counts     = 500   # Minimum number of fragments per cell
 
 
 """========================================================================="""
@@ -38,19 +38,25 @@ min_peak_counts     = 500                                                   # Mi
 
 # Singularity containers to be downloaded from Quay.io, done in snakemake.sh
 envs = {
-    'snapatac2' : 'envs/snapatac2.sif',
-    'singlecell': 'envs/single_cell_gpu.sif',
-    'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif',
-    'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif'
+    'snapatac2'     : 'envs/snapatac2.sif',
+    'singlecell'    : 'envs/single_cell_gpu.sif',
+    'scenicplus'    : 'envs/scenicplus.sif',
+    'decoupler'     : 'envs/decoupler.sif',
+    'circe'         : 'envs/circe.sif',
+    'atac_fragment' : 'envs/atac_fragment.sif'
     }
 
 rule all:
     input:
-        # Uncomment when you want to model rna data
-        merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
+        # EF - rule filtered_UMAP
+        merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad',
 
+        # Uncomment when you want to run DGE/DAR analysis
+        output_DGE_data = expand(
+            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+            cell_type = cell_types,
+            disease = diseases
+            ),
 
 # # Uncomment to view QC data
 # genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
@@ -62,20 +68,8 @@ rule all:
 #             sample = samples
 #             ),
 
-# # EF - rule filtered_UMAP
-# merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad',
-
-# # Uncomment when you want to run DGE/DAR analysis
-# output_DGE_data = expand(
-#     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-#     cell_type = cell_types,
-#     disease = diseases
-#     ),
-
-
-
-
-
+# # Uncomment when you want to model rna data
+# merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
 
 # # EF - WIP
 # pseudo_fragment_files = expand(
@@ -354,10 +348,10 @@ rule first_pass_annotate:
 
 rule cluster_based_QC:
     input:
-        # merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna-EF_manual.h5ad'
+        merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad'
+        # merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna-EF_manual.h5ad'
     output:
-        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/05_QC_filtered_anndata_rna.h5ad',
         course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
         course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
