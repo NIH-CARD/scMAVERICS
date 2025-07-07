@@ -18,11 +18,12 @@ seq_batch_key = 'Use_batch'                                     # Key for sequen
 sample_key = 'Sample'                                           # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist()   # Read in the list of batches and samples
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'age_bin'                             # Name of the disease parameter
+disease_param = 'age_bin'                                       # Name of the disease parameter
 control = 'young'                                               # Define disease states
 diseases = ['old']                                              # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type']        # Define the cell types to look for, from gene marker file
-design_covariates = [seq_batch_key, 'Age', 'Sex']               # Design factors/covariates for DGEs and DARs
+# design_covariates = [seq_batch_key, 'Age', 'Sex']               # Design factors/covariates for DGEs and DARs
+design_covariates = ['Sex']                                     # Design factors/covariates for DGEs and DARs
 
 """Quality control thresholds"""
 mito_percent_thresh = 15    # Maximum percent of genes in a cell that can be mitochondrial
@@ -405,7 +406,8 @@ rule all:
 
 rule DGE:
     input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        # rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna_recalc_missing_rows.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
         output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',

@@ -20,6 +20,14 @@ disease_param = snakemake.params.disease_param
 # Subset to cell type
 adata = adata[adata.obs['cell_type'] == cell_type].copy()
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# # EF-TEST
+# # Ensure the 'age_bin' column has no missing values
+# adata = adata[adata.obs[disease_param].notna()].copy()
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     adata,
