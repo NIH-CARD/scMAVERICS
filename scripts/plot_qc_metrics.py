@@ -41,7 +41,7 @@ doublet_adata = adata[adata.obs['total_counts'] < 0]
 
 for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
-    # Make plot directory
+    '''# Make plot directory
     try:
         os.mkdir(f'figures/plots/{sample}')
     except FileExistsError:
@@ -125,7 +125,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
     """Plot the scrublet values"""
     fig, ax = plt.subplots(1, 2, figsize=(10, 4))
-    fig.suptitle(f' Sample {sample} ', fontsize=BIGGER_SIZE)
+    fig.suptitle(f' Sample {sample} ', fontsize=BIGGER_SIZE)'''
 
     # Run scrublet on filtered samples 
     filtered_adata = adata[
@@ -139,7 +139,7 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
     doublet_adata = ad.concat([doublet_adata, filtered_adata], join='outer')
 
     # Violin plot in the first panel
-    sc.pl.violin(filtered_adata, ['doublet_score'], jitter=0.5, ax=ax[0], show=False)
+    '''sc.pl.violin(filtered_adata, ['doublet_score'], jitter=0.5, ax=ax[0], show=False)
     ax[0].plot([-.5, .5], [snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], '--r')
     ax[0].set_ylabel('droplet score')
     ax[0].set_xlim(-.75, .75)
@@ -164,25 +164,30 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
         color="pct_counts_mt",
         show=False
         )
-    plt.savefig(f'figures/plots/{sample}/num_gene_counts_total.png', dpi=300)
+    plt.savefig(f'figures/plots/{sample}/num_gene_counts_total.png', dpi=300)'''
 
 
 # Plot summary mitochondria, ribosome, and scrublet scores
+adata.obs.to_csv('/data/CARD_singlecell/PFC_atlas/data/unfiltered_metadata.csv', index=False)
+doublet_adata.obs.to_csv('/data/CARD_singlecell/PFC_atlas/data/unfiltered_doublet_metadata.csv', index=False)
 
+plt.figure(figsize=(6, 6))
 # Mitochondria QC
 y, x, _ = plt.hist(
-    adata.obs.obs['pct_counts_mt'], 
+    adata.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
 plt.yscale("log")
 plt.xlabel('percent')
 plt.ylabel('number of cells')
 plt.plot([snakemake.params.mito_percent_thresh, snakemake.params.mito_percent_thresh], [1, y.max()], '--r')
-plt.ylim(0, y.max())
+plt.ylim(1, y.max())
 plt.title('Percent mitochondria per cell')
 plt.savefig(snakemake.output.mito_figure, dpi=300)
+plt.close()
 
 # Ribosome QC
+plt.figure(figsize=(6, 6))
 y, x, _ = plt.hist(
         adata.obs['pct_counts_rb'], 
         bins=int(np.sqrt(adata.n_obs))
@@ -194,8 +199,10 @@ plt.xlabel('percent')
 plt.ylabel('number of cells')
 plt.title('Percent ribosome genes per cell')
 plt.savefig(snakemake.output.ribo_figure, dpi=300)
+plt.close()
 
 # Number of genes
+plt.figure(figsize=(6, 6))
 y, x, _ = plt.hist(
         adata.obs['n_genes_by_counts'], 
         bins=int(np.sqrt(adata.n_obs))
@@ -206,8 +213,10 @@ plt.xlabel('total counts')
 plt.ylabel('number of cells')
 plt.title('Number of genes per cell')
 plt.savefig(snakemake.output.gene_counts_figure, dpi=300)
+plt.close()
 
 # Doublet QC
+plt.figure(figsize=(6, 6))
 y, x, _ = plt.hist(
         doublet_adata.obs['doublet_score'], 
         bins=int(doublet_adata.n_obs))
@@ -217,8 +226,10 @@ plt.xlabel('droplet score')
 plt.ylabel('number of droplets')
 plt.title('Doublet score per cell')
 plt.savefig(snakemake.output.doublet_figure, dpi=300)
+plt.close()
 
 # Genes by total counts
+plt.figure(figsize=(6, 6))
 sc.pl.scatter(
     adata, 
     "total_counts", 

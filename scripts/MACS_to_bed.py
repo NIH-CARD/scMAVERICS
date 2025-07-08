@@ -2,7 +2,9 @@ import pandas as pd
 import pyranges as pr
 
 # Load bed file
-peak_file = pd.read_csv(snakemake.input.xls, delimiter='\t', skiprows=21)
+peak_file = pd.read_csv(snakemake.input.xls, delimiter='\t', skiprows=1)
+# Only for gappedPeak
+peak_file.columns =['chr', 'start', 'end', 'name', 'score', 'blank1', 'blank2', 'blank3', 'summit', 'blank4', 'blank5', 'blank6', 'blank7', 'blank8', 'blank9']
 
 # Convert to bed file
 peak_pr = pr.PyRanges(

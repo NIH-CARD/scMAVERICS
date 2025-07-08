@@ -60,3 +60,4 @@ envs
 # EXCLUSIONS
 # Anything from the whole folders being ignored that should be included
 figures
+hmmr_test

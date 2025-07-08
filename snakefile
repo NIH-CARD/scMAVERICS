@@ -62,14 +62,17 @@ envs = {
 
 rule all:
     input:
-        celltype_bigwig = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-            cell_type=cell_types),
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        celltype_atac = expand(
-            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-            cell_type=cell_types)
-       
+        doublet_figure = work_dir+'/figures/QC_doublet.svg'
+"""celltype_atac = expand(
+    work_dir+'/hmmr_test/celltypes/{cell_type}/atac_circe.h5ad',
+    cell_type = cell_types
+    ),
+merged_atac_anndata = work_dir+'/atlas/04_modeled_hmmr_atac.h5ad',
+cell_specific_regression = expand(
+    work_dir+'/hmmr_test/celltypes/{cell_type}/peak_age_regression.csv',
+    cell_type = cell_types
+)"""
+
 """merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
@@ -143,21 +146,21 @@ rule merge_unfiltered:
     resources:
         runtime=480, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'/scripts/merge_anndata.py'
+        work_dir+'/scripts/merge_anndata.py'"""
 
 rule plot_qc_rna:
     input:
         merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
     output:
-        mito_figure = work_dir+'/figures/QC_mito_pct.png',
-        ribo_figure = work_dir+'/figures/QC_ribo_pct.png',
-        gene_counts_figure = work_dir+'/figures/QC_gene_counts.png',
-        doublet_figure = work_dir+'/figures/QC_doublet.png',
-        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'
+        mito_figure = work_dir+'/figures/QC_mito_pct.svg',
+        ribo_figure = work_dir+'/figures/QC_ribo_pct.svg',
+        gene_counts_figure = work_dir+'/figures/QC_gene_counts.svg',
+        doublet_figure = work_dir+'/figures/QC_doublet.svg',
+        genes_by_counts = work_dir+'figures/QC_genes_by_counts.svg'
     singularity:
         envs['singlecell']
     resources:
-        runtime=960, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=2880, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
     params:
         mito_percent_thresh = mito_percent_thresh,
         doublet_thresh = doublet_thresh,
@@ -441,26 +444,27 @@ rule cistopic_pseudobulk:
         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/cistopic_pseudobulk.py'
-"""
+
 rule MACS2_peak_call:
     input:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/fragments.bed'
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/fragments.bed',
+        blacklist_bed = work_dir + '/data/hg38-blacklist.v2.bed.gz'
     output: 
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+        narrow_peak = work_dir + "/hmmr_test/celltypes/{cell_type}/{cell_type}_accessible_regions.gappedPeak"
     params:
         out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
         mem_mb=200000, runtime=2880
-    singularity:
-        envs['atac_fragment']
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+"module load macs/3; macs3 hmmratac --input {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE "
+"TEST CUTOFF ANALYSIS hmmratac --input ../fragments.bed --name astro --outdir . --blacklist ../../../hg38-blacklist.v2.bed.gz --format BEDPE --cutoff-analysis-only"
 
 rule consensus_peaks:
     input:
         narrow_peaks = expand(
-            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            work_dir + "/data/celltypes/{cell_type}/{cell_type}_accessible_regions.gappedPeak",
             cell_type = cell_types
             )
     output:
@@ -478,7 +482,6 @@ rule cistopic_create_objects:
         fragment_file = data_dir+'{sample}/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
-        cistopic_object = data_dir + '{sample}/04_{sample}_cistopic_obj.pkl',
         cistopic_adata = data_dir + '{sample}/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
@@ -500,7 +503,7 @@ rule cistopic_merge_objects:
             batch=batches
             )
     output:
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_merged_hmmr_atac.h5ad'
     singularity:
         envs['atac_fragment']
     params:
@@ -515,8 +518,8 @@ rule atac_peaks_model:
     input:
         merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
     output:
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_cistopic_atac.h5ad',
+        atac_model_history = work_dir+'/data/model_elbo/atac_cistopic_model_history.csv'
     params:
         atac_model = work_dir+'/data/models/atac/',
         sample_key = sample_key
@@ -529,7 +532,7 @@ rule atac_peaks_model:
 
 rule multiome_output:
     input:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_cistopic_atac.h5ad',
         merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad'
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
@@ -547,7 +550,7 @@ rule create_bigwig:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
     resources:
-        mem_mb=1000000, runtime=180, slurm_partition='largemem'
+        mem_mb=1500000, runtime=960, slurm_partition='largemem'
     singularity:
         envs['atac_fragment']
     script:
@@ -555,7 +558,7 @@ rule create_bigwig:
 
 rule celltype_bed:
     input:
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_accessible_regions.gappedPeak",
     output:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     singularity:
@@ -598,12 +601,13 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
+
 rule peak_linear_regression:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
         covariates = '/data/CARD_singlecell/PFC_atlas/data/covariates.csv'
     output:
-        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_pseudobulk.csv',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/pseudobulk_atac.csv',
         cell_specific_regression = work_dir+'/data/celltypes/{cell_type}/peak_age_regression.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split("_")[-2],
@@ -615,7 +619,20 @@ rule peak_linear_regression:
         runtime=1440, mem_mb=500000, slurm_partition='largemem'
     script:
         'scripts/linear_regression_peaks.py'
-   
+
+rule wnn:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_cistopic_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad'
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    singularity:
+        envs['snapatac']
+    resources:
+        runtime=960, mem_mb=1500000, slurm_partition='largemem' 
+    script:
+        'scripts/wnn.py'
+
 rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'

@@ -41,12 +41,6 @@ barcode2disease = cell_data['cohort'].to_dict()
 cistopic_obj.cell_data['cell_type'] = [barcode2celltype[x] for x in cistopic_obj.cell_data['atlas_identifier']]
 cistopic_obj.cell_data['cohort'] = [barcode2disease[x] for x in cistopic_obj.cell_data['atlas_identifier']]
 
-# Export sample
-pickle.dump(
-    cistopic_obj,
-    open(snakemake.output.cistopic_object, "wb")
-)
-
 # Create AnnData object
 adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
 adata.obs.index = cistopic_obj.cell_data['atlas_identifier'].to_list()

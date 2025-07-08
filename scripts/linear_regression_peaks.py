@@ -43,10 +43,11 @@ sample_cell = pdata.obs[['sample_id']]
 adata_df.columns = pdata.var_names.to_list()
 adata_df.index = sample_cell.index
 adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
-adata_df = pd.merge(left=covariate_df, right=adata_df, left_on='SampleID', right_on='sample_id')
-
 #
 adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
+adata_df = pd.merge(left=covariate_df, right=adata_df, left_on='SampleID', right_on='sample_id')
+
+
 
 # 
 peak_data = []
