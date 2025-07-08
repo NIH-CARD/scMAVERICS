@@ -7,7 +7,7 @@ import os
 
 """File locations"""
 data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = os.getcwd() # Define the working directory, explictly as the directory of this pipeline
+work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
 metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
@@ -46,11 +46,8 @@ envs = {
 
 rule all:
     input:
-        output_DAR_data = expand(
-            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ) # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+        # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
 # Uncomment when you have verified QC metrics
@@ -353,7 +350,7 @@ rule rna_polish_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
 
@@ -650,7 +647,7 @@ rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
         circe_network = work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
