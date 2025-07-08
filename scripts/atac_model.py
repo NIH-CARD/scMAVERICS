@@ -33,7 +33,11 @@ scvi.external.POISSONVI.setup_anndata(
     filtered_adata,) 
 
 # Add the parameters of the model
-model = scvi.external.POISSONVI(filtered_adata)
+model = scvi.external.POISSONVI(
+    filtered_adata,
+    n_layers=2, 
+    n_latent=30, 
+    latent_distribution="ln")
 
 # Train the model
 model.train(
