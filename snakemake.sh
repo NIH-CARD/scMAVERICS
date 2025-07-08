@@ -2,7 +2,8 @@
 
 #SBATCH --cpus-per-task 1
 #SBATCH --mem-per-cpu=32G
-#SBATCH --time 48:00:00
+#SBATCH --time 96:00:00
+
 
 module purge
 module load apptainer
@@ -16,8 +17,9 @@ apptainer pull --disable-cache envs/snapatac2.sif oras://quay.io/adamcatchingdti
 apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu:0.8
 apptainer pull --disable-cache envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.9
 apptainer pull --disable-cache envs/circe.sif oras://quay.io/adamcatchingdti/circe.sif:0.9
+apptainer pull --disable-cache envs/atac_fragment.sif oras://quay.io/adamcatchingdti/atac_fragment.sif:0.9
 
-apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest
+apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 
 # Load singularity
 module load singularity
@@ -29,8 +31,7 @@ module load singularity
 chmod 777 scripts/rna_model.sh
 chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
-
-module load snakemake/7.7.0
+chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity #--dag | dot -Tpdf > dag.pdf
+snakemake --cores all --profile snakemake_profile --use-singularity

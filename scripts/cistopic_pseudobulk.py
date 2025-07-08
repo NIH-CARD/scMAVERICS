@@ -1,49 +1,41 @@
 import numpy as np
 import pandas as pd
-from pycisTopic.pseudobulk_peak_calling import export_pseudobulk
 import scanpy as sc
-import os
+import polars as pl
+import pyranges as pr
 
 # Read in rna observation data
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
 # Port cell data from final RNA atlas to cisTopic pseudobulked
-cell_data = rna.obs
-# Add the sample_id and barcode variables to match required cisTopic input
-cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
-cell_data['sample_id'] = cell_data[snakemake.params.sample_param_name]
+cell_df = rna.obs
 
-# Make sure list of samples is interpreted as strings
-samples = [str(x) for x in snakemake.params.samples]
+# Metadata specific column names
+sample_value = snakemake.params.sample_param_name
 
-# Subset metadata to just samples in dataset 
-cell_data = cell_data[cell_data['sample_id'].isin(samples)]
+# Get sample list
+samples = snakemake.params.samples
 
-# Load chromosome sizes
-chromsizes = pd.read_table(
-    "http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes",
-    header = None,
-    names = ["Chromosome", "End"]
-)
-chromsizes.insert(1, "Start", 0)
+# For sample in samples
+for i, sample in enumerate(samples):
+    # Define fragment file
+    bed_location = snakemake.input.fragment_file[i]
+    # Load fragment with polars
+    print(f'Loading sample {sample} fragments')
+    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
+    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
+    # Get list of sample and cell type specific barcodes
+    cell_type_barcodes = {cell_type: cell_df[(cell_df['cell_type']== cell_type) & (cell_df[sample_value] == sample)]['cell_barcode'].to_list() for cell_type in snakemake.params.cell_types}
+    # Filter on the cell type barcodes
+    cell_fragment = {cell_type: pl_fragment.filter(pl_fragment['name'].is_in(cell_type_barcodes[cell_type])) for cell_type in snakemake.params.cell_types}
+    # Add the filtered barcodes to the fragments
+    print(f'Writing sample {sample}')
+    for j, cell_type in enumerate(snakemake.params.cell_types):
+        with open(snakemake.output.pseudo_fragment_files[j], mode='a') as f:
+            cell_fragment[cell_type].write_csv(f, include_header=False, separator='\t')
+            f.close()
+    print(f'Sample {sample} has been added')
 
-# Input the fragment files with the same input
-fragments_dict = dict(zip(samples, snakemake.input.fragment_file))
-
-
-# Create folds for pseudobulked samples
-os.makedirs(snakemake.params.bed_file_locs, exist_ok=True)
-os.makedirs(snakemake.params.bigwig_file_locs, exist_ok=True)
-
-# Export normalized pseudobulk bed and bigwig files
-bw_paths, bed_paths = export_pseudobulk(
-    input_data = cell_data,
-    variable = snakemake.params.pseudobulk_param,
-    chromsizes = chromsizes,
-    bed_path = snakemake.params.bed_file_locs,
-    bigwig_path = snakemake.params.bigwig_file_locs,
-    path_to_fragments = fragments_dict,
-    n_cpu = snakemake.threads,
-    normalize_bigwig = False,
-    temp_dir = snakemake.resources.tmpdir
-    )
+# Uncomment once singularity image is updated
+#bigwig_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{cell_type}_test.bw'
+#combined_bed.to_bigwig(bigwig_path, rpm=True)

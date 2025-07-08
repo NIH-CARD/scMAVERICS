@@ -7,6 +7,14 @@ import pandas as pd
 # Open the RNA merged and filtered
 adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
+doublet_clusters = []
+for cluster in adata.obs['leiden_2'].drop_duplicates():
+    #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .05:
+        doublet_clusters.append(cluster)
+
+adata = adata[~adata.obs['leiden_2'].isin(doublet_clusters)].copy()
+
 # Create the DataFrame of canonical gene markers (This can be expanded)
 marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
 
@@ -53,7 +61,8 @@ annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dic
 adata.obs['cell_type'] = [annotation_dict[clust] for clust in adata.obs['leiden_2']]
 
 # Save the cell barcode, cluster, cell-type, and batch values to a .csv
-adata.obs[['atlas_identifier', 'leiden_2', 'cell_type', 'Use_batch']].to_csv(snakemake.output.cell_annotate, index=False)
+adata.obs[['atlas_identifier', 'leiden_2', 'cell_type', snakemake.params.seq_batch_key]].to_csv(snakemake.output.cell_annotate, index=False)
+
 
 # Save the annotated AnnData object
 adata.write_h5ad(filename=snakemake.output.merged_rna_anndata, compression='gzip')

@@ -7,37 +7,35 @@ import scipy
 import numpy as np
 import sys
 
+# To make sure GPU is accessible
 print(torch.cuda.is_available())
 
+# Set up parameters
 scvi.settings.seed = 0
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
 adata = ad.read_h5ad(sys.argv[1])
 
+# Make matrix sparse
 adata.X = scipy.sparse.csr_matrix(adata.X.astype(np.float64)[:])
-
 
 print("# regions before filtering:", adata.shape[-1])
 
+# Create object to filter without removing 
 filtered_adata = adata.copy()
-# compute the threshold: 5% of the cells
+# Compute the threshold: 5% of the cells
 min_cells = int(filtered_adata.shape[0] * 0.05)
-# in-place filtering of regions
+# Filter genes 
 sc.pp.filter_genes(filtered_adata, min_cells=min_cells)
 
 print("# regions after filtering:", filtered_adata.shape[-1])
 
 # Setup POISSONVI on the data layer
-scvi.external.POISSONVI.setup_anndata(
-    filtered_adata,) 
+scvi.external.POISSONVI.setup_anndata(filtered_adata) 
 
 # Add the parameters of the model
-model = scvi.external.POISSONVI(
-    filtered_adata,
-    n_layers=2, 
-    n_latent=30, 
-    latent_distribution="ln")
+model = scvi.external.POISSONVI(filtered_adata)
 
 # Train the model
 model.train(

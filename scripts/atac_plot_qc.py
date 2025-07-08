@@ -24,11 +24,17 @@ cm = 1/2.54
 # Set figure context
 sns.set_context('paper')
 
+# Define sample key
+sample_key = snakemake.params.sample_key
+
 # Open the AnnData object
 adata = sc.read_h5ad(snakemake.input.merged_atac_anndata) 
 
+# Check for plots directory and create if not there
+os.makedirs('plots', exist_ok=True)
+
 # Iterate through the samples
-for sample in adata.obs['sample'].to_list():
+for sample in adata.obs[sample_key].to_list():
 
     # Make plot directory
     try:
@@ -42,7 +48,7 @@ for sample in adata.obs['sample'].to_list():
     fig.suptitle(f' Sample {sample} ', fontsize=BIGGER_SIZE)
 
     sc.pl.violin(
-        adata[adata.obs['sample'] == sample], 
+        adata[adata.obs[sample_key] == sample], 
         ['n_genes_by_counts'], 
         jitter=0.5, 
         ax=ax[0],
@@ -55,8 +61,8 @@ for sample in adata.obs['sample'].to_list():
 
     # Histogram of values in the second panel
     y, x, _ = ax[1].hist(
-        adata[atac.obs['sample'] == sample].obs['n_genes_by_counts'], 
-        bins=int(np.sqrt(adata[adata.obs['sample'] == sample].n_obs))
+        adata[atac.obs[sample_key] == sample].obs['n_genes_by_counts'], 
+        bins=int(np.sqrt(adata[adata.obs[sample_key] == sample].n_obs))
         )
     ax[1].set_xlabel('number of open features')
     ax[1].set_ylabel('number of cells')
@@ -68,7 +74,7 @@ for sample in adata.obs['sample'].to_list():
 
     """"""
     # Define the sample
-    sample = adata.obs['sample'].iloc[0]
+    sample = adata.obs[sample_key].iloc[0]
     fig, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=False)
     fig.suptitle(f' Sample {sample} ', fontsize=BIGGER_SIZE)
 
@@ -92,7 +98,7 @@ for sample in adata.obs['sample'].to_list():
     # Histogram of values in the second panel
     y, x, _ = ax[1].hist(
         np.log10(shared_fragments), 
-        bins=int(np.sqrt(adata[adata.obs['sample'] == sample].n_obs))
+        bins=int(np.sqrt(adata[adata.obs[sample_key] == sample].n_obs))
         )
     ax[1].set_xlabel('number of shared open features')
     ax[1].set_ylabel('number of cells')

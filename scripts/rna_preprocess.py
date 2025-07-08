@@ -10,10 +10,10 @@ with the parameters upon which quality control filtering can be done.
 
 # Read the samples table once
 samples = pd.read_csv(snakemake.input.metadata_table)
-samples['Sample'] = samples['Sample'].astype(str)
+samples[snakemake.params.sample_key] = samples[snakemake.params.sample_key].astype(str)
 
 # Extract the metadata for the specific sample in one step
-metadata = samples[samples['Sample'] == str(snakemake.params.sample)].iloc[0]
+metadata = samples[samples[snakemake.params.sample_key] == str(snakemake.params.sample)].iloc[0]
 
 """Preprocess the RNA data"""
 
