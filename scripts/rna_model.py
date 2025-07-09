@@ -17,11 +17,11 @@ adata = ad.read_h5ad(sys.argv[1])
 
 # Setup SCVI on the data layer
 scvi.model.SCVI.setup_anndata(
-    filtered_adata, layer="counts", batch_key=sys.argv[2])
+    adata, layer="counts", batch_key=sys.argv[2])
 
 # Add the parameters of the model
 model = scvi.model.SCVI(
-    filtered_adata, 
+    adata, 
     dispersion="gene-batch", 
     n_layers=2, 
     n_latent=30, 
