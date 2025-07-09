@@ -37,4 +37,14 @@ circe_network = ci.extract_atac_links(atac)
 circe_network['Peak1'] = circe_network['Peak1'].str.replace(':', '_').str.replace('-', '_')
 circe_network['Peak2'] = circe_network['Peak2'].str.replace(':', '_').str.replace('-', '_')
 
-circe_network.to_csv(snakemake.output.circe_network, index=None)
+# Split columns for links files
+circe_network['chr 1'] = [x.split('_')[0] for x in circe_network['Peak1']]
+circe_network['start 1'] = [x.split('_')[1] for x in circe_network['Peak1']]
+circe_network['end 1'] = [x.split('_')[2] for x in circe_network['Peak1']]
+
+circe_network['chr 2'] = [x.split('_')[0] for x in circe_network['Peak2']]
+circe_network['start 2'] = [x.split('_')[1] for x in circe_network['Peak2']]
+circe_network['end 2'] = [x.split('_')[2] for x in circe_network['Peak2']]
+
+links_network = circe_network[['chr 1', 'start 1', 'end 1', 'chr 2', 'start 2', 'end 2', 'score']]
+links_network.to_csv(snakemake.output.circe_network, index=None, header=None)
