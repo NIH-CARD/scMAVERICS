@@ -50,10 +50,10 @@ envs = {
 
 rule all:
     input:
-
-
-# # Uncomment to view QC data
-# genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+        # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+# Uncomment to view QC data
+"""genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
 # Uncomment when you have verified QC metrics
 # rna_anndata=expand(
 #             data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad', 
@@ -362,21 +362,21 @@ rule all:
 #     script:
 #         work_dir+'/scripts/feature_selection.py'
 
-# rule rna_polish_model:
-#     input:
-#         hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
-#     output:
-#         hvg_rna_anndata = work_dir+'/atlas/05_modeled_hvg_anndata_rna.h5ad',
-#         model_history = work_dir+'/data/model_elbo/rna_model_v2_history.csv'
-#     params:
-#         model = work_dir+'/data/models/rna_polish/',
-#         sample_key = sample_key
-#     threads:
-#         64
-#     resources:
-#         runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
-#     shell:
-#         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
+rule rna_polish_model:
+    input:
+        hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
+    output:
+        hvg_rna_anndata = work_dir+'/atlas/05_modeled_hvg_anndata_rna.h5ad',
+        model_history = work_dir+'/data/model_elbo/rna_model_v2_history.csv'
+    params:
+        model = work_dir+'/data/models/rna_polish/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
 
 # rule filtered_UMAP:
 #     input:
