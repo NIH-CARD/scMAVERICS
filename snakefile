@@ -8,7 +8,8 @@ import pandas as pd
 
 """File locations"""
 data_dir            = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'      # Define the data directory, explicitly
-work_dir            = os.getcwd()                                           # Define the working directory, explictly as the directory of this pipeline
+# work_dir            = os.getcwd()                                           # Define the working directory, explictly as the directory of this pipeline
+work_dir            = '/vf/users/CARD_singlecell/SN_control_atlas/scMAVERICS/'
 metadata_table      = work_dir + '/input/SN_control_samples-EF_fixed.csv'   # Define where the metadata data exists for each sample to be processed
 gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
 
@@ -49,12 +50,7 @@ envs = {
 
 rule all:
     input:
-        # Uncomment when you want to run DGE/DAR analysis
-        output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
-            ),
+
 
 # # Uncomment to view QC data
 # genes_by_counts = work_dir+'figures/QC_genes_by_counts.png',
@@ -68,6 +64,13 @@ rule all:
 
 # # Uncomment when you want to model rna data
 # merged_rna_anndata = work_dir + '/atlas/05_annotated_anndata_rna.h5ad',
+
+# # Uncomment when you want to run DGE/DAR analysis
+# output_DGE_data = expand(
+#     work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+#     cell_type = cell_types,
+#     disease = diseases
+#     ),
 
 # # Uncomment when you want to model ATAC-peak data
 # merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
