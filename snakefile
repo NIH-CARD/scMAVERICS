@@ -9,7 +9,7 @@ import pandas as pd
 """File locations"""
 data_dir            = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'      # Define the data directory, explicitly
 # work_dir            = os.getcwd()                                           # Define the working directory, explictly as the directory of this pipeline
-work_dir            = '/vf/users/CARD_singlecell/SN_control_atlas/scMAVERICS/'
+work_dir            = '/vf/users/CARD_singlecell/SN_control_atlas/scMAVERICS'
 metadata_table      = work_dir + '/input/SN_control_samples-EF_fixed.csv'   # Define where the metadata data exists for each sample to be processed
 gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
 
@@ -50,8 +50,17 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
-        # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+        output_DAR_data = expand(
+            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+            cell_type = cell_types,
+            disease = diseases
+            ) # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+
+# merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
+
+# merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+# # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
 # Uncomment when you have verified QC metrics
@@ -76,17 +85,7 @@ rule all:
 # merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
 # merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',
 
-# output_DAR_data = expand(
-#     work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-#     cell_type = cell_types,
-#     disease = diseases
-#     ),
-# merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
-# output_DAR_data = expand(
-#     work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-#     cell_type = cell_types,
-#     disease = diseases
-#     ) # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # # #! WARNING - run once, then comment out!
 # rule cellbender:
@@ -105,6 +104,8 @@ rule all:
 #         runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
 #     shell:
 #         work_dir + '/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # rule rna_preprocess:
 #     input:
@@ -362,21 +363,21 @@ rule all:
 #     script:
 #         work_dir+'/scripts/feature_selection.py'
 
-rule rna_polish_model:
-    input:
-        hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
-    output:
-        hvg_rna_anndata = work_dir+'/atlas/05_modeled_hvg_anndata_rna.h5ad',
-        model_history = work_dir+'/data/model_elbo/rna_model_v2_history.csv'
-    params:
-        model = work_dir+'/data/models/rna_polish/',
-        sample_key = sample_key
-    threads:
-        64
-    resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
-    shell:
-        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
+# rule rna_polish_model:
+#     input:
+#         hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
+#     output:
+#         hvg_rna_anndata = work_dir+'/atlas/05_modeled_hvg_anndata_rna.h5ad',
+#         model_history = work_dir+'/data/model_elbo/rna_model_v2_history.csv'
+#     params:
+#         model = work_dir+'/data/models/rna_polish/',
+#         sample_key = sample_key
+#     threads:
+#         64
+#     resources:
+#         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+#     shell:
+#         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
 
 # rule filtered_UMAP:
 #     input:
@@ -391,21 +392,21 @@ rule rna_polish_model:
 #     script:
 #         work_dir+'/scripts/scVI_to_UMAP.py'
 
-# rule second_pass_annotate:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
-#         gene_markers = gene_markers_file
-#     output:
-#         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-#         cell_annotate = work_dir+'/data/rna_cell_annot.csv'
-#     params:
-#         seq_batch_key = seq_batch_key
-#     singularity:
-#         envs['singlecell']
-#     resources:
-#         runtime=240, mem_mb=1500000, slurm_partition='largemem'
-#     script:
-#         work_dir+'/scripts/annotate.py'
+rule second_pass_annotate:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
+        gene_markers = gene_markers_file
+    output:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+    params:
+        seq_batch_key = seq_batch_key
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=240, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/annotate.py'
 
 rule DGE:
     input:
@@ -431,32 +432,33 @@ rule DGE:
     script:
         'scripts/rna_DGE.py'
 
-# rule cistopic_pseudobulk:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/07_annotated_anndata_rna.h5ad',
-#         fragment_file=expand(
-#             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
-#             zip,
-#             sample = samples,
-#             batch = batches
-#             )
-#     output:
-#         pseudo_fragment_files = expand(
-#             work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
-#             cell_types=cell_types)
-#     params:
-#         pseudobulk_param = 'cell_type',
-#         samples=samples,
-#         sample_param_name = sample_key,
-#         cell_types = cell_types
-#     singularity:
-#         envs['atac_fragment']
-#     threads:
-#         64
-#     resources:
-#         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
-#     script:
-#         'scripts/cistopic_pseudobulk.py'
+rule cistopic_pseudobulk:
+    input:
+        # merged_rna_anndata = work_dir + '/atlas/07_annotated_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+        fragment_file = expand(
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            sample = samples,
+            batch = batches
+            )
+    output:
+        pseudo_fragment_files = expand(
+            work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
+            cell_types=cell_types)
+    params:
+        pseudobulk_param = 'cell_type',
+        samples = samples,
+        sample_param_name = sample_key,
+        cell_types = cell_types
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/cistopic_pseudobulk.py'
 
 rule MACS2_peak_call:
     input:
@@ -473,20 +475,20 @@ rule MACS2_peak_call:
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
-# rule consensus_peaks:
-#     input:
-#         narrow_peaks = expand(
-#             work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
-#             cell_type = cell_types
-#             )
-#     output:
-#         consensus_bed = work_dir + '/data/consensus_regions.bed'
-#     singularity:
-#         envs['scenicplus']
-#     resources:
-#         runtime=960, mem_mb=100000
-#     script:
-#         'scripts/MACS_consensus.py'
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            cell_type = cell_types
+            )
+    output:
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
+    singularity:
+        envs['scenicplus']
+    resources:
+        runtime=960, mem_mb=100000
+    script:
+        'scripts/MACS_consensus.py'
     
 rule cistopic_create_objects:
     input:
@@ -510,75 +512,75 @@ rule cistopic_create_objects:
     script:
         'scripts/cistopic_create_object.py'
 
-# rule cistopic_merge_objects:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad',
-#         cistopic_objects = expand(
-#             data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             ),
-#         rna_anndata=expand(
-#             data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             )
-#     output:
-#         merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
-#         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample_key = sample_key,
-#         disease_param = disease_param
-#     resources:
-#         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
-#     script:
-#         'scripts/merge_cistopic_and_adata.py'
+rule cistopic_merge_objects:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad',
+        cistopic_objects = expand(
+            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+            zip,
+            sample=samples,
+            batch=batches
+            ),
+        rna_anndata=expand(
+            data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample_key = sample_key,
+        disease_param = disease_param
+    resources:
+        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
+    script:
+        'scripts/merge_cistopic_and_adata.py'
 
-# rule atac_peaks_model:
-#     input:
-#         merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
-#     output:
-#         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-#         atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
-#     params:
-#         atac_model = work_dir+'/data/models/atac/',
-#         sample_key = sample_key
-#     threads:
-#         64
-#     resources:
-#         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
-#     shell:
-#         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
+rule atac_peaks_model:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
+    params:
+        atac_model = work_dir+'/data/models/atac/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 
-# rule multiome_output:
-#     input:
-#         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-#         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
-#     output:
-#         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-#     singularity:
-#         envs['singlecell']
-#     resources:
-#         runtime=120, mem_mb=300000, slurm_partition='quick' 
-#     script:
-#         'scripts/merge_muon.py'
+rule multiome_output:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=120, mem_mb=300000, slurm_partition='quick' 
+    script:
+        'scripts/merge_muon.py'
 
-# rule create_bigwig:
-#     input:
-#         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_types}_fragments.bed'
-#     output:
-#         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-#         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
-#     resources:
-#         mem_mb=300000, runtime=180, slurm_partition='quick'
-#     singularity:
-#         envs['atac_fragment']
-#     script:
-#         'scripts/atac_bigwig.py'
+rule create_bigwig:
+    input:
+        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_types}_fragments.bed'
+    output:
+        celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
+    resources:
+        mem_mb=300000, runtime=180, slurm_partition='quick'
+    singularity:
+        envs['atac_fragment']
+    script:
+        'scripts/atac_bigwig.py'
 
 rule celltype_bed:
     input:
