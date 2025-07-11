@@ -3,8 +3,6 @@ import pandas as pd
 import anndata as ad
 import scanpy as sc
 from pycisTopic.cistopic_class import *
-import scanpy as sc
-import anndata as ad
 import pyranges as pr
 
 sample_key = snakemake.params.sample_key
@@ -34,12 +32,13 @@ cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
 adatas = []
 print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
-    cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
-                                               path_to_regions=snakemake.input.cell_bedfile,
-                                               valid_bc = cell_data[cell_data['sample_id'] == sample]['barcode'].to_list(),
-                                               n_cpu=1,
-                                               project=sample
-                                               )
+    cistopic_obj = create_cistopic_object_from_fragments(
+        path_to_fragments=fragment_file,
+        path_to_regions=snakemake.input.cell_bedfile,
+        valid_bc = cell_data[cell_data['sample_id'] == sample]['barcode'].to_list(),
+        n_cpu=1,
+        project=sample
+        )
 
     cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][x] + '_' + cistopic_obj.cell_data['sample_id'][x] for x in range(len(cistopic_obj.cell_data))]
     adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
