@@ -8,7 +8,7 @@ import os
 """File locations"""
 data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
 work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
+metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
@@ -46,7 +46,8 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
         # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
@@ -383,6 +384,45 @@ rule second_pass_annotate:
     script:
         work_dir+'/scripts/annotate.py'
 
+rule gene_linear_regression:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        covariates = work_dir+'/data/covariates.csv'
+    output:
+        rna_pseudobulk = work_dir+'/data/pseudobulked_rna.csv',
+        cell_gene_regression = work_dir+'/data/gene_age_regression.csv'
+    params:
+        sample_key=sample_key,
+        disease_param = disease_param,
+        design_factors = design_covariates,
+        cell_types = cell_types
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/linear_regression_genes.py'
+
+rule peak_linear_regression:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        covariates = '/data/CARD_singlecell/PFC_atlas/data/covariates.csv'
+    output:
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/pseudobulk_atac.csv',
+        cell_specific_regression = work_dir+'/data/celltypes/{cell_type}/peak_age_regression.csv'
+    params:
+        cell_type = lambda wildcards, output: output[0].split("_")[-2],
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, mem_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/linear_regression_peaks.py'
+
 rule DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
@@ -410,15 +450,15 @@ rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'{sample}/atac_fragments.tsv.gz',
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
             batch=batches
             )
     output:
         pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_types}/{cell_types}_fragments.bed',
-            cell_types=cell_types)
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
+            cell_type = cell_types)
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
@@ -431,7 +471,7 @@ rule cistopic_pseudobulk:
     resources:
         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/cistopic_pseudobulk.py'
+        'scripts/fragment_pseudobulk.py'
 
 rule MACS2_peak_call:
     input:
@@ -466,15 +506,16 @@ rule consensus_peaks:
 rule cistopic_create_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        fragment_file = data_dir+'{sample}/atac_fragments.tsv.gz',
+        fragment_file = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
-        cistopic_object = data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata = data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad'
+        data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj',
+        data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
         sample='{sample}',
+        batch='{batch}',
         seq_batch_key = seq_batch_key,
         sample_key = sample_key,
         disease_param = disease_param
@@ -489,13 +530,13 @@ rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cistopic_objects = expand(
-            data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj',
             zip,
             sample=samples,
             batch=batches
             ),
         rna_anndata=expand(
-            data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
             zip,
             sample=samples,
             batch=batches
