@@ -46,7 +46,15 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        output_DAR_data = expand(
+            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+            cell_type = cell_types,
+            disease = diseases
+            ),
+        celltype_atac = expand(
+            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+            cell_type = cell_types
+        ),
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
         # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
@@ -482,7 +490,7 @@ rule MACS2_peak_call:
     params:
         out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
-        mem_mb=200000, runtime=960
+        mem_mb=200000, runtime=2880
     singularity:
         envs['scenicplus']
     shell:
@@ -509,8 +517,8 @@ rule cistopic_create_objects:
         fragment_file = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
-        data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj',
-        data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        cistopic_objects = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+        cistopic_adata=data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
@@ -530,12 +538,12 @@ rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cistopic_objects = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj',
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
             zip,
             sample=samples,
             batch=batches
             ),
-        rna_anndata=expand(
+        cistopic_adata=expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
             zip,
             sample=samples,
