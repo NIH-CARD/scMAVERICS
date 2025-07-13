@@ -91,6 +91,6 @@ adata.var['Gene Type '] = adata.var['Gene Type'].astype('category')
 adata.var['start'] = adata.var['start'].astype(int)
 adata.var['end'] = adata.var['end'].astype(int)
 adata.var['total counts'] = np.array(adata.X.sum(axis=0))[0]
-adata.var['Simple Annotation'] = [x.split(' ')[0] for x in adata.var['Annotation']]
+adata.var['Simple Annotation'] = [str(x).split(' ')[0] for x in adata.var['Annotation']]
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
