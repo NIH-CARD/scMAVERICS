@@ -707,4 +707,5 @@ rule atac_coaccessibilty:
         8
     resources:
         runtime=360, mem_mb=300000
+    script:
         'scripts/circe_by_celltype.py'
