@@ -47,4 +47,4 @@ circe_network['start 2'] = [x.split('_')[1] for x in circe_network['Peak2']]
 circe_network['end 2'] = [x.split('_')[2] for x in circe_network['Peak2']]
 
 links_network = circe_network[['chr 1', 'start 1', 'end 1', 'chr 2', 'start 2', 'end 2', 'score']]
-links_network.to_csv(snakemake.output.circe_network, index=None, header=None)
+links_network.to_csv(snakemake.output.circe_network, sep='\t', index=None, header=None)
