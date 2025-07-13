@@ -20,7 +20,7 @@ disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-design_covariates = [seq_batch_key, 'Age', 'Sex'] # Design factors/covariates for DGEs and DARs
+design_covariates = ['Age', 'Sex'] # Design factors/covariates for DGEs and DARs
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -52,7 +52,7 @@ rule all:
             disease = diseases
             ),
         celltype_atac = expand(
-            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+            work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
             cell_type = cell_types
         ),
         merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
@@ -643,6 +643,7 @@ rule export_atac_cell:
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
+        covariates = design_covariates,
         samples=samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
@@ -705,6 +706,5 @@ rule atac_coaccessibilty:
     threads:
         8
     resources:
-        runtime=2880, mem_mb=1500000, slurm_partition='largemem'
-    script:
+        runtime=360, mem_mb=300000
         'scripts/circe_by_celltype.py'

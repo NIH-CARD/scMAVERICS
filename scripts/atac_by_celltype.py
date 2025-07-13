@@ -71,6 +71,11 @@ adata.obs['cisTopic_nr_frag'] = adata.obs['cisTopic_nr_frag'].astype(int)
 adata.obs['cisTopic_nr_acc'] = adata.obs['cisTopic_nr_acc'].astype(int)
 adata.obs['atlas_identifier'] = adata.obs['atlas_identifier'].astype(str)
 
+# Add required covariate values
+for covariate in snakemake.params.covariates:
+    cov_dict = cell_data.obs[covariate].to_dict()
+    adata.obs[covariate] = [cov_dict[x] for x in adata.obs_names.to_list()]
+
 # Remove unnecessary outputs
 del adata.obs['cisTopic_log_nr_frag']
 del adata.obs['cisTopic_log_nr_acc']
