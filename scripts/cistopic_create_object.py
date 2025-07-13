@@ -37,7 +37,7 @@ cistopic_obj.cell_data[snakemake.params.disease_param] = [barcode2disease[x] for
 # Export sample
 pickle.dump(
     cistopic_obj,
-    open(snakemake.output.cistopic_object, "wb")
+    open(snakemake.output.cistopic_objects, "wb")
 )
 
 # Create AnnData object
