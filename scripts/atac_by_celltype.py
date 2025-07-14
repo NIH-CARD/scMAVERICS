@@ -73,7 +73,7 @@ adata.obs['atlas_identifier'] = adata.obs['atlas_identifier'].astype(str)
 
 # Add required covariate values
 for covariate in snakemake.params.covariates:
-    cov_dict = cell_data.obs[covariate].to_dict()
+    cov_dict = cell_data[covariate].to_dict()
     adata.obs[covariate] = [cov_dict[x] for x in adata.obs_names.to_list()]
 
 # Remove unnecessary outputs
