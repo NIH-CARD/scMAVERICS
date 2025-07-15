@@ -20,7 +20,7 @@ disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-design_covariates = ['Age', 'Sex'] # Design factors/covariates for DGEs and DARs
+design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -46,16 +46,14 @@ envs = {
 
 rule all:
     input:
-        output_DAR_data = expand(
-            work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        celltype_bigwig = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
             cell_type = cell_types,
-            disease = diseases
             ),
-        celltype_atac = expand(
+        circe_network = expand(
             work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
             cell_type = cell_types
-        ),
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+            )
         # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
@@ -92,7 +90,7 @@ rule cellbender:
     params:
         sample='{sample}'
     resources:
-        runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
+        runtime=1440, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
@@ -593,12 +591,12 @@ rule multiome_output:
 
 rule create_bigwig:
     input:
-        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_types}_fragments.bed'
+        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     output:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
     resources:
-        mem_mb=300000, runtime=180, slurm_partition='quick'
+        mem_mb=1000000, runtime=180,  slurm_partition='largemem'
     singularity:
         envs['atac_fragment']
     script:
@@ -706,6 +704,6 @@ rule atac_coaccessibilty:
     threads:
         8
     resources:
-        runtime=360, mem_mb=300000
+        runtime=960, mem_mb=300000
     script:
         'scripts/circe_by_celltype.py'
