@@ -392,50 +392,51 @@ rule all:
 #     script:
 #         work_dir+'/scripts/scVI_to_UMAP.py'
 
-rule second_pass_annotate:
-    input:
-        merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
-        gene_markers = gene_markers_file
-    output:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv'
-    params:
-        seq_batch_key = seq_batch_key
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=240, mem_mb=1500000, slurm_partition='largemem'
-    script:
-        work_dir+'/scripts/annotate.py'
+# rule second_pass_annotate:
+#     input:
+#         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
+#         gene_markers = gene_markers_file
+#     output:
+#         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+#         cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+#     params:
+#         seq_batch_key = seq_batch_key
+#     singularity:
+#         envs['singlecell']
+#     resources:
+#         runtime=240, mem_mb=1500000, slurm_partition='largemem'
+#     script:
+#         work_dir+'/scripts/annotate.py'
 
-rule DGE:
-    input:
-        # rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna_recalc_missing_rows.h5ad'
-    output:
-        output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
-    params:
-        disease_param = disease_param,
-        control = control,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        sample_key=sample_key,
-        design_factors = design_covariates
-    singularity:
-        envs['decoupler']
-    threads:
-        64
-    resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
-    script:
-        'scripts/rna_DGE.py'
+# rule DGE:
+#     input:
+#         # rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+#         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna_recalc_missing_rows.h5ad'
+#     output:
+#         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+#         output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
+#         celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
+#     params:
+#         disease_param = disease_param,
+#         control = control,
+#         disease = lambda wildcards, output: output[0].split("_")[-2],
+#         cell_type = lambda wildcards, output: output[0].split("_")[-3],
+#         sample_key=sample_key,
+#         design_factors = design_covariates
+#     singularity:
+#         envs['decoupler']
+#     threads:
+#         64
+#     resources:
+#         runtime=1440, disk_mb=200000, mem_mb=200000
+#     script:
+#         'scripts/rna_DGE.py'
 
 rule cistopic_pseudobulk:
     input:
         # merged_rna_anndata = work_dir + '/atlas/07_annotated_anndata_rna.h5ad',
-        merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+        # merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna_recalc_missing_rows.h5ad',
         fragment_file = expand(
             data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
