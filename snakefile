@@ -50,10 +50,6 @@ rule all:
             work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
             cell_type = cell_types,
             ),
-        circe_network = expand(
-            work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
-            cell_type = cell_types
-            )
         # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
 # Uncomment to view QC data
 """genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
@@ -596,7 +592,7 @@ rule create_bigwig:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
     resources:
-        mem_mb=1000000, runtime=180,  slurm_partition='largemem'
+        mem_mb=1500000, runtime=960,  slurm_partition='largemem'
     singularity:
         envs['atac_fragment']
     script:
