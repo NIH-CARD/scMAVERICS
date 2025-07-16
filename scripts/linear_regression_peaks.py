@@ -10,6 +10,7 @@ from statsmodels.stats.multitest import multipletests
 from patsy import dmatrices
 
 cell_type = snakemake.params.cell_type
+sample_key = snakemake.params.sample_key
 
 adata = sc.read_h5ad(snakemake.input.celltype_atac)
 
@@ -31,8 +32,6 @@ sc.pp.normalize_total(pdata, target_sum=1e6, max_fraction = 0.000001, key_added=
 
 # 
 covariate_df = pd.read_csv(snakemake.input.covariates)
-covariate_df.index = covariate_df['Unnamed: 0']
-del covariate_df['Unnamed: 0']
 covariate_df = covariate_df.T
 covariate_df['SampleID'] = covariate_df.index
 covariates = ' + '.join(covariate_df.columns.to_list()[:-1])

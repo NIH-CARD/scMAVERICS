@@ -54,5 +54,5 @@ bed_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{snakemake.params.ce
 combined_bed.to_bed(bed_path, keep=False)
 
 # Uncomment once singularity image is updated
-#bigwig_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{cell_type}_test.bw'
-#combined_bed.to_bigwig(bigwig_path, rpm=True)
+bigwig_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{cell_type}_test.bw'
+combined_bed.to_bigwig(bigwig_path, rpm=True)
