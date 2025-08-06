@@ -41,3 +41,5 @@ snakemake \
     --cores all \
     --profile snakemake_profile \
     --use-singularity #-n
+    # Run on only a few samples?:
+    # -j 2
