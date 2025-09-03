@@ -18,12 +18,15 @@ sample_batch = cell_data[[snakemake.params.sample_key, snakemake.params.seq_batc
 
 # Path to regions
 path_to_regions = snakemake.input.consensus_bed
+
 # Create cistopic object
-cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake.input.fragment_file,
-                                               path_to_regions=path_to_regions,
-                                               valid_bc = cell_data[cell_data['sample_id'] == snakemake.params.sample]['barcode'].to_list(),
-                                               n_cpu=32,
-                                               project=snakemake.params.sample)
+cistopic_obj = create_cistopic_object_from_fragments(
+    path_to_fragments = snakemake.input.fragment_file,
+    path_to_regions = path_to_regions,
+    valid_bc = cell_data[cell_data['sample_id'] == snakemake.params.sample]['barcode'].to_list(),
+    n_cpu = 32,
+    project = snakemake.params.sample
+)
 
 # Assign metadata
 cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][i] + '_' + cistopic_obj.cell_data['sample_id'][i] for i in range(len(cistopic_obj.cell_data))]
