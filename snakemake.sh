@@ -40,6 +40,6 @@ snakemake --unlock
 snakemake \
     --cores all \
     --profile snakemake_profile \
-    --use-singularity #-n
-    # Run on only a few samples?:
-    # -j 2
+    --use-singularity \
+    --until consensus_peaks \
+    # -n
