@@ -68,9 +68,42 @@ rule all:
         #     batch = batches
         #     ),
         # merged_rna_anndata = work_dir + '/atlas/03_filtered_anndata_rna.h5ad',
-        # hvg_rna_anndata = work_dir + '/atlas/03_hvg_anndata_rna.h5ad'
-        model_history = work_dir + '/data/model_elbo/rna_model_history.csv'
-
+        # hvg_rna_anndata = work_dir + '/atlas/03_hvg_anndata_rna.h5ad',
+        # model_history = work_dir + '/data/model_elbo/rna_model_history.csv',
+        # cell_bedfile = expand(
+        #     work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        #     zip,
+        #     cell_type = cell_types
+        #     ),
+        # cell_annotated_bedfile = expand(
+        #     work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
+        #     zip,
+        #     cell_type = cell_types
+        #     )
+        # celltype_atac = expand(
+        #     work_dir + '/data/celltypes/{cell_type}/atac.h5ad',
+        #     zip,
+        #     cell_type = cell_types
+        # )
+        # cistopic_adata = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
+        #     zip,
+        #     batch = batches,
+        #     sample = samples
+        # ),
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad',
+        # cistopic_objects = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+        #     zip,
+        #     sample = samples,
+        #     batch = batches
+        #     ),
+        # rna_anndata = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
+        #     zip,
+        #     sample = samples,
+        #     batch = batches
+        #     ),
 
 # merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
 # # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
@@ -127,24 +160,24 @@ rule all:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-rule rna_preprocess:
-    input:
-        metadata_table = metadata_table,
-        # rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
-        rna_anndata = data_dir + '{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
-    output:
-        rna_anndata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
-        # rna_anndata = data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad'
-    singularity:
-        envs['singlecell']
-    params:
-        batch = '{batch}',
-        sample = '{sample}',
-        sample_key = sample_key,
-    resources:
-        runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
-    script:
-        work_dir + '/scripts/rna_preprocess.py'
+# rule rna_preprocess:
+#     input:
+#         metadata_table = metadata_table,
+#         # rna_anndata = data_dir + '{sample}/cellbender_gex_counts_filtered.h5'
+#         rna_anndata = data_dir + '{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
+#     output:
+#         rna_anndata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
+#         # rna_anndata = data_dir + '{sample}/01_{sample}_anndata_object_rna.h5ad'
+#     singularity:
+#         envs['singlecell']
+#     params:
+#         batch = '{batch}',
+#         sample = '{sample}',
+#         sample_key = sample_key,
+#     resources:
+#         runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
+#     script:
+#         work_dir + '/scripts/rna_preprocess.py'
 
 # rule merge_unfiltered:
 #     input:
@@ -526,59 +559,66 @@ rule atac_preprocess:
 #     script:
 #         'scripts/MACS_consensus.py'
 
-rule cistopic_create_objects:
+# rule cistopic_create_objects:
+#     input:
+#         merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+#         # fragment_file = data_dir +'{sample}/atac_fragments.tsv.gz',
+#         fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+#         consensus_bed = work_dir + '/data/consensus_regions.bed'
+#     output:
+#         # cistopic_object = data_dir + '{sample}/04_{sample}_cistopic_obj.pkl',
+#         # cistopic_adata = data_dir + '{sample}/04_{sample}_anndata_peaks_atac.h5ad'
+#         cistopic_object = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+#         cistopic_adata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+#     singularity:
+#         envs['scenicplus']
+#     params:
+#         batch = '{batch}',
+#         sample = '{sample}',
+#         sample_key = sample_key,
+#         seq_batch_key = seq_batch_key,
+#         disease_param = disease_param
+#     resources:
+#         # runtime=120, mem_mb=250000, slurm_partition='quick'
+#         # runtime=120, mem_mb=250000, slurm_partition='norm'
+#         runtime=120, mem_mb=240000, slurm_partition='quick'
+#     threads:
+#         16
+#     script:
+#         'scripts/cistopic_create_object.py'
+
+rule cistopic_merge_objects:
     input:
+        # merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad',
         merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
-        # fragment_file = data_dir +'{sample}/atac_fragments.tsv.gz',
-        fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
+        cistopic_objects = expand(
+            # data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+            zip,
+            sample = samples,
+            batch = batches
+            ),
+        rna_anndata = expand(
+            # data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
+            zip,
+            sample = samples,
+            batch = batches
+            )
     output:
-        # cistopic_object = data_dir + '{sample}/04_{sample}_cistopic_obj.pkl',
-        # cistopic_adata = data_dir + '{sample}/04_{sample}_anndata_peaks_atac.h5ad'
-        cistopic_object = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
         batch = '{batch}',
         sample = '{sample}',
         sample_key = sample_key,
-        seq_batch_key = seq_batch_key,
         disease_param = disease_param
     resources:
-        runtime=120, mem_mb=250000, slurm_partition='quick'
-    threads:
-        16
+        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
-        'scripts/cistopic_create_object.py'
-
-# rule cistopic_merge_objects:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/05_polished_anndata_rna.h5ad',
-#         cistopic_objects = expand(
-#             data_dir+'{sample}/04_{sample}_cistopic_obj.pkl',
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             ),
-#         rna_anndata=expand(
-#             data_dir+'{sample}/04_{sample}_anndata_peaks_atac.h5ad', 
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             )
-#     output:
-#         merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
-#         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample_key = sample_key,
-#         disease_param = disease_param
-#     resources:
-#         runtime=1440, mem_mb=2000000, slurm_partition='largemem'
-#     script:
-#         'scripts/merge_cistopic_and_adata.py'
+        'scripts/merge_cistopic_and_adata.py'
 
 # rule atac_peaks_model:
 #     input:
@@ -622,15 +662,15 @@ rule cistopic_create_objects:
 #     script:
 #         'scripts/atac_bigwig.py'
 
-rule celltype_bed:
-    input:
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-    singularity:
-        envs['atac_fragment']
-    output:
-        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
-    script:
-        'scripts/MACS_to_bed.py'
+# rule celltype_bed:
+#     input:
+#         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+#     singularity:
+#         envs['atac_fragment']
+#     output:
+#         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+#     script:
+#         'scripts/MACS_to_bed.py'
 
 # rule annotate_bed:
 #     input:
@@ -642,33 +682,33 @@ rule celltype_bed:
 #     shell:
 #         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
-# rule export_atac_cell:
-#     input:
-#         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-#         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
-#         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
-#         fragment_files=expand(
-#             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
-#             zip,
-#             sample=samples,
-#             batch=batches
-#             )
-#     output:
-#         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
-#     singularity:
-#         envs['scenicplus']
-#     params:
-#         sample_key = sample_key,
-#         seq_batch_key = seq_batch_key,
-#         disease_param = disease_param,
-#         samples=samples,
-#         cell_type = lambda wildcards, output: output[0].split('/')[-2]
-#     threads:
-#         8
-#     resources:
-#         runtime=2880, mem_mb=400000, slurm_partition='largemem'
-#     script:
-#         'scripts/atac_by_celltype.py'
+rule export_atac_cell:
+    input:
+        merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
+        fragment_files = expand(
+            data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            sample = samples,
+            batch = batches
+            )
+    output:
+        celltype_atac = work_dir + '/data/celltypes/{cell_type}/atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample_key = sample_key,
+        seq_batch_key = seq_batch_key,
+        disease_param = disease_param,
+        samples = samples,
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    threads:
+        8
+    resources:
+        runtime=2880, mem_mb=400000, slurm_partition='largemem'
+    script:
+        'scripts/atac_by_celltype.py'
 
 # """rule export_celltypes:
 #     input:
