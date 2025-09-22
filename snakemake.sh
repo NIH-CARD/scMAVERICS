@@ -41,5 +41,13 @@ snakemake \
     --cores all \
     --profile snakemake_profile \
     --use-singularity \
-    --until consensus_peaks \
     # -n
+    # -R $(snakemake --list-input-changes) #\
+    # -n
+
+
+    # # To inspect which output files have changes, run:
+    # --list-input-changes \
+
+    # # Force re-run of rules with changed input files
+    # -R $(snakemake --list-input-changes) \
