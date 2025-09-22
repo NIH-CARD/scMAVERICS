@@ -12,7 +12,10 @@ data_dir            = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'      # De
 work_dir            = '/vf/users/CARD_singlecell/SN_control_atlas/scMAVERICS'
 metadata_table      = work_dir + '/input/SN_control_samples-EF_fixed.csv'   # Define where the metadata data exists for each sample to be processed
 gene_markers_file   = work_dir + '/input/celltype_markers_dict_reduced.csv' # Define where celltypes/cell marker gene 
-
+# # TEMP
+# my_batch_list = ['2', '3', '2', '2', '3', '2', '3', '2', '0', '2', '6']
+# my_sample_list = ['2539', '5931', '1424', '1297', '2781', '1745', '4276', '2420', '1560', '1615', 'PT13122']
+# # </TEMP>
 
 """Metadata parameters"""
 seq_batch_key = 'Use_batch'                                     # Key for sequencing batch, used for directory search
@@ -84,26 +87,38 @@ rule all:
         #     work_dir + '/data/celltypes/{cell_type}/atac.h5ad',
         #     zip,
         #     cell_type = cell_types
-        # )
+        # ),
+        # # EF - TEST - fix
+        # cistopic_object = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+        #     zip,
+        #     batch = my_batch_list,
+        #     sample = my_sample_list
+        # ),
+        # cistopic_adata = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
+        #     zip,
+        #     batch = my_batch_list,
+        #     sample = my_sample_list
+        # ),
+        # cistopic_object = expand(
+        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+        #     zip,
+        #     batch = batches,
+        #     sample = samples
+        # ),
         # cistopic_adata = expand(
         #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
         #     zip,
         #     batch = batches,
         #     sample = samples
         # ),
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad',
-        # cistopic_objects = expand(
-        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-        #     zip,
-        #     sample = samples,
-        #     batch = batches
-        #     ),
-        # rna_anndata = expand(
-        #     data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
-        #     zip,
-        #     sample = samples,
-        #     batch = batches
-        #     ),
+        # # TEST - rerun just Sample 2587 - worked!
+        # cistopic_object = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/batch1/Multiome/2587-ARC/outs/04_2587_cistopic_obj.pkl',
+        # cistopic_adata  = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/batch1/Multiome/2587-ARC/outs/04_2587_anndata_peaks_atac.h5ad',
+        # # TODO
+        merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
 
 # merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
 # # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
@@ -259,20 +274,20 @@ rule all:
 #     script:
 #         work_dir + '/scripts/merge_anndata.py'
 
-rule atac_preprocess:
-    input:
-        # fragment_file = data_dir + '{sample}/atac_fragments.tsv.gz'
-        # fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/atac_fragments.tsv.gz'
-        fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz'
-    output:
-        # atac_anndata = data_dir + '{sample}/01_{sample}_anndata_object_atac.h5ad'
-        atac_anndata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
-    singularity:
-        envs['snapatac2']
-    resources:
-        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
-    script:
-        work_dir+'/scripts/atac_preprocess.py'
+# rule atac_preprocess:
+#     input:
+#         # fragment_file = data_dir + '{sample}/atac_fragments.tsv.gz'
+#         # fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/atac_fragments.tsv.gz'
+#         fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz'
+#     output:
+#         # atac_anndata = data_dir + '{sample}/01_{sample}_anndata_object_atac.h5ad'
+#         atac_anndata = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
+#     singularity:
+#         envs['snapatac2']
+#     resources:
+#         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+#     script:
+#         work_dir+'/scripts/atac_preprocess.py'
 
 # #! NOTE - don't need this rule
 # rule merge_unfiltered_atac:
@@ -500,6 +515,7 @@ rule atac_preprocess:
 #     script:
 #         'scripts/rna_DGE.py'
 
+#! WARNING - from here on, replace the 07_polished_anndata_rna.h5ad with 07_polished_anndata_rna_recalc_missing_rows.h5ad
 # rule cistopic_pseudobulk:
 #     input:
 #         # merged_rna_anndata = work_dir + '/atlas/07_annotated_anndata_rna.h5ad',
@@ -561,8 +577,9 @@ rule atac_preprocess:
 
 # rule cistopic_create_objects:
 #     input:
-#         merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
-#         # fragment_file = data_dir +'{sample}/atac_fragments.tsv.gz',
+#         # merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad',
+#         merged_rna_anndata = work_dir + '/atlas/07_polished_anndata_rna_recalc_missing_rows.h5ad',
+#         # fragment_file = data_dir + '{sample}/atac_fragments.tsv.gz',
 #         fragment_file = data_dir + 'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
 #         consensus_bed = work_dir + '/data/consensus_regions.bed'
 #     output:
@@ -611,8 +628,6 @@ rule cistopic_merge_objects:
     singularity:
         envs['scenicplus']
     params:
-        batch = '{batch}',
-        sample = '{sample}',
         sample_key = sample_key,
         disease_param = disease_param
     resources:
