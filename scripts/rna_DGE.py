@@ -18,7 +18,7 @@ control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
 # Subset to cell type
-adata = adata[adata.obs['cell_type'] == cell_type].copy()
+adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
@@ -55,7 +55,7 @@ dc.get_metadata_associations(
 
 # CSV pseudobulk
 adata_df = pd.DataFrame(pdata.X)
-sample_cell = pdata.obs[['sample_id', 'cell_type', disease_param]]
+sample_cell = pdata.obs[[snakemake.params.sample_key, 'cell_type', disease_param]]
 adata_df.columns = pdata.var_names.to_list()
 adata_df.index = sample_cell.index
 adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
@@ -78,7 +78,7 @@ inference = DefaultInference(n_cpus=64)
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=['comparison', 'batch'],
+    design_factors=snakemake.params.design_factors + ['comparison'],
     refit_cooks=True,
     inference=inference,
 )
@@ -111,6 +111,6 @@ dc.plot_volcano_df(
     sign_thr=1e-2,
     figsize=(4, 4)
 )
-plt.title(f'Control vs. {disease_name} in {cell_type}')
+plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
 plt.tight_layout()
 plt.savefig(snakemake.output.output_figure, dpi=300)

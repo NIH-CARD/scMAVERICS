@@ -353,15 +353,16 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + 'figures/{cell_type}/rna_{cell_type}_{disease}_DAR.png',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.h5ad'
+        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
+        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
         sample_key=sample_key,
-        design_factors = design_covariates
+        design_factors = design_covariates,
+        separating_cluster = 'cell_type'
     singularity:
         envs['decoupler']
     threads:
@@ -370,6 +371,7 @@ rule DGE:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/rna_DGE.py'
+
 
 rule cistopic_pseudobulk:
     input:
