@@ -12,7 +12,7 @@ work_dir = '' # Define the working directory, explictly as the directory of this
 metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
-Metadata parameters"""
+"""Metadata parameters"""
 seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
 sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
@@ -654,5 +654,133 @@ rule atac_coaccessibilty:
         8
     resources:
         runtime=960, mem_mb=300000
+    script:
+        'scripts/circe_by_celltype.py'
+
+rule fragments_pseudobulk_cell_disease:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        fragment_file=expand(
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        pseudo_fragment_files = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
+            cell_type=cell_types,
+            disease=diseases + [control]
+        )
+    params:
+        pseudobulk_param = 'cell_type',
+        samples=samples,
+        sample_param_name = sample_key,
+        cell_types = cell_types,
+        diseases = diseases + [control],
+        disease_param = disease_param
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/cell_disease_pseudobulk.py'
+
+rule MACS2_peak_cell_disease:
+    input:
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
+    output: 
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/celltypes/{cell_type}",
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease
+    resources:
+        mem_mb=200000, runtime=960
+    singularity:
+        envs['scenicplus']
+    shell:
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type}_{wildcards.disease} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule create_bigwig_cell_disease:
+    input:
+        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
+    output:
+        celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
+    resources:
+        mem_mb=1000000, runtime=400, slurm_partition='largemem'
+    singularity:
+        envs['atac_fragment']
+    script:
+        'scripts/atac_bigwig.py'
+
+rule celltype_bed_cell_disease:
+    input:
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+    singularity:
+        envs['atac_fragment']
+    output:
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
+
+rule annotate_bed_cell_disease:
+    input:
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+    output:
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
+    resources:
+        runtime=30, mem_mb=50000, 
+    shell:
+        'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
+
+rule export_atac_cell_disease:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
+        fragment_files=expand(
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample_key = sample_key,
+        seq_batch_key = seq_batch_key,
+        disease_param = disease_param,
+        covariates = design_covariates,
+        samples=samples,
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease
+    threads:
+        8
+    resources:
+        runtime=1440, mem_mb=400000, slurm_partition='largemem'
+    script:
+        'scripts/atac_by_celltype.py'
+
+rule atac_coaccessibilty_cell_disease:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
+    params:
+        cell_type = lambda wildcards: wildcards.cell_type
+    singularity:
+        envs['circe']
+    threads:
+        8
+    resources:
+        runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
