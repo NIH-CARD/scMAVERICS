@@ -62,7 +62,7 @@ envs = {
 
 rule all:
     input:
-        doublet_figure = work_dir+'/figures/QC_doublet.svg'
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_cistopic_atac.h5ad'
 """celltype_atac = expand(
     work_dir+'/hmmr_test/celltypes/{cell_type}/atac_circe.h5ad',
     cell_type = cell_types
