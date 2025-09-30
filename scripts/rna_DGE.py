@@ -45,7 +45,6 @@ dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
 
-<<<<<<< HEAD
 dc.get_metadata_associations(
     pdata,
     obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
@@ -57,11 +56,6 @@ dc.get_metadata_associations(
 # CSV pseudobulk
 adata_df = pd.DataFrame(pdata.X)
 sample_cell = pdata.obs[['sample_id', 'cell_type', disease_param]]
-=======
-# CSV pseudobulk
-adata_df = pd.DataFrame(pdata.X)
-sample_cell = pdata.obs[[snakemake.params.sample_key, 'cell_type', disease_param]]
->>>>>>> origin/main
 adata_df.columns = pdata.var_names.to_list()
 adata_df.index = sample_cell.index
 adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
@@ -84,11 +78,7 @@ inference = DefaultInference(n_cpus=64)
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
     adata=pdata,
-<<<<<<< HEAD
     design_factors=['comparison', 'batch'],
-=======
-    design_factors=snakemake.params.design_factors + ['comparison'],
->>>>>>> origin/main
     refit_cooks=True,
     inference=inference,
 )
