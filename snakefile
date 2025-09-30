@@ -9,7 +9,7 @@ import os
 """File locations"""
 data_dir = '' # Define the data directory, explicitly
 work_dir = '' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
+metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
@@ -41,7 +41,9 @@ envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler': 'envs/decoupler.sif',
+    'circe': 'envs/circe.sif',
+    'atac_fragment': 'envs/atac_fragment.sif'
     }
 
 rule all:
