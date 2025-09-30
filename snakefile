@@ -767,3 +767,20 @@ rule export_atac_cell_disease:
         runtime=1440, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/atac_by_celltype.py'
+
+rule atac_coaccessibilty_cell_disease:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
+    output:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
+    params:
+        cell_type = lambda wildcards: wildcards.cell_type
+    singularity:
+        envs['circe']
+    threads:
+        8
+    resources:
+        runtime=600, mem_mb=400000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
