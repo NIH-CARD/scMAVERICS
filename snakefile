@@ -296,58 +296,6 @@ rule first_pass_annotate:
     script:
         'scripts/annotate.py'
 
-"""LEGACY BIN METHOD"""
-
-"""rule atac_bins_model:
-    input:
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table=metadata_table,
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            )
-    output:
-        umap_data = work_dir+'/data/atac_umap.csv',
-        var_data = work_dir+'/data/atac_var_selected.csv',
-        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
-    params:
-        samples = samples,
-        sample_key = sample_key
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=2880, mem_mb=3000000, slurm_partition='largemem'
-    threads:
-        64
-    script:
-        work_dir+'/scripts/merge_atac.py' 
-
-rule atac_bins_annotate:
-    input:
-        atac_anndata = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/03_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        umap_csv = work_dir+'/data/atac_umap.csv',
-        var_csv = work_dir+'/data/atac_var_selected.csv',
-        annot_csv = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table = metadata_table
-    output:
-        atac_anndata = work_dir+'/atlas/04_filtered_anndata_atac.h5ad',
-        merged_atac_anndata = work_dir+'/atlas/05_annotated_anndata_atac.h5ad'
-    params:
-        samples=samples
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=2880, disk_mb=500000, mem_mb=300000
-    script:
-        'scripts/atac_bins_annotate.py'"""
-
 rule DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
@@ -506,7 +454,7 @@ rule multiome_output:
         runtime=240, mem_mb=300000
     script:
         'scripts/export_celltype.py'
-"""
+
 
 rule DAR:
     input:
