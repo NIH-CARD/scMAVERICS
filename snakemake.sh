@@ -34,4 +34,4 @@ chmod 777 scripts/atac_model.sh
 chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity
+snakemake --cores all --profile snakemake_profile --use-singularity -n

@@ -7,9 +7,9 @@ import os
 
 
 """File locations"""
-data_dir = '' # Define the data directory, explicitly
-work_dir = '' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
+data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
+work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
+metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
@@ -31,6 +31,8 @@ doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
 
+"""Subcluster values, extracted manually after"""
+leiden_clusters =['0', '6', '1', '5', '24', '26', '20', '13', '28', '32', '27', '34', '15', '11', '30', '7', '21', '36', '4', '19', '25', '37', '8', '17', '18', '9', '14', '38', '35', '3', '33', '31', '16', '39', '41', '42', '2', '23', '43', '44', '45','40']
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -41,14 +43,18 @@ envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif'
+    'decoupler': 'envs/decoupler.sif',
+    'circe': 'envs/circe.sif',
+    'atac_fragment': 'envs/atac_fragment.sif'
     }
 
 rule all:
     input:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
-        
+        output_DGE_data = expand(
+            work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
+            cell_type = leiden_clusters,
+            disease = ['DLB'])
+
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -784,3 +790,27 @@ rule atac_coaccessibilty_cell_disease:
         runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
+
+rule leiden_DGE:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        output_DGE_data = work_dir + '/data/significant_genes/rna/leiden/rna_leiden_{cell_type}_{disease}_DGE.csv',
+        output_figure = work_dir + '/figures/leiden/rna_leiden_{cell_type}_{disease}_DGE.svg',
+        celltype_pseudobulk = work_dir+'/data/celltypes/leiden/rna_leiden_{cell_type}_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        sample_key=sample_key,
+        design_factors = design_covariates,
+        separating_cluster = 'leiden_2'
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/rna_DGE.py'
