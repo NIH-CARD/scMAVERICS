@@ -146,7 +146,11 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 
     # Histogram
     y, x, _ = ax[1].hist(
+<<<<<<< HEAD
+        filtered_adata.obs['doublet_score'], 
+=======
         filtered_adata, 
+>>>>>>> origin/main
         bins=int(filtered_adata.n_obs))
     ax[1].plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')
     ax[1].set_ylim(0, y.max())
@@ -169,7 +173,11 @@ for sample in adata.obs[sample_key].drop_duplicates().to_list():
 # Plot summary mitochondria, ribosome, and scrublet scores
 
 # Mitochondria QC
+<<<<<<< HEAD
+y, x, _ = sns.hist(
+=======
 y, x, _ = plt.hist(
+>>>>>>> origin/main
     adata.obs.obs['pct_counts_mt'], 
     bins=int(np.sqrt(adata.n_obs))
     )
@@ -182,7 +190,11 @@ plt.title('Percent mitochondria per cell')
 plt.savefig(snakemake.output.mito_figure, dpi=300)
 
 # Ribosome QC
+<<<<<<< HEAD
+y, x, _ = sns.hist(
+=======
 y, x, _ = plt.hist(
+>>>>>>> origin/main
         adata.obs['pct_counts_rb'], 
         bins=int(np.sqrt(adata.n_obs))
         )
@@ -195,7 +207,11 @@ plt.title('Percent ribosome genes per cell')
 plt.savefig(snakemake.output.ribo_figure, dpi=300)
 
 # Number of genes
+<<<<<<< HEAD
+y, x, _ = sns.hist(
+=======
 y, x, _ = plt.hist(
+>>>>>>> origin/main
         adata.obs['n_genes_by_counts'], 
         bins=int(np.sqrt(adata.n_obs))
         )
@@ -207,8 +223,13 @@ plt.title('Number of genes per cell')
 plt.savefig(snakemake.output.gene_counts_figure, dpi=300)
 
 # Doublet QC
+<<<<<<< HEAD
+y, x, _ = sns.hist(
+        doublet_adata.obs['doublet_score'], 
+=======
 y, x, _ = plt.hist(
         doublet_adata, 
+>>>>>>> origin/main
         bins=int(doublet_adata.n_obs))
 plt.plot([snakemake.params.doublet_thresh, snakemake.params.doublet_thresh], [1, y.max()], '--r')
 plt.ylim(0, y.max())
@@ -225,4 +246,8 @@ sc.pl.scatter(
     color="pct_counts_mt",
     show=False
     )
+<<<<<<< HEAD
 plt.savefig(snakemake.output.genes_by_counts, dpi=300)
+=======
+plt.savefig(snakemake.output.genes_by_counts, dpi=300)
+>>>>>>> origin/main

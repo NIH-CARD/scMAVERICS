@@ -57,7 +57,7 @@ sc.pp.log1p(adata)
 adata.layers['log-norm']=adata.X.copy() 
 
 # Calculate cell cycle()
-cell_cycle_genes = [x.strip() for x in open('/data/CARD_singlecell/SN_atlas/input/lab_cell_cycle_genes.txt')]
+cell_cycle_genes = [x.strip() for x in open('input/lab_cell_cycle_genes.txt')]
 s_genes = cell_cycle_genes[:43]
 g2m_genes = cell_cycle_genes[43:]
 try:

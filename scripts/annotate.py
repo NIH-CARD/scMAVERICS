@@ -16,8 +16,15 @@ for cluster in adata.obs['leiden_2'].drop_duplicates():
 adata = adata[~adata.obs['leiden_2'].isin(doublet_clusters)].copy()
 
 # Create the DataFrame of canonical gene markers (This can be expanded)
-marker_genes = pd.read_csv(snakemake.input.gene_markers)
-marker_gene_df = pd.DataFrame(marker_genes)
+marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
+
+doublet_clusters = []
+for cluster in adata.obs['leiden'].drop_duplicates():
+    #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
+        doublet_clusters.append(cluster)
+
+adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
 
 # Run over-represenation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
@@ -55,6 +62,7 @@ adata.obs['cell_type'] = [annotation_dict[clust] for clust in adata.obs['leiden_
 
 # Save the cell barcode, cluster, cell-type, and batch values to a .csv
 adata.obs[['atlas_identifier', 'leiden_2', 'cell_type', snakemake.params.seq_batch_key]].to_csv(snakemake.output.cell_annotate, index=False)
+
 
 # Save the annotated AnnData object
 adata.write_h5ad(filename=snakemake.output.merged_rna_anndata, compression='gzip')

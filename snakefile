@@ -5,20 +5,22 @@ import os
 """                                 Parameters                              """
 """========================================================================="""
 
+
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
+data_dir = '' # Define the data directory, explicitly
+work_dir = '' # Define the working directory, explictly as the directory of this pipeline
 metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
-"""Metadata parameters"""
+Metadata parameters"""
 seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
 sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
+
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'Primary Diagnosis' # Name of the disease parameter
+disease_param = 'disease' # Name of the disease parameter
 control = 'control' # Define disease states
-diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
+diseases = ['disease_1', 'disease_2'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 
@@ -39,44 +41,15 @@ envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif',
-    'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif'
+    'decoupler': 'envs/decoupler.sif'
     }
 
 rule all:
     input:
-        celltype_bigwig = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-            cell_type = cell_types,
-            ),
-        # This is the last step of the pipeline, run all the way through with this input or swap out for an intermediary file below for checkpoints
-# Uncomment to view QC data
-"""genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'"""
-# Uncomment when you have verified QC metrics
-"""rna_anndata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            ),"""
-# Uncomment when you want to model rna data
-"""merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'"""
-# Uncomment when you want to model ATAC-peak data
-"""merged_cistopic_adata = work_dir + '/atlas/05_annotated_anndata_atac.h5ad',
-merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu',"""
-# Uncomment when you want to run DGE/DAR analysis
-"""output_DGE_data = expand(
-    work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-    cell_type = cell_types,
-    disease = diseases
-    ),
-output_DAR_data = expand(
-    work_dir + '/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-    cell_type = cell_types,
-    disease = diseases
-    ),"""
-
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+        
+# This needs to be forced to run once
 rule cellbender:
     input:
         rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
@@ -262,22 +235,10 @@ rule feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
-        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=360, mem_mb=1500000, slurm_partition='largemem'
-    script:
-        work_dir+'/scripts/feature_selection.py'
-
-rule rna_model:
-    input:
-        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
-    output:
-        hvg_rna_anndata = work_dir+'/atlas/04_modeled_hvg_anndata_rna.h5ad',
-        model_history = work_dir+'/data/model_elbo/rna_model_history.csv'
+        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
+        model_history = work_dir+'/model_elbo/rna_model_history.csv'
     params:
-        model = work_dir+'/data/models/rna/',
+        model = work_dir+'/data/models/rna_v2/',
         sample_key = sample_key
     threads:
         64
@@ -438,7 +399,8 @@ rule DGE:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
         sample_key=sample_key,
-        design_factors = design_covariates
+        design_factors = design_covariates,
+        separating_cluster = 'cell_type'
     singularity:
         envs['decoupler']
     threads:
@@ -447,6 +409,7 @@ rule DGE:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/rna_DGE.py'
+
 
 rule cistopic_pseudobulk:
     input:
@@ -471,11 +434,11 @@ rule cistopic_pseudobulk:
     threads:
         64
     resources:
-        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
         'scripts/fragment_pseudobulk.py'
 
-rule MACS2_peak_call:
+rule cistopic_call_peaks:
     input:
         pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     output: 
@@ -500,8 +463,10 @@ rule consensus_peaks:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     singularity:
         envs['scenicplus']
+    threads:
+        32
     resources:
-        runtime=960, mem_mb=100000
+        runtime=240, mem_mb=100000, disk_mb=500000
     script:
         'scripts/MACS_consensus.py'
     
@@ -544,15 +509,12 @@ rule cistopic_merge_objects:
             batch=batches
             )
     output:
-        merged_cistopic_object = work_dir + '/data/merged_cistopic_object.pkl',
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
+        merged_cistopic_adata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     singularity:
         envs['scenicplus']
-    params:
-        sample_key = sample_key,
-        disease_param = disease_param
     resources:
-        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
+        runtime=960, mem_mb=300000
     script:
         'scripts/merge_cistopic_and_adata.py'
 
@@ -647,23 +609,15 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
-"""rule export_celltypes:
+rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-    output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/consensus_peaks_atac.h5ad',
-        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad'
-    params:
-        cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
         envs['singlecell']
-    threads:
-        8
     resources:
-        runtime=120, mem_mb=300000
+        runtime=240, mem_mb=300000
     script:
         'scripts/export_celltype.py'
-"""
 
 rule DAR:
     input:
@@ -676,8 +630,7 @@ rule DAR:
         disease_param = disease_param,
         control = control,
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = design_covariates
+        cell_type = lambda wildcards, output: output[0].split("_")[-3]
     singularity:
         envs['decoupler']
     threads:

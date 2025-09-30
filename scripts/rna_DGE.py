@@ -18,7 +18,7 @@ control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
 # Subset to cell type
-adata = adata[adata.obs['cell_type'] == cell_type].copy()
+adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
@@ -44,6 +44,14 @@ dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
+
+dc.get_metadata_associations(
+    pdata,
+    obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
+    obsm_key='X_pca',  # Where the PCs are stored
+    uns_key='pca_anova',  # Where the results are stored
+    inplace=True,
+)
 
 # CSV pseudobulk
 adata_df = pd.DataFrame(pdata.X)
@@ -103,6 +111,6 @@ dc.plot_volcano_df(
     sign_thr=1e-2,
     figsize=(4, 4)
 )
-plt.title(f'Control vs. {disease_name} in {cell_type}')
+plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
 plt.tight_layout()
 plt.savefig(snakemake.output.output_figure, dpi=300)
