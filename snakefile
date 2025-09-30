@@ -12,7 +12,7 @@ work_dir = '' # Define the working directory, explictly as the directory of this
 metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
-Metadata parameters"""
+"""Metadata parameters"""
 seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
 sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
