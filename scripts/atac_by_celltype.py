@@ -72,6 +72,11 @@ adata.obs['cisTopic_nr_frag'] = adata.obs['cisTopic_nr_frag'].astype(int)
 adata.obs['cisTopic_nr_acc'] = adata.obs['cisTopic_nr_acc'].astype(int)
 adata.obs['atlas_identifier'] = adata.obs['atlas_identifier'].astype(str)
 
+# Add required covariate values
+for covariate in snakemake.params.covariates:
+    cov_dict = cell_data[covariate].to_dict()
+    adata.obs[covariate] = [cov_dict[x] for x in adata.obs_names.to_list()]
+
 # Remove unnecessary outputs
 del adata.obs['cisTopic_log_nr_frag']
 del adata.obs['cisTopic_log_nr_acc']
@@ -92,6 +97,6 @@ adata.var['Gene Type '] = adata.var['Gene Type'].astype('category')
 adata.var['start'] = adata.var['start'].astype(int)
 adata.var['end'] = adata.var['end'].astype(int)
 adata.var['total counts'] = np.array(adata.X.sum(axis=0))[0]
-adata.var['Simple Annotation'] = [x.split(' ')[0] for x in adata.var['Annotation']]
+adata.var['Simple Annotation'] = [str(x).split(' ')[0] for x in adata.var['Annotation']]
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
