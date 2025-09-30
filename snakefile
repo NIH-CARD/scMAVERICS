@@ -475,7 +475,7 @@ rule DAR:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DARs.py'
+        'scripts/atac_DAR.py'
    
 rule atac_coaccessibilty:
     input:
