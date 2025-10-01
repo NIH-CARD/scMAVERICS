@@ -39,7 +39,6 @@ adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
 
 # Store raw counts in layers
 pdata.layers['counts'] = pdata.X.copy()
-pdata.obs['Age'] = pdata.obs['Age'].astype(float)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]

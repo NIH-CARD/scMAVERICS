@@ -18,7 +18,7 @@ sample_key = 'Sample_ID' # Key for samples, required in aggregating while preser
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'disease' # Name of the disease parameter
+disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
@@ -51,9 +51,9 @@ envs = {
 rule all:
     input:
         output_DAR_data = expand(
-            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.csv',
+            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
             cell_type = leiden_clusters,
-            disease = ['DLB']),
+            disease = diseases),
 """
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
@@ -880,16 +880,16 @@ rule DAR_leiden:
     input:
         atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
     output:
-        output_leiden_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
-        output_leiden_figure = work_dir+'/figures/leiden/atac_{cell_type}_{disease}_DAR.svg',
-        cell_leiden_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{disease}_pseudobulk.csv'
+        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
         control = control,
         sample_key=sample_key,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = design_covariates,
+        design_factors = [],
         separating_cluster = 'leiden_2'
     singularity:
         envs['decoupler']
