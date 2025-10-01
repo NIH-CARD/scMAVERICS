@@ -7,6 +7,8 @@
 
 module purge
 module load apptainer
+module load snakemake/7.7.0
+
 
 
 # Pull profile, this will only run once, and is required for running on Biowulf
@@ -34,4 +36,4 @@ chmod 777 scripts/atac_model.sh
 chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity -n
+snakemake --cores all --profile snakemake_profile --use-singularity
