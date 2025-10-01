@@ -1,4 +1,3 @@
-import anndata as ad
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -17,10 +16,13 @@ disease_name = snakemake.params.disease
 control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
+# Subset to cell type
+atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
+
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
-    sample_col='sample_id',
+    sample_col=snakemake.params.sample_key,
     groups_col=disease_param,
     mode='sum',
     min_cells=10,
@@ -53,7 +55,7 @@ pdata_genes = dc.filter_by_expr(
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
-inference = DefaultInference(n_cpus=1)
+inference = DefaultInference(n_cpus=64)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
