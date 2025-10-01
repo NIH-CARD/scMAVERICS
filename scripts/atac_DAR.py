@@ -1,3 +1,4 @@
+import anndata as ad
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -22,7 +23,7 @@ atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
-    sample_col=snakemake.params.sample_key,
+    sample_col='sample_id',
     groups_col=disease_param,
     mode='sum',
     min_cells=10,
