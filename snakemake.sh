@@ -7,6 +7,7 @@
 
 module purge
 module load apptainer
+module load snakemake
 
 
 # Pull profile, this will only run once, and is required for running on Biowulf
