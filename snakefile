@@ -7,8 +7,8 @@ import os
 
 
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
+data_dir = '' # Define the data directory, explicitly
+work_dir = '' # Define the working directory, explictly as the directory of this pipeline
 metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
