@@ -38,4 +38,4 @@ for key in motifs.keys():
     motif_df = pd.concat([motif_df, cell_motif])
 
 # Export motif enrichment DataFrame
-motif_df.to_csv(snakemake.output.motif_enrichment)
+motif_df.to_csv(snakemake.output.motif_enrichment, index=False)

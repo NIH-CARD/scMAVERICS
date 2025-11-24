@@ -23,6 +23,7 @@ control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
+reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -899,3 +900,20 @@ rule DAR_leiden:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/atac_DAR.py'
+
+rule motif_enrichment:
+    input:
+        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        ref_genome = reference_genome,
+        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme'
+    output:
+        motif_enrichment = work_dir+'/data/motif_enrichment.csv'
+    params:
+        control = control,
+        cell_type = 'cell_type'
+    singularity:
+        envs['snapatac2']
+    resources:
+        runtime=240, disk_mb=300000, mem_mb=200000
+    script:
+        'scripts/atac_motif_enrichment.py'
