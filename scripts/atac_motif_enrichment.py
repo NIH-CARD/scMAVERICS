@@ -25,7 +25,7 @@ TF_motifs = snap._snapatac2.read_motifs(snakemake.input.TF_motifs)
 
 # Motif enrichment, use CIS-BP TF list
 motifs = snap.tl.motif_enrichment(
-    motifs = jaspar_2024,
+    motifs = TF_motifs,
     regions = marker_peaks,
     genome_fasta = snakemake.input.ref_genome
 )
