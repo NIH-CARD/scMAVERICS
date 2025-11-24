@@ -30,7 +30,15 @@ plots
 # Ignore the actual files inside input
 input/old_files
 input/*.csv
-#? Q) Keep input folder? Ignore all files inside it?
+
+# Webpages are generated but not updated to this Github
+webpages
+
+# Don't include TF-associated files yet
+input/*.pfm
+input/*.bed
+input/*.meme
+input/*.jaspar
 
 # No need to show my mistakes (logs) to the world
 logs
