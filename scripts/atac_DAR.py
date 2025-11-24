@@ -17,6 +17,9 @@ disease_name = snakemake.params.disease
 control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
+# Subset to cell type
+atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
+
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
@@ -36,7 +39,6 @@ adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
 
 # Store raw counts in layers
 pdata.layers['counts'] = pdata.X.copy()
-pdata.obs['Age'] = pdata.obs['Age'].astype(float)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
@@ -53,7 +55,7 @@ pdata_genes = dc.filter_by_expr(
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
-inference = DefaultInference(n_cpus=1)
+inference = DefaultInference(n_cpus=64)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(

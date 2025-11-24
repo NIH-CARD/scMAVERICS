@@ -14,13 +14,13 @@ gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where ce
 
 """Metadata parameters"""
 seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
-sample_key = 'Sample' # Key for samples, required in aggregating while preserving sample info
+sample_key = 'Sample_ID' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'disease' # Name of the disease parameter
+disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
-diseases = ['disease_1', 'disease_2'] # Disease states to compare, keep as list of strings, unnecessary 
+diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 
@@ -31,6 +31,8 @@ doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
 
+"""Subcluster values, extracted manually after"""
+leiden_clusters =['0', '6', '1', '5', '24', '26', '20', '13', '28', '32', '27', '34', '15', '11', '30', '7', '21', '36', '4', '19', '25', '37', '8', '17', '18', '9', '14', '38', '35', '3', '33', '31', '16', '39', '41', '42', '2', '23', '43', '44', '45','40']
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -48,10 +50,24 @@ envs = {
 
 rule all:
     input:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+        output_DAR_data = expand(
+            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
+            cell_type = leiden_clusters,
+            disease = diseases),
+"""
+output_DGE_data = expand(
+    work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
+    cell_type = leiden_clusters,
+    disease = ['DLB']
+    ),
+output_leiden_DAR_data = expand(
+    work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
+    cell_type = leiden_clusters,
+    disease = diseases
+),"""
         
-# This needs to be forced to run once
+
+"""# This needs to be forced to run once
 rule cellbender:
     input:
         rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
@@ -785,4 +801,101 @@ rule atac_coaccessibilty_cell_disease:
     resources:
         runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
-        'scripts/circe_by_celltype.py'
+        'scripts/circe_by_celltype.py'"""
+
+rule leiden_DGE:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        output_DGE_data = work_dir + '/data/significant_genes/rna/leiden/rna_leiden_{cell_type}_{disease}_DGE.csv',
+        output_figure = work_dir + '/figures/leiden/rna_leiden_{cell_type}_{disease}_DGE.svg',
+        celltype_pseudobulk = work_dir+'/data/celltypes/leiden/rna_leiden_{cell_type}_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        sample_key=sample_key,
+        design_factors = design_covariates,
+        separating_cluster = 'leiden_2'
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/rna_DGE.py'
+
+"""rule leiden_disease_vs_disease_DGE:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        output_DGE_data = work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
+        output_figure = work_dir + '/figures/leiden/rna_leiden_{cell_type}_PD_vs_{disease}_DGE.svg',
+        celltype_pseudobulk = work_dir+'/data/celltypes/leiden/rna_leiden_{cell_type}_PD_vs_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = 'PD',
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        sample_key=sample_key,
+        design_factors = design_covariates,
+        separating_cluster = 'leiden_2'
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/rna_DGE.py'
+
+
+rule DAR_disease_vs_disease_leiden:
+    input:
+        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_PD_vs_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = 'PD',
+        sample_key=sample_key,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = design_covariates,
+        separating_cluster = 'leiden_2'
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/atac_DAR.py'"""
+
+rule DAR_leiden:
+    input:
+        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        sample_key=sample_key,
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        design_factors = [],
+        separating_cluster = 'leiden_2'
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=1440, disk_mb=200000, mem_mb=200000
+    script:
+        'scripts/atac_DAR.py'
