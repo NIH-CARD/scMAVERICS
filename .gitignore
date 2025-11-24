@@ -30,7 +30,6 @@ plots
 # Ignore the actual files inside input
 input/old_files
 input/*.csv
-#? Q) Keep input folder? Ignore all files inside it?
 # Webpages are generated but not updated to this Github
 webpages
 
