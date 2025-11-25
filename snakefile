@@ -55,7 +55,12 @@ rule all:
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_differential_motif.csv',
             cell_type = cell_types,
             disease = diseases
-        )
+        ),
+        output_DAR_CCAN_data = expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
+            cell_type = cell_types,
+            disease = diseases
+        ),
 
 """
 output_DGE_data = expand(
@@ -935,3 +940,16 @@ rule differential_motif_enrichment:
         runtime=240, disk_mb=300000, mem_mb=200000
     script:
         'scripts/differential_motif_enrichment.py'
+
+rule DAR_CCAN_modules:
+    input:
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv'
+    output:
+        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv'
+    singularity:
+        envs['circe']
+    resources:
+        runtime=240, disk_mb=300000, mem_mb=200000
+    script:
+        'scripts/atac_DAR_CCANs.py'
