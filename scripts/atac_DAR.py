@@ -80,7 +80,7 @@ stat_res.summary()
 # Extract results
 deseq2_results_df = stat_res.results_df
 deseq2_results_df['-log10_padj'] = -np.log10(deseq2_results_df['padj'])
-deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
+deseq2_results_df.to_csv(snakemake.output.output_DAR_data, index=False)
 
 # Plot
 dc.plot_volcano_df(

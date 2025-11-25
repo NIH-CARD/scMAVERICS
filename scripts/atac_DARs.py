@@ -77,7 +77,7 @@ stat_res.summary()
 deseq2_results_df = stat_res.results_df
 
 # Export results
-deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
+deseq2_results_df.to_csv(snakemake.output.output_DAR_data, index=False)
 
 dc.plot_volcano_df(
     deseq2_results_df,
