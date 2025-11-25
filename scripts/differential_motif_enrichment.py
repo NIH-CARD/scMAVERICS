@@ -25,15 +25,15 @@ cell_disease_motifs = snap.tl.motif_enrichment(
     motifs=tf_motifs,
     regions={'up': enriched_peaks, 'down': depleted_peaks},
     background=cell_type_DARs['peak'].values,
-    genome_fasta=ref_genome,
+    genome_fasta=snakemake.input.ref_genome,
     method='hypergeometric'
 )
 # Split out up and down regulated motifs
-up_df = cell_cre_disease_motifs['up'].to_pandas()
+up_df = cell_disease_motifs['up'].to_pandas()
 up_df['regulation'] = 'up'
 
-down_df = cell_cre_disease_motifs['down'].to_pandas()
-down_df = 'down'
+down_df = cell_disease_motifs['down'].to_pandas()
+down_df['regulation'] = 'down'
 
 cell_disease_motif_df = pd.concat([up_df, down_df])
 cell_disease_motif_df['-log10(p-value)'] = -np.log10(cell_disease_motif_df['adjusted p-value'])
