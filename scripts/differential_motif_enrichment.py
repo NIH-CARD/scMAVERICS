@@ -9,7 +9,7 @@ import snapatac2 as snap
 cell_type_atac = sc.read_h5ad(snakemake.input.cell_type_atac)
 
 # Import cell type and disease specific DARs
-cell_type_DARs = pd.read_csv(snakemake.input)
+cell_type_DARs = pd.read_csv(snakemake.input.output_DAR_data)
 
 # Load in TF motifs
 tf_motifs = snap._snapatac2.read_motifs(snakemake.input.TF_motifs)
@@ -19,7 +19,7 @@ DAR_counts = cell_type_DARs.shape[0] # Total number of peaks
 top_05_num = int(DAR_counts * 0.05) # 5% of the total number
 
 enriched_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).iloc[:top_05_num]['peak'].values
-depleted_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).iloc[top_05_num:]['peak'].valuess
+depleted_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).iloc[top_05_num:]['peak'].values
 
 cell_disease_motifs = snap.tl.motif_enrichment(
     motifs=tf_motifs,
