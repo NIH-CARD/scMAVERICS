@@ -51,11 +51,6 @@ envs = {
 
 rule all:
     input:
-        differential_motif_dataframe = expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_differential_motif.csv',
-            cell_type = cell_types,
-            disease = diseases
-        ),
         output_DAR_CCAN_data = expand(
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
             cell_type = cell_types,
@@ -75,7 +70,7 @@ output_leiden_DAR_data = expand(
 ),"""
         
 
-"""# This needs to be forced to run once
+# This needs to be forced to run once
 rule cellbender:
     input:
         rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
@@ -357,7 +352,7 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-rule second_pass_annotate:
+"""rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
         gene_markers = gene_markers_file
@@ -371,7 +366,7 @@ rule second_pass_annotate:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'
+        work_dir+'/scripts/annotate.py'"""
 
 rule gene_linear_regression:
     input:
@@ -437,7 +432,7 @@ rule DGE:
         'scripts/rna_DGE.py'
 
 
-rule cistopic_pseudobulk:
+"""rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
@@ -462,7 +457,7 @@ rule cistopic_pseudobulk:
     resources:
         runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/fragment_pseudobulk.py'
+        'scripts/fragment_pseudobulk.py'"""
 
 rule cistopic_call_peaks:
     input:
@@ -606,7 +601,7 @@ rule annotate_bed:
     shell:
         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
-rule export_atac_cell:
+"""rule export_atac_cell:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
@@ -633,7 +628,7 @@ rule export_atac_cell:
     resources:
         runtime=2880, mem_mb=400000, slurm_partition='largemem'
     script:
-        'scripts/atac_by_celltype.py'
+        'scripts/atac_by_celltype.py'"""
 
 rule export_celltypes:
     input:
@@ -645,7 +640,7 @@ rule export_celltypes:
     script:
         'scripts/export_celltype.py'
 
-rule DAR:
+"""rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
@@ -664,7 +659,7 @@ rule DAR:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DAR.py'
+        'scripts/atac_DAR.py'"""
    
 rule atac_coaccessibilty:
     input:
@@ -809,7 +804,7 @@ rule atac_coaccessibilty_cell_disease:
     resources:
         runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
-        'scripts/circe_by_celltype.py'"""
+        'scripts/circe_by_celltype.py'
 
 rule leiden_DGE:
     input:
@@ -835,7 +830,7 @@ rule leiden_DGE:
     script:
         'scripts/rna_DGE.py'
 
-"""rule leiden_disease_vs_disease_DGE:
+rule leiden_disease_vs_disease_DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
@@ -882,7 +877,7 @@ rule DAR_disease_vs_disease_leiden:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DAR.py'"""
+        'scripts/atac_DAR.py'
 
 rule DAR_leiden:
     input:
