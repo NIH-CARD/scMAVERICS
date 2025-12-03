@@ -14,7 +14,7 @@ diseaes_adata = adata[adata.obs[snakemake.params.disease_param].isin([snakemake.
 # Add one-hot column for disease comparison, sort the AnnData object
 diseaes_adata.obs['disease'] = pd.Categorical(
     diseaes_adata.obs[snakemake.params.disease_param], 
-    categories=[snakemake.params.control, snakemake.params.disease], 
+    categories=[snakemake.params.disease, snakemake.params.control], 
     ordered=True)
 indices = diseaes_adata.obs.sort_values(['disease']).index
 diseaes_adata = diseaes_adata[indices,:].copy()
@@ -32,7 +32,7 @@ res = gp.gsea(
     permutation_num=1000,
     permutation_type='phenotype',
     outdir=None,
-    method='s2n', # signal_to_noise
+    method='log2_ratio_of_classes', # signal_to_noise
     threads= snakemake.threads # Speed up enrichment analysis
     )
 
