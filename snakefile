@@ -46,7 +46,8 @@ envs = {
     'scenicplus': 'envs/scenicplus.sif',
     'decoupler': 'envs/decoupler.sif',
     'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif'
+    'atac_fragment': 'envs/atac_fragment.sif',
+    'great_gsea': 'envs/great_gsea.sif'
     }
 
 rule all:
@@ -56,7 +57,16 @@ rule all:
             cell_type = cell_types,
             disease = diseases
         ),
-
+        cell_disease_GSEA =  expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GSEA_genes.csv',
+            cell_type = cell_types,
+            disease = diseases
+        ),
+        cell_disease_GREAT = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
+            cell_type = cell_types,
+            disease = diseases
+        )
 """
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
@@ -674,7 +684,7 @@ rule atac_coaccessibilty:
     threads:
         8
     resources:
-        runtime=2880, mem_mb=300000
+        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
 
@@ -948,3 +958,38 @@ rule DAR_CCAN_modules:
         runtime=240, disk_mb=300000, mem_mb=200000
     script:
         'scripts/atac_DAR_CCANs.py'
+
+rule disease_gsea:
+    input:
+        adata_path =  work_dir+'/data/celltypes/{cell_type}/rna.h5ad',
+        ontologies = work_dir+'/input/ontologies.csv'
+    output:
+        cell_disease_GSEA =  work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GSEA_genes.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-3]
+    singularity:
+        envs['great_gsea']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/rna_GSEA.py'
+
+rule disease_great:
+    input:
+        DAR_path =  work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        tss_file =  work_dir+'/input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'/input/chr_size.bed',
+        annotation_file =  work_dir+'/input/ontologies.csv',
+    output:
+        cell_disease_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_DAR_peaks.bed',
+        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv'
+    singularity:
+        envs['great_gsea']
+    resources:
+        runtime=960
+    script:
+        'scripts/atac_GREAT.py'
