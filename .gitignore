@@ -38,7 +38,7 @@ input/*.pfm
 input/*.bed
 input/*.meme
 input/*.jaspar
-BINDectect
+BINDectect_output
 
 # No need to show my mistakes (logs) to the world
 logs
