@@ -52,6 +52,11 @@ envs = {
 
 rule all:
     input:
+        celltype_normalized_bigwig = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw',
+            cell_type = cell_types,
+            disease = ['PD', 'DLB', 'control']
+        ),
         output_DAR_CCAN_data = expand(
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
             cell_type = cell_types,
@@ -66,7 +71,8 @@ rule all:
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
             cell_type = cell_types,
             disease = diseases
-        )
+        ),
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
 """
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
@@ -442,7 +448,7 @@ rule DGE:
         'scripts/rna_DGE.py'
 
 
-"""rule cistopic_pseudobulk:
+rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
@@ -467,7 +473,7 @@ rule DGE:
     resources:
         runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/fragment_pseudobulk.py'"""
+        'scripts/fragment_pseudobulk.py'
 
 rule cistopic_call_peaks:
     input:
@@ -611,7 +617,7 @@ rule annotate_bed:
     shell:
         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
-"""rule export_atac_cell:
+rule export_atac_cell:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
@@ -638,7 +644,7 @@ rule annotate_bed:
     resources:
         runtime=2880, mem_mb=400000, slurm_partition='largemem'
     script:
-        'scripts/atac_by_celltype.py'"""
+        'scripts/atac_by_celltype.py'
 
 rule export_celltypes:
     input:
@@ -650,7 +656,7 @@ rule export_celltypes:
     script:
         'scripts/export_celltype.py'
 
-"""rule DAR:
+rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
@@ -669,7 +675,7 @@ rule export_celltypes:
     resources:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
-        'scripts/atac_DAR.py'"""
+        'scripts/atac_DAR.py'
    
 rule atac_coaccessibilty:
     input:
@@ -684,7 +690,7 @@ rule atac_coaccessibilty:
     threads:
         8
     resources:
-        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
+        runtime=2880, mem_mb=1500000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
 
@@ -752,6 +758,7 @@ rule create_bigwig_cell_disease:
 rule celltype_bed_cell_disease:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        blacklist = '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
@@ -990,6 +997,6 @@ rule disease_great:
     singularity:
         envs['great_gsea']
     resources:
-        runtime=960
+        runtime=1440
     script:
         'scripts/atac_GREAT.py'
