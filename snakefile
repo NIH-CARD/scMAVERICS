@@ -600,6 +600,7 @@ rule create_bigwig:
 rule celltype_bed:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
@@ -758,7 +759,7 @@ rule create_bigwig_cell_disease:
 rule celltype_bed_cell_disease:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
-        blacklist = '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
+        blacklist = work_dir + '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:

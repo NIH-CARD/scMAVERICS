@@ -5,7 +5,7 @@ import pyranges as pr
 peak_file = pd.read_csv(snakemake.input.xls, delimiter='\t', skiprows=21)
 
 # Load in blacklist
-black_list = pr.read_bed(snakmake.input.blacklist)
+black_list = pr.read_bed(snakemake.input.blacklist)
 
 # Convert to bed file
 peak_pr = pr.PyRanges(
