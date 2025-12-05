@@ -52,10 +52,9 @@ envs = {
 
 rule all:
     input:
-        celltype_normalized_bigwig = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw',
-            cell_type = cell_types,
-            disease = ['PD', 'DLB', 'control']
+        circe_network = expand(
+            work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
+            cell_type = cell_types
         ),
         output_DAR_CCAN_data = expand(
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
@@ -72,7 +71,7 @@ rule all:
             cell_type = cell_types,
             disease = diseases
         ),
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
+        
 """
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
@@ -600,7 +599,7 @@ rule create_bigwig:
 rule celltype_bed:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-        blacklist = work_dir + '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
