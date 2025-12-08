@@ -17,9 +17,6 @@ disease_name = snakemake.params.disease
 control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
-# Subset to cell type
-atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
-
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,

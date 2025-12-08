@@ -666,6 +666,8 @@ rule DAR:
     params:
         disease_param = disease_param,
         control = control,
+        separating_cluster = 'cell_type',
+        design_factors = design_covariates,
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-3]
     singularity:
@@ -1000,3 +1002,5 @@ rule disease_great:
         runtime=1440
     script:
         'scripts/atac_GREAT.py'
+
+rule
