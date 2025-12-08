@@ -1050,3 +1050,18 @@ rule celltype_disease_score_bigwig:
         runtime=960, mem_mb=300000
     shell:
         'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.footprinted_bigwig} --cores {threads}'
+
+rule control_comparison_score_bigwig:
+    input:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_corrected.bw'
+        regions = work_dir+'/data/consensus_regions.bed'
+    output:
+        control_footprint_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw'
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.control_footprint_bigwig} --cores {threads}'
