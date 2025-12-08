@@ -1025,7 +1025,7 @@ rule celltype_disease_ATACorrect:
     output:
         corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw'
     params:
-        ATACorrect_outdir = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/',
+        ATACorrect_outdir = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect',
         prefix = '{cell_type}_{disease}'
     singularity:
         envs['atac_fragment']
@@ -1035,3 +1035,18 @@ rule celltype_disease_ATACorrect:
         runtime=960, mem_mb=300000
     shell:
         'TOBIAS ATACorrect --bam {input.bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
+
+rule celltype_disease_score_bigwig:
+    input:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
+        regions = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+    output:
+        footprinted_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{diease}_footprints.bw'
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.footprinted_bigwig} --cores {threads}'
