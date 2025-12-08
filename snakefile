@@ -48,7 +48,8 @@ envs = {
     'decoupler': 'envs/decoupler.sif',
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
-    'great_gsea': 'envs/great_gsea.sif'
+    'great_gsea': 'envs/great_gsea.sif',
+    'tobias': 'envs/tobias_env.sif'
     }
 
 rule all:
@@ -1027,7 +1028,7 @@ rule celltype_disease_ATACorrect:
         ATACorrect_outdir = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect',
         prefix = '{cell_type}_{disease}'
     singularity:
-        envs['atac_fragment']
+        envs['tobias']
     threads:
         64
     resources:
@@ -1042,7 +1043,7 @@ rule celltype_disease_score_bigwig:
     output:
         footprinted_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
     singularity:
-        envs['atac_fragment']
+        envs['tobias']
     threads:
         64
     resources:
@@ -1057,7 +1058,7 @@ rule control_comparison_score_bigwig:
     output:
         control_footprint_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw'
     singularity:
-        envs['atac_fragment']
+        envs['tobias']
     threads:
         64
     resources:
