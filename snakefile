@@ -1016,4 +1016,22 @@ rule celltype_disease_bed2bam:
     shell:
         'bedToBam -i {input.bed} -g {input.ref_genome} > {output.bam}'
 
-
+rule celltype_disease_ATACorrect:
+    input:
+        bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bam',
+        blacklist = work_dir + '/input/hg38-blacklist.bed',
+        cell_type_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+        ref_genome = reference_genome
+    output:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw'
+    params:
+        ATACorrect_outdir = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/',
+        prefix = '{cell_type}_{disease}'
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS ATACorrect --bam {input.bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
