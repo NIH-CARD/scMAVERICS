@@ -490,10 +490,8 @@ rule consensus_peaks:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     singularity:
         envs['scenicplus']
-    threads:
-        32
     resources:
-        runtime=240, mem_mb=100000, disk_mb=500000
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         'scripts/MACS_consensus.py'
     
@@ -1003,7 +1001,7 @@ rule celltype_disease_bed2bam:
     singularity:
         envs['atac_fragment']
     resources:
-        runtime=2880, mem_mb=300000
+        runtime=480, mem_mb=100000
     shell:
         'bedToBam -i {input.bed} -g {input.ref_genome_length} > {output.bam}'
 
