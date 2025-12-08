@@ -52,25 +52,15 @@ envs = {
 
 rule all:
     input:
-        circe_network = expand(
-            work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
+        footprinted_bigwig = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw',
+            cell_type = cell_types,
+            disease = ['PD', 'DLB', 'control']
+        ),
+        control_footprint_bigwig = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
             cell_type = cell_types
-        ),
-        output_DAR_CCAN_data = expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
-            cell_type = cell_types,
-            disease = diseases
-        ),
-        cell_disease_GSEA =  expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GSEA_genes.csv',
-            cell_type = cell_types,
-            disease = diseases
-        ),
-        cell_disease_GREAT = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
-            cell_type = cell_types,
-            disease = diseases
-        ),
+        )
         
 """
 output_DGE_data = expand(
@@ -1020,7 +1010,7 @@ rule celltype_disease_ATACorrect:
     input:
         bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bam',
         blacklist = work_dir + '/input/hg38-blacklist.bed',
-        cell_type_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+        cell_type_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
         ref_genome = reference_genome
     output:
         corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw'
@@ -1041,7 +1031,7 @@ rule celltype_disease_score_bigwig:
         corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
         regions = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
     output:
-        footprinted_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{diease}_footprints.bw'
+        footprinted_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
     singularity:
         envs['atac_fragment']
     threads:
@@ -1053,7 +1043,7 @@ rule celltype_disease_score_bigwig:
 
 rule control_comparison_score_bigwig:
     input:
-        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_corrected.bw'
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_corrected.bw',
         regions = work_dir+'/data/consensus_regions.bed'
     output:
         control_footprint_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw'
