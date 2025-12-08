@@ -61,6 +61,11 @@ rule all:
         control_footprint_bigwig = expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
             cell_type = cell_types
+        ),
+        output_DAR_CCAN_data = expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
+            cell_type = cell_types,
+            disease = ['PD', 'DLB']
         )
         
 """
@@ -638,6 +643,11 @@ rule export_atac_cell:
 rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    output:
+        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad',
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
+    params:
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
         envs['singlecell']
     resources:
