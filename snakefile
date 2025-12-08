@@ -1003,4 +1003,17 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
-rule
+rule celltype_disease_bed2bam:
+    input:
+        bed = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
+        ref_genome = reference_genome
+    output:
+        bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bam'
+    singularity:
+        envs['atac_fragment']
+    resources:
+        runtime=2880, mem_mb=300000
+    shell:
+        'bedToBam -i {input.bed} -g {input.ref_genome} > {output.bam}'
+
+
