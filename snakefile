@@ -24,6 +24,7 @@ diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, u
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -996,7 +997,7 @@ rule disease_great:
 rule celltype_disease_bed2bam:
     input:
         bed = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
-        ref_genome = reference_genome
+        ref_genome_length = genome_length
     output:
         bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bam'
     singularity:
@@ -1004,7 +1005,7 @@ rule celltype_disease_bed2bam:
     resources:
         runtime=2880, mem_mb=300000
     shell:
-        'bedToBam -i {input.bed} -g {input.ref_genome} > {output.bam}'
+        'bedToBam -i {input.bed} -g {input.ref_genome_length} > {output.bam}'
 
 rule celltype_disease_ATACorrect:
     input:
