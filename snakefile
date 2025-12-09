@@ -49,25 +49,12 @@ envs = {
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
-    'tobias': 'envs/tobias_env.sif'
+    'tobias': 'envs/tobias.sif'
     }
 
 rule all:
     input:
-        footprinted_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw',
-            cell_type = cell_types,
-            disease = ['PD', 'DLB', 'control']
-        ),
-        control_footprint_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
-            cell_type = cell_types
-        ),
-        output_DAR_CCAN_data = expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv',
-            cell_type = cell_types,
-            disease = ['PD', 'DLB']
-        )
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
         
 """
 output_DGE_data = expand(
@@ -641,7 +628,7 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
-rule export_celltypes:
+"""rule export_celltypes:
     input:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
@@ -654,7 +641,7 @@ rule export_celltypes:
     resources:
         runtime=240, mem_mb=300000
     script:
-        'scripts/export_celltype.py'
+        'scripts/export_celltype.py'"""
 
 rule DAR:
     input:
@@ -1003,18 +990,25 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
-rule celltype_disease_bed2bam:
+rule barcode_merge:
     input:
-        bed = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
-        ref_genome_length = genome_length
+        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
+        metadata_table = metadata_table
     output:
-        bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bam'
-    singularity:
-        envs['atac_fragment']
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    params:
+        disease_param = disease_param,
+        sample_key = sample_key
     resources:
-        runtime=480, mem_mb=100000
-    shell:
-        'bedToBam -i {input.bed} -g {input.ref_genome_length} > {output.bam}'
+        slurm_partition='quick' 
+    run:
+        metadata_df = pd.read_csv(input.metadata_table)
+        sample_disease = dict(zip(metadata_df[params.sample_key], metadata_df[params.disease_param]))
+        cell_barcodes = pd.read_csv(input.cell_annotate)
+        cell_barcodes['sample'] = ['_'.join(x.split('_')[1:]) for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes['disease'] = [sample_disease[x] for x in cell_barcodes['sample']]
+        cell_barcodes['barcode'] = [x.split('_')[0] for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes.to_csv(output.annotate_metadata_table, index=False)
 
 rule celltype_disease_ATACorrect:
     input:
@@ -1030,7 +1024,7 @@ rule celltype_disease_ATACorrect:
     singularity:
         envs['tobias']
     threads:
-        64
+        16
     resources:
         runtime=960, mem_mb=300000
     shell:
