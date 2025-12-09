@@ -58,7 +58,7 @@ rule all:
             data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.bam",
             batch = '0',
             sample = '831',
-            cell_type = set(cell_types)
+            cell_type = cell_types
             )
 """sample_filter_bam = expand(
     expand(
@@ -1033,7 +1033,7 @@ rule barcode_filter:
     resources:
         slurm_partition='quick'
     shell:
-        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {sample_key} {output.cell_disease_barcodes}"
+        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {output.cell_disease_barcodes}"
 
 rule celltype_disease_sample_filter_bam:
     input:

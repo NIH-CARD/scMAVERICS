@@ -8,14 +8,16 @@ cell_barcodes = pd.read_csv(df_path)
 # Define filtering parameters
 cell_type = sys.argv[2]
 sample = sys.argv[3]
-sample_param = sys.argv[4]
-
+print(cell_barcodes[
+    (cell_barcodes['cell_type'] == cell_type) & 
+    (cell_barcodes['sample'] == sample)].shape)
 # Where to save the output
-output_path = sys.argv[5]
+output_path = sys.argv[4]
 
 barcodes = cell_barcodes[
     (cell_barcodes['cell_type'] == cell_type) & 
-    (cell_barcodes['sample']) == sample]['barcode'].to_list()
+    (cell_barcodes['sample'] == sample)]['barcode'].to_list()
+print(barcodes)
 
 file = open(output_path, 'w')
 for x in ['CB:Z:' + x + '\n' for x in barcodes]:
