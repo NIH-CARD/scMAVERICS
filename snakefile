@@ -54,8 +54,23 @@ envs = {
 
 rule all:
     input:
-        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
-        
+        sample_filter_bam = expand(
+            data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.bam",
+            batch = '0',
+            sample = '831',
+            cell_type = set(cell_types)
+            )
+"""sample_filter_bam = expand(
+    expand(
+        data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{{cell_type}}_{{disease}}.bam", 
+        zip, 
+        batch=batches, 
+        sample=samples
+        ),
+    cell_type = set(cell_types),
+    disease = ['control', 'PD', 'DLB']
+    )"""
+
 """
 output_DGE_data = expand(
     work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
@@ -1009,6 +1024,38 @@ rule barcode_merge:
         cell_barcodes['disease'] = [sample_disease[x] for x in cell_barcodes['sample']]
         cell_barcodes['barcode'] = [x.split('_')[0] for x in cell_barcodes['atlas_identifier']]
         cell_barcodes.to_csv(output.annotate_metadata_table, index=False)
+
+rule barcode_filter:
+    input:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    output:
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/{sample}_{cell_type}_barcodes.txt'
+    resources:
+        slurm_partition='quick'
+    shell:
+        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {sample_key} {output.cell_disease_barcodes}"
+
+rule celltype_disease_sample_filter_bam:
+    input:
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/{sample}_{cell_type}_barcodes.txt',
+        input_bam = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_possorted_bam.bam'
+    output:
+        sample_filter_bam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.bam",
+        output_header = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_header",
+        output_body = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_body.sam",
+        output_sam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.sam"
+    singularity:
+        envs['atac_fragment']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        "samtools view -H {input.input_bam} -@ 16 > {output.output_header} \n"
+        "samtools view {input.input_bam} -@ 16 | LC_ALL=C grep -F -f {input.cell_disease_barcodes} > {output.output_body} \n"
+        "cat {output.output_header} {output.output_body} > {output.output_sam} \n"
+        "samtools view -b {output.output_sam} -@ 16 > {output.sample_filter_bam} \n"
+        "rm {output.output_sam} {output.output_header} {output.output_body}"
 
 rule celltype_disease_ATACorrect:
     input:
