@@ -58,7 +58,23 @@ rule all:
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
             cell_type = ['DaN'],
             disease = ['control']
-        )
+        ),
+        corrected_bigwig = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
+            cell_type = ['DaN'],
+            disease = ['control']
+        ),
+        footprinted_bigwig = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
+            cell_type = ['DaN'],
+            disease = ['control']
+        ),
+"""        cell_disease_GREAT = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
+            cell_type = cell_types,
+            disease = diseases
+        )"""
+
 
 # This needs to be forced to run once
 rule cellbender:
@@ -977,7 +993,7 @@ rule disease_great:
     singularity:
         envs['great_gsea']
     resources:
-        runtime=1440
+        runtime=2880
     script:
         'scripts/atac_GREAT.py'
 
@@ -1064,9 +1080,11 @@ rule pseudobulk_bams:
         envs['atac_fragment']
     threads:
         16
+    resources:
+        runtime=960, mem_mb=300000
     shell:
-        "cat {input.sample_filter_bam} > {output.presorted_pseudobulk_bam} \n"
-        "samtools sort {output.presorted_pseudobulk_bam} -@ 16 > {output.sorted_pseudobulk_bam}"
+        "samtools cat {input.sample_filter_bam} -o {output.presorted_pseudobulk_bam} \n"
+        "samtools sort {output.presorted_pseudobulk_bam} -@ 16 -o {output.sorted_pseudobulk_bam}"
 
 rule celltype_disease_ATACorrect:
     input:
@@ -1086,7 +1104,7 @@ rule celltype_disease_ATACorrect:
     resources:
         runtime=960, mem_mb=300000
     shell:
-        'TOBIAS ATACorrect --bam {input.bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
+        'TOBIAS ATACorrect --bam {input.sorted_pseudobulk_bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
 
 rule celltype_disease_score_bigwig:
     input:
