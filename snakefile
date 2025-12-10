@@ -56,24 +56,24 @@ rule all:
     input:
         sorted_pseudobulk_bam = expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
-            cell_type = ['DaN'],
-            disease = ['control']
-        ),
-        corrected_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
-            cell_type = ['DaN'],
-            disease = ['control']
+            cell_type = cell_types,
+            disease = diseases
         ),
         footprinted_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
-            cell_type = ['DaN'],
-            disease = ['control']
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw',
+            cell_type = cell_types,
+            disease = diseases
         ),
-"""        cell_disease_GREAT = expand(
+        control_footprint_bigwig = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
+            cell_type = cell_types,
+            disease = diseases
+        )
+        cell_disease_GREAT = expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
             cell_type = cell_types,
             disease = diseases
-        )"""
+        )
 
 
 # This needs to be forced to run once
