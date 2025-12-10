@@ -54,22 +54,12 @@ envs = {
 
 rule all:
     input:
-        sample_filter_bam = expand(
-            data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.bam",
-            batch = '0',
-            sample = '831',
-            cell_type = cell_types
-            )
-"""sample_filter_bam = expand(
-    expand(
-        data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{{cell_type}}_{{disease}}.bam", 
-        zip, 
-        batch=batches, 
-        sample=samples
-        ),
-    cell_type = set(cell_types),
-    disease = ['control', 'PD', 'DLB']
-    )"""
+        sorted_pseudobulk_bam = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
+            cell_type = ['DaN'],
+            disease = ['control']
+        )
+
 
 """
 output_DGE_data = expand(
@@ -82,7 +72,95 @@ output_leiden_DAR_data = expand(
     cell_type = leiden_clusters,
     disease = diseases
 ),"""
-        
+
+rule barcode_merge:
+    input:
+        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
+        metadata_table = metadata_table
+    output:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    params:
+        disease_param = disease_param,
+        sample_key = sample_key
+    resources:
+        slurm_partition='quick' 
+    run:
+        import pandas as pd
+        metadata_df = pd.read_csv(input.metadata_table)
+        sample_disease = dict(zip(metadata_df[params.sample_key], metadata_df[params.disease_param]))
+        cell_barcodes = pd.read_csv(input.cell_annotate)
+        cell_barcodes['sample'] = ['_'.join(x.split('_')[1:]) for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes['disease'] = [sample_disease[x] for x in cell_barcodes['sample']]
+        cell_barcodes['barcode'] = [x.split('_')[0] for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes.to_csv(output.annotate_metadata_table, index=False)
+
+rule filter_celltype_condition_samples:
+    input:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    output:
+        batch_sample_celltype_disease_df = work_dir+'/data/batch_sample_celltype_disease.csv'
+    params:
+        seq_batch_key = seq_batch_key
+    run:
+        import pandas as pd
+        annotate_metadata_table = pd.read_csv(input.annotate_metadata_table)
+        combindation_df = annotate_metadata_table.groupby([params.seq_batch_key, 'sample', 'cell_type', 'disease']).count().reset_index()
+        bscd_df = combindation_df[combindation_df['barcode'] != 0][[params.seq_batch_key, 'sample', 'cell_type', 'disease']]
+        bscd_df.to_csv(output.batch_sample_celltype_disease_df, index=False)
+
+rule barcode_filter:
+    input:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    output:
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt'
+    resources:
+        slurm_partition='quick'
+    shell:
+        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {output.cell_disease_barcodes}"
+
+def filter_celltype_condition_samples_seq(wildcards):
+    df = pd.read_csv(work_dir+'/data/barcode_cell_annotation.csv')
+    df = df[(df['cell_type'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)]
+    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'cell_type'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
+
+rule celltype_sample_filter_bam:
+    input:
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt',
+        input_bam = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_possorted_bam.bam'
+    output:
+        sample_filter_bam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.bam",
+        output_header = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}_header"),
+        output_body = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}_body.sam"),
+        output_sam = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.sam")
+    singularity:
+        envs['atac_fragment']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        "samtools view -H {input.input_bam} -@ 16 > {output.output_header} \n"
+        "samtools view {input.input_bam} -@ 16 | LC_ALL=C grep -F -f {input.cell_disease_barcodes} > {output.output_body} \n"
+        "cat {output.output_header} {output.output_body} > {output.output_sam} \n"
+        "samtools view -b {output.output_sam} -@ 16 > {output.sample_filter_bam}"
+
+rule pseudobulk_bams:
+    input:
+        sample_filter_bam = filter_celltype_condition_samples_seq
+    output:
+        sorted_pseudobulk_bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam'
+    params:
+        batch_sample_celltype_disease_df = work_dir+'/data/batch_sample_celltype_disease.csv'
+    singularity:
+        envs['atac_fragment']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        "cat {input.sample_filter_bam} > {work_dir}/data/celltypes/{wildcards.cell_type}/{wildcards.cell_type}_{wildcards.disease}_presort.bam \n"
+        "samtools sort {work_dir}/data/celltypes/{wildcards.cell_type}/{wildcards.cell_type}_{wildcards.disease}_presort.bam -@ 16 > {output.sorted_pseudobulk_bam}"
+
 
 # This needs to be forced to run once
 rule cellbender:
@@ -1005,57 +1083,6 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
-rule barcode_merge:
-    input:
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
-        metadata_table = metadata_table
-    output:
-        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
-    params:
-        disease_param = disease_param,
-        sample_key = sample_key
-    resources:
-        slurm_partition='quick' 
-    run:
-        metadata_df = pd.read_csv(input.metadata_table)
-        sample_disease = dict(zip(metadata_df[params.sample_key], metadata_df[params.disease_param]))
-        cell_barcodes = pd.read_csv(input.cell_annotate)
-        cell_barcodes['sample'] = ['_'.join(x.split('_')[1:]) for x in cell_barcodes['atlas_identifier']]
-        cell_barcodes['disease'] = [sample_disease[x] for x in cell_barcodes['sample']]
-        cell_barcodes['barcode'] = [x.split('_')[0] for x in cell_barcodes['atlas_identifier']]
-        cell_barcodes.to_csv(output.annotate_metadata_table, index=False)
-
-rule barcode_filter:
-    input:
-        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
-    output:
-        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/{sample}_{cell_type}_barcodes.txt'
-    resources:
-        slurm_partition='quick'
-    shell:
-        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {output.cell_disease_barcodes}"
-
-rule celltype_disease_sample_filter_bam:
-    input:
-        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/{sample}_{cell_type}_barcodes.txt',
-        input_bam = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_possorted_bam.bam'
-    output:
-        sample_filter_bam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.bam",
-        output_header = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_header",
-        output_body = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_body.sam",
-        output_sam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}.sam"
-    singularity:
-        envs['atac_fragment']
-    threads:
-        16
-    resources:
-        slurm_partition='quick'
-    shell:
-        "samtools view -H {input.input_bam} -@ 16 > {output.output_header} \n"
-        "samtools view {input.input_bam} -@ 16 | LC_ALL=C grep -F -f {input.cell_disease_barcodes} > {output.output_body} \n"
-        "cat {output.output_header} {output.output_body} > {output.output_sam} \n"
-        "samtools view -b {output.output_sam} -@ 16 > {output.sample_filter_bam} \n"
-        "rm {output.output_sam} {output.output_header} {output.output_body}"
 
 rule celltype_disease_ATACorrect:
     input:
