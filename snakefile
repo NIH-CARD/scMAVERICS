@@ -55,16 +55,21 @@ envs = {
 rule all:
     input:
         expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
             cell_type = cell_types,
             control = control,
             disease = diseases
         ),
         expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
             cell_type = cell_types,
             control = ['PD'],
             disease = ['DLB']
+        ),
+        expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_BINDetect/bindetect_results.txt',
+            cell_type = cell_types,
+            control = 'control'
         ),
         expand(
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
@@ -77,10 +82,6 @@ rule all:
             cell_type = cell_types,
             control = ['PD'],
             disease = ['DLB']
-        ),
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-            cell_type = cell_types,
         ),
         expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
@@ -691,7 +692,7 @@ rule atac_coaccessibilty:
     threads:
         16
     resources:
-        runtime=180, mem_mb=200000, slurm_partition='quick'
+        runtime=960, mem_mb=200000
     script:
         'scripts/circe_by_celltype.py'
 
@@ -1029,7 +1030,7 @@ def filter_celltype_condition_samples_seq(wildcards):
 
 rule celltype_sample_filter_bam:
     input:
-        cell_disease_barcodes = temp(work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt'),
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt',
         input_bam = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_possorted_bam.bam'
     output:
         sample_filter_bam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.bam",
@@ -1115,3 +1116,42 @@ rule control_comparison_score_bigwig:
         runtime=960, mem_mb=300000
     shell:
         'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.control_footprint_bigwig} --cores {threads}'
+
+rule disease_footprinting:
+    input:
+        motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
+        control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_ATACorrect/{cell_type}_{control}_corrected.bw',
+        disease_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
+        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        genome=reference_genome
+    output:
+        control_disease_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt'
+    params:
+        outdir=work_dir+'/data/{cell_type}/{cell_type}_{disease}_{control}_BINDetect'
+    singularity:
+        envs['tobias']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {output.outdir} --cores {threads}'
+
+rule control_footprinting:
+    input:
+        motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
+        control_bw='/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_{control}_footprints.bw',
+        peaks='/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        genome=reference_genome
+    output:
+        control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_BINDetect/bindetect_results.txt'
+    params:
+        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_BINDetect'
+    singularity:
+        envs['tobias']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        'TOBIAS BINDetect --motifs {motifs} --signals {control_bw}  --genome {genome} --peaks {peaks}  --outdir {outdir} --cores {threads}'
