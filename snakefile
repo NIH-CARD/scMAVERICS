@@ -674,7 +674,7 @@ rule DAR:
     threads:
         16
     resources:
-        runtime=480, disk_mb=200000, mem_mb=200000
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/atac_DAR.py'
    
@@ -691,7 +691,7 @@ rule atac_coaccessibilty:
     threads:
         16
     resources:
-        runtime=2880, mem_mb=1500000, slurm_partition='largemem'
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/circe_by_celltype.py'
 
