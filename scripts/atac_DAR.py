@@ -55,7 +55,7 @@ pdata_genes = dc.filter_by_expr(
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
-inference = DefaultInference(n_cpus=64)
+inference = DefaultInference(n_cpus=snakemake.threads)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(

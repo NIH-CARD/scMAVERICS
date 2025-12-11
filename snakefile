@@ -672,9 +672,9 @@ rule DAR:
     singularity:
         envs['decoupler']
     threads:
-        64
+        16
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=480, disk_mb=200000, mem_mb=200000
     script:
         'scripts/atac_DAR.py'
    
@@ -689,7 +689,7 @@ rule atac_coaccessibilty:
     singularity:
         envs['circe']
     threads:
-        8
+        16
     resources:
         runtime=2880, mem_mb=1500000, slurm_partition='largemem'
     script:
