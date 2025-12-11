@@ -61,15 +61,9 @@ rule all:
             disease = diseases
         ),
         expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt',
             cell_type = cell_types,
-            control = ['PD'],
-            disease = ['DLB']
-        ),
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_BINDetect/bindetect_results.txt',
-            cell_type = cell_types,
-            control = 'control'
+            control = ['control']
         ),
         expand(
             work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
@@ -95,7 +89,6 @@ rule all:
             control = ['PD'],
             disease = ['DLB']
         )
-
 
 # This needs to be forced to run once
 rule cellbender:
@@ -1140,11 +1133,11 @@ rule disease_footprinting:
 rule control_footprinting:
     input:
         motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
-        control_bw='/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_{control}_footprints.bw',
-        peaks='/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
+        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
         genome=reference_genome
     output:
-        control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_BINDetect/bindetect_results.txt'
+        control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt'
     params:
         outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_BINDetect'
     singularity:
