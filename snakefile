@@ -79,6 +79,10 @@ rule all:
             disease = ['DLB']
         ),
         expand(
+            work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+            cell_type = cell_types,
+        ),
+        expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
             cell_type = cell_types,
             control = control,
@@ -805,10 +809,10 @@ rule export_atac_cell_disease:
 
 rule atac_coaccessibilty_cell_disease:
     input:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
-        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_circe_network.csv'
     params:
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
