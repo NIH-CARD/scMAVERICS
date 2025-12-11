@@ -17,6 +17,9 @@ disease_name = snakemake.params.disease
 control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
+# Subset to cell type
+atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
+
 # Get pseudo-bulk profile
 pdata = dc.get_pseudobulk(
     atac,
@@ -77,6 +80,7 @@ stat_res.summary()
 # Extract results
 deseq2_results_df = stat_res.results_df
 deseq2_results_df['-log10_padj'] = -np.log10(deseq2_results_df['padj'])
+deseq2_results_df['peak'] = deseq2_results_df.index.to_list()
 deseq2_results_df.to_csv(snakemake.output.output_DAR_data, index=False)
 
 # Plot

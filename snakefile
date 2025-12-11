@@ -54,25 +54,41 @@ envs = {
 
 rule all:
     input:
-        sorted_pseudobulk_bam = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
+        expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
             cell_type = cell_types,
+            control = control,
             disease = diseases
         ),
-        footprinted_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw',
+        expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
             cell_type = cell_types,
+            control = ['PD'],
+            disease = ['DLB']
+        ),
+        expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
+            cell_type = cell_types,
+            control = control,
             disease = diseases
         ),
-        control_footprint_bigwig = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
+        expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
             cell_type = cell_types,
-            disease = diseases
-        )
-        cell_disease_GREAT = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv',
+            control = ['PD'],
+            disease = ['DLB']
+        ),
+        expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
             cell_type = cell_types,
+            control = control,
             disease = diseases
+        ),
+        expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
+            cell_type = cell_types,
+            control = ['PD'],
+            disease = ['DLB']
         )
 
 
@@ -635,35 +651,20 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
-"""rule export_celltypes:
-    input:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-    output:
-        celltype_rna = work_dir+'/data/celltypes/{cell_type}/rna.h5ad',
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
-    params:
-        cell_type = lambda wildcards, output: output[0].split('/')[-2]
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=240, mem_mb=300000
-    script:
-        'scripts/export_celltype.py'"""
-
 rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{control}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{control}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        control = control,
+        control = lambda wildcards, output: output[0].split("_")[-3],
         separating_cluster = 'cell_type',
         design_factors = design_covariates,
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3]
+        cell_type = lambda wildcards, output: output[0].split("_")[-4]
     singularity:
         envs['decoupler']
     threads:
@@ -867,44 +868,19 @@ rule leiden_disease_vs_disease_DGE:
     script:
         'scripts/rna_DGE.py'
 
-
-rule DAR_disease_vs_disease_leiden:
-    input:
-        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
-    output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_PD_vs_{disease}_pseudobulk.csv'
-    params:
-        disease_param = disease_param,
-        control = 'PD',
-        sample_key=sample_key,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = design_covariates,
-        separating_cluster = 'leiden_2'
-    singularity:
-        envs['decoupler']
-    threads:
-        64
-    resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
-    script:
-        'scripts/atac_DAR.py'
-
 rule DAR_leiden:
     input:
         atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{disease}_pseudobulk.csv'
+        output_double_disease_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_{control}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{control}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        control = control,
+        control = lambda wildcards, output: output[0].split("_")[-3],
         sample_key=sample_key,
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
         design_factors = [],
         separating_cluster = 'leiden_2'
     singularity:
@@ -952,9 +928,9 @@ rule differential_motif_enrichment:
 rule DAR_CCAN_modules:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv'
+        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv'
     output:
-        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_CCAN_DAR.csv'
+        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv'
     singularity:
         envs['circe']
     resources:
@@ -983,13 +959,13 @@ rule disease_gsea:
 
 rule disease_great:
     input:
-        DAR_path =  work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        DAR_path =  work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
         tss_file =  work_dir+'/input/tss_from_great.bed',
         chr_sizes_file =  work_dir+'/input/chr_size.bed',
         annotation_file =  work_dir+'/input/ontologies.csv',
     output:
-        cell_disease_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_DAR_peaks.bed',
-        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GREAT_peaks.csv'
+        cell_disease_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_DAR_peaks.bed',
+        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv'
     singularity:
         envs['great_gsea']
     resources:
