@@ -1128,7 +1128,7 @@ rule disease_footprinting:
     resources:
         slurm_partition='quick'
     shell:
-        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {output.outdir} --cores {threads}'
+        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
 
 rule control_footprinting:
     input:
@@ -1147,4 +1147,4 @@ rule control_footprinting:
     resources:
         slurm_partition='quick'
     shell:
-        'TOBIAS BINDetect --motifs {motifs} --signals {control_bw}  --genome {genome} --peaks {peaks}  --outdir {outdir} --cores {threads}'
+        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
