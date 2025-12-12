@@ -685,7 +685,7 @@ rule atac_coaccessibilty:
     threads:
         16
     resources:
-        runtime=960, mem_mb=200000
+        runtime=1440, mem_mb=500000, slurm_partition='quick'
     script:
         'scripts/circe_by_celltype.py'
 
@@ -1120,13 +1120,13 @@ rule disease_footprinting:
     output:
         control_disease_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt'
     params:
-        outdir=work_dir+'/data/{cell_type}/{cell_type}_{disease}_{control}_BINDetect'
+        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect'
     singularity:
         envs['tobias']
     threads:
         16
     resources:
-        slurm_partition='quick'
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
 
@@ -1139,12 +1139,12 @@ rule control_footprinting:
     output:
         control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt'
     params:
-        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_BINDetect'
+        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect'
     singularity:
         envs['tobias']
     threads:
         16
     resources:
-        slurm_partition='quick'
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
