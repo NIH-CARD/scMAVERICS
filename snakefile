@@ -685,7 +685,7 @@ rule atac_coaccessibilty:
     threads:
         16
     resources:
-        runtime=1440, mem_mb=500000, slurm_partition='quick'
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
 
