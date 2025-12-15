@@ -147,7 +147,7 @@ rule plot_qc_rna:
         ribo_figure = work_dir+'/figures/QC_ribo_pct.png',
         gene_counts_figure = work_dir+'/figures/QC_gene_counts.png',
         doublet_figure = work_dir+'/figures/QC_doublet.png',
-        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'
+        genes_by_counts = work_dir+'/figures/QC_genes_by_counts.png'
     singularity:
         envs['singlecell']
     resources:
@@ -229,7 +229,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -276,8 +276,20 @@ rule feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
-        model_history = work_dir+'/model_elbo/rna_model_history.csv'
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=360, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/feature_selection.py'
+
+rule rna_model:
+    input:
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
+    output:
+        hvg_rna_anndata = work_dir+'/atlas/04_modeled_hvg_anndata_rna.h5ad',
+        model_history = work_dir+'/data/model_elbo/rna_model_history.csv'
     params:
         model = work_dir+'/data/models/rna_v2/',
         sample_key = sample_key
@@ -753,7 +765,7 @@ rule create_bigwig_cell_disease:
 rule celltype_bed_cell_disease:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
-        blacklist = work_dir + '/data/CARD_singlecell/SN_atlas/input/hg38-blacklist.bed'
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
@@ -932,7 +944,7 @@ rule DAR_CCAN_modules:
     singularity:
         envs['circe']
     resources:
-        runtime=240, disk_mb=300000, mem_mb=200000
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
     script:
         'scripts/atac_DAR_CCANs.py'
 
