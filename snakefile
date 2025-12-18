@@ -648,3 +648,21 @@ rule atac_coaccessibilty:
         runtime=5760, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
+
+rule motif_enrichment:
+    input:
+        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        ref_genome = reference_genome,
+        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme'
+    output:
+        motif_enrichment = work_dir+'/data/motif_enrichment.csv'
+    params:
+        control = control,
+        cell_type = 'cell_type',
+        disease_param = disease_param
+    singularity:
+        envs['snapatac2']
+    resources:
+        runtime=240, disk_mb=300000, mem_mb=200000
+    script:
+        'scripts/atac_motif_enrichment.py'
