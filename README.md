@@ -28,9 +28,9 @@ Copy this repository to where you will be working with your data. This folder wi
     - A list of conditions to compare to the control, called 'diseases' in the example
 - Cell-typing table with marker genes, in .csv format, see example in `input/example_marker_genes.csv`
 - Directory of the CellRanger output, the data here is the output of `CellRanger`, the raw data required includes;
-    - data_dir/{sample}/raw_feature_bc_matrix.h5
-    - data_dir/{sample}/atac_fragments.tsv.gz
-    - data_dir/{sample}/atac_possorted_bam.bam
+    - `data_dir/{sample}/raw_feature_bc_matrix.h5`
+    - `data_dir/{sample}/atac_fragments.tsv.gz`
+    - `data_dir/{sample}/atac_possorted_bam.bam`
  
 In addition, the `snakefile` requires modifications to fit your project. The top section "Parameter" should be modified for your dataset, include quality control values, where the input metadata and cell/cell gene marker files are stored. Input files should have their values match the parameters section.
 
