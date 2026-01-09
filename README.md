@@ -31,6 +31,7 @@ Copy this repository to where you will be working with your data. This folder wi
     - data_dir/{sample}/raw_feature_bc_matrix.h5
     - data_dir/{sample}/atac_fragments.tsv.gz
     - data_dir/{sample}/atac_possorted_bam.bam
+ 
 In addition, the `snakefile` requires modifications to fit your project. The top section "Parameter" should be modified for your dataset, include quality control values, where the input metadata and cell/cell gene marker files are stored. Input files should have their values match the parameters section.
 
 #### Outputs:
