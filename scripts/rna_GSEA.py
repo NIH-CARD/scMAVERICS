@@ -8,6 +8,8 @@ import gseapy as gp
 # Load in cell type AnnData object
 adata = sc.read_h5ad(snakemake.input.adata_path)
 
+adata = adata[adata.obs[snakemake.params.cell_param] == snakemake.params.cell_type]
+
 # Filter based on condition to test
 diseaes_adata = adata[adata.obs[snakemake.params.disease_param].isin([snakemake.params.control, snakemake.params.disease])]
 
@@ -28,7 +30,7 @@ go_mf = greatpy_go_set_df[['key', 'symbol']].groupby('key')['symbol'].apply(list
 res = gp.gsea(
     data=diseaes_adata.to_df().T, # row -> genes, column-> samples
     gene_sets = go_mf,
-    cls=diseaes_adata.obs.disease,
+    classes=[snakemake.params.disease, snakemake.params.control],
     permutation_num=1000,
     permutation_type='phenotype',
     outdir=None,

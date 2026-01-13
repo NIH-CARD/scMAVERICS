@@ -35,6 +35,19 @@ min_peak_counts = 500 # Minimum number of fragments per cell
 
 """Subcluster values, extracted manually after"""
 leiden_clusters =['0', '6', '1', '5', '24', '26', '20', '13', '28', '32', '27', '34', '15', '11', '30', '7', '21', '36', '4', '19', '25', '37', '8', '17', '18', '9', '14', '38', '35', '3', '33', '31', '16', '39', '41', '42', '2', '23', '43', '44', '45','40']
+subtypes = [
+    'DaN_NTN1', 'ExN_GRIK1', 'InN_RMST', 'ExN_GRIA1', 'PC', 'InN_ORB',
+    'Astro_proto', 'Oligo_RBFOX1', 'Oligo_RBFOX1', 'MG_DIM',
+    'Oligo_RBFOX1', 'OPC_GPC6', 'Oligo_LAMA', 'Oligo_RBFOX1',
+    'OPC_APOD', 'Oligo_RBFOX1', 'Astro_IF', 'DaN_HSP90AA1',
+    'Oligo_RBFOX1', 'Oligo_LAMA', 'Oligo_LAMA', 'EC', 'Oligo_LAMA',
+    'Oligo_LAMA', 'FB', 'Oligo_LAMA', 'Oligo_LAMA', 'Oligo_LAMA',
+    'Oligo_LAMA', 'Oligo_LAMA', 'MG_homeo', 'Oligo_RBFOX1',
+    'Oligo_RBFOX1', 'OPC_TPST1', 'Oligo_LAMA', 'MG_DAM',
+    'Oligo_RBFOX1', 'TC', 'Oligo_LAMA', 'MG_CAM', 'Oligo_RBFOX1',
+    'ExN_RIT2', 'MG_CAM', 'InN_MEF2C', 'Oligo_LAMA', 'Astro_ADGRV1+',
+    'EpC', 'Oligo_RBFOX1', 'OPC_SLC44A1', 'Oligo_LAMA', 'InN_SV2C',
+    'MG_mit', 'Oligo_RBFOX1', 'Oligo_RBFOX1']
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -54,40 +67,17 @@ envs = {
 
 rule all:
     input:
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
-            cell_type = cell_types,
-            control = control,
-            disease = diseases
+        output_double_disease_DAR_data = expand(
+            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{control}_{disease}_DAR.csv',
+            control = 'control',
+            disease = ['PD', 'DLB'],
+            cell_type = leiden_clusters
         ),
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt',
-            cell_type = cell_types,
-            control = ['control']
-        ),
-        expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
-            cell_type = cell_types,
-            control = control,
-            disease = diseases
-        ),
-        expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
-            cell_type = cell_types,
-            control = ['PD'],
-            disease = ['DLB']
-        ),
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
-            cell_type = cell_types,
-            control = control,
-            disease = diseases
-        ),
-        expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv',
-            cell_type = cell_types,
-            control = ['PD'],
-            disease = ['DLB']
+        output_sin_disease_DAR_data = expand(
+            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{control}_{disease}_DAR.csv',
+            control = 'PD',
+            disease = ['DLB'],
+            cell_type = leiden_clusters
         )
 
 # This needs to be forced to run once
@@ -420,6 +410,22 @@ rule gene_linear_regression:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/linear_regression_genes.py'
+
+rule cell_cell_communication:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+    output:
+        cell_cell_communication_data = work_dir+'/data/CCC/cellphonedb_interaction_network.csv'
+    params:
+        control = control,
+        disease_param = disease_param
+    threads:
+        64
+    resources:
+        disk_mb=200000, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/cell_cell_communication.py'
+
 
 rule peak_linear_regression:
     input:
@@ -950,13 +956,36 @@ rule DAR_CCAN_modules:
 
 rule disease_gsea:
     input:
-        adata_path =  work_dir+'/data/celltypes/{cell_type}/rna.h5ad',
+        adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         ontologies = work_dir+'/input/ontologies.csv'
     output:
         cell_disease_GSEA =  work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GSEA_genes.csv'
     params:
         disease_param = disease_param,
         control = control,
+        cell_param = 'cell_type',
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        disease = lambda wildcards, output: output[0].split("_")[-3]
+    singularity:
+        envs['great_gsea']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/rna_GSEA.py'
+
+rule disease_subtype_gsea:
+    input:
+        adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        ontologies = work_dir+'/input/ontologies.csv'
+    output:
+        cell_disease_GSEA =  work_dir+'/data/celltypes/leiden/{cell_type}_{disease}_GSEA_genes.csv'
+    params:
+        disease_param = disease_param,
+        control = control,
+        cell_param = 'subtype',
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
         disease = lambda wildcards, output: output[0].split("_")[-3]
     singularity:
         envs['great_gsea']
