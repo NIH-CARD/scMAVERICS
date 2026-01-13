@@ -1,4 +1,8 @@
 # Code for cell-cell communication
+import liana as li
+import pandas as pd
+import numpy as np
+import scanpy as sc
 
 adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
