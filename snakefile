@@ -21,6 +21,7 @@ samples = pd.read_csv(metadata_table)[sample_key].tolist()
 disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
+disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
@@ -33,21 +34,21 @@ doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
 
-"""Subcluster values, extracted manually after"""
-leiden_clusters =['0', '6', '1', '5', '24', '26', '20', '13', '28', '32', '27', '34', '15', '11', '30', '7', '21', '36', '4', '19', '25', '37', '8', '17', '18', '9', '14', '38', '35', '3', '33', '31', '16', '39', '41', '42', '2', '23', '43', '44', '45','40']
+"""Subcluster values, currated after celltyping"""
 subtypes = [
-    'DaN_NTN1', 'ExN_GRIK1', 'InN_RMST', 'ExN_GRIA1', 'PC', 'InN_ORB',
-    'Astro_proto', 'Oligo_RBFOX1', 'Oligo_RBFOX1', 'MG_DIM',
-    'Oligo_RBFOX1', 'OPC_GPC6', 'Oligo_LAMA', 'Oligo_RBFOX1',
-    'OPC_APOD', 'Oligo_RBFOX1', 'Astro_IF', 'DaN_HSP90AA1',
-    'Oligo_RBFOX1', 'Oligo_LAMA', 'Oligo_LAMA', 'EC', 'Oligo_LAMA',
-    'Oligo_LAMA', 'FB', 'Oligo_LAMA', 'Oligo_LAMA', 'Oligo_LAMA',
-    'Oligo_LAMA', 'Oligo_LAMA', 'MG_homeo', 'Oligo_RBFOX1',
-    'Oligo_RBFOX1', 'OPC_TPST1', 'Oligo_LAMA', 'MG_DAM',
-    'Oligo_RBFOX1', 'TC', 'Oligo_LAMA', 'MG_CAM', 'Oligo_RBFOX1',
-    'ExN_RIT2', 'MG_CAM', 'InN_MEF2C', 'Oligo_LAMA', 'Astro_ADGRV1+',
-    'EpC', 'Oligo_RBFOX1', 'OPC_SLC44A1', 'Oligo_LAMA', 'InN_SV2C',
-    'MG_mit', 'Oligo_RBFOX1', 'Oligo_RBFOX1']
+    'Astro-ADGRV1+', 'Astro-IF', 'Astro-proto',
+    'DaN-HSP90AA1', 'DaN-NTN1',
+    'EC',
+    'EpC',
+    'ExN-GRIA1', 'ExN-GRIK1', 'ExN-RIT2',
+    'FB',
+    'InN-MEF2C', 'InN-ORB', 'InN-RMST', 'InN-SV2C',
+    'MG-CAM','MG-DAM', 'MG-DIM', 'MG-homeo', 'MG-mit',
+    'OPC-APOD', 'OPC-GPC6', 'OPC-SLC44A1', 'OPC-TPST1',
+    'Oligo-LAMA', 'Oligo-RBFOX1',
+    'PC',
+    'TC'
+    ]
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -67,17 +68,33 @@ envs = {
 
 rule all:
     input:
-        output_double_disease_DAR_data = expand(
-            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        subtype_control_vs_disease_DGE_data = expand(
+            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'subtype',
             control = 'control',
             disease = ['PD', 'DLB'],
-            cell_type = leiden_clusters
+            cell_type = subtypes
         ),
-        output_sin_disease_DAR_data = expand(
-            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        subtype_disease_vs_disease_DGE_data = expand(
+            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'subtype',
             control = 'PD',
             disease = ['DLB'],
-            cell_type = leiden_clusters
+            cell_type = subtypes
+        ),
+        celltype_control_vs_disease_DGE_data = expand(
+            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'cell_type',
+            control = 'control',
+            disease = ['PD', 'DLB'],
+            cell_type = cell_types
+        ),
+        celltype_disease_vs_disease_DGE_data = expand(
+            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'cell_type',
+            control = 'PD',
+            disease = ['DLB'],
+            cell_type = cell_types
         )
 
 # This needs to be forced to run once
@@ -415,7 +432,7 @@ rule cell_cell_communication:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
     output:
-        cell_cell_communication_data = work_dir+'/data/CCC/cellphonedb_interaction_network.csv'
+        cell_cell_communication_data = work_dir+'/data/CCC/combined/CCC_celltype_results.csv'
     params:
         control = control,
         disease_param = disease_param
@@ -425,7 +442,6 @@ rule cell_cell_communication:
         disk_mb=200000, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/cell_cell_communication.py'
-
 
 rule peak_linear_regression:
     input:
@@ -449,12 +465,12 @@ rule DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
+        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg',
+        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        disease = lambda wildcards, output: output[0].split("_")[-3],
+        control = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
@@ -472,17 +488,20 @@ rule DGE:
 rule combine_DGE:
     input:
         output_DGE_data = expand(
-            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-            cell_type = cell_types,
-            disease = diseases
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'subtype',
+            control = 'control',
+            disease = ['PD', 'DLB'],
+            cell_type = subtypes
             )
     output:
-        merged_DGE_data = work_dir + '/data/significant_genes/rna_{sep_param}_unfiltered_gene_hits.csv',
+        unfiltered_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_unfiltered_results.csv',
+        merged_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_results.csv'
     singularity:
-        envs['cell_cell_communication']
-    
-        
-    
+        envs['decoupler']
+    script:
+        'scripts/merge_DGE.py'
+
 
 rule differential_cell_cell_communication:
     input:
@@ -497,8 +516,6 @@ rule differential_cell_cell_communication:
     script:
         'scripts/rna_differential_cell_cell_communication.py'
     
-
-
 rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',

@@ -83,23 +83,29 @@ dds = DeseqDataSet(
     inference=inference,
 )
 
-# Compute log-fold changes
-dds.deseq2()
+# Error handling for singular matrixes (they don't vary across co-variates)
+try:
+    # Compute log-fold changes
+    dds.deseq2()
 
-# Extract contrast between control and disease states
-stat_res = DeseqStats(
-    dds,
-    contrast=['comparison', disease_name, control_name],
-    inference=inference,
-)
+    # Extract contrast between control and disease states
+    stat_res = DeseqStats(
+        dds,
+        contrast=['comparison', disease_name, control_name],
+        inference=inference,
+    )
 
-# Compute Wald test
-stat_res.summary()
+    # Compute Wald test
+    stat_res.summary()
 
-# Extract results
-DGE_results_df = stat_res.results_df
-DGE_results_df['-log10_padj'] = -np.log10(DGE_results_df['padj'])
-DGE_results_df.to_csv(snakemake.output.output_DGE_data)
+    # Extract results
+    DGE_results_df = stat_res.results_df
+    DGE_results_df[snakemake.params.separating_cluster] = cell_type
+    DGE_results_df['-log10_padj'] = -np.log10(DGE_results_df['padj'])
+    DGE_results_df.to_csv(snakemake.output.output_DGE_data)
+except np.linalg.LinAlgError as err:
+    # Output nothing if 
+    pd.DataFrame().to_csv(snakemake.output.output_DGE_data)
 
 # Plot 
 dc.plot_volcano_df(
