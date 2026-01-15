@@ -87,20 +87,25 @@ try:
     DGE_results_df[snakemake.params.separating_cluster] = cell_type
     DGE_results_df['-log10_padj'] = -np.log10(DGE_results_df['padj'])
     DGE_results_df.to_csv(snakemake.output.output_DGE_data)
+
+    # Plot 
+    dc.plot_volcano_df(
+        DGE_results_df,
+        x='log2FoldChange',
+        y='padj',
+        top=20,
+        lFCs_thr=1,
+        sign_thr=1e-2,
+        figsize=(4, 4)
+    )
+    plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
+    plt.tight_layout()
+    plt.savefig(snakemake.output.output_figure, dpi=300)
 except np.linalg.LinAlgError as err:
+    print('\n\nSingular matrix! No output\n\n')
     # Output nothing if 
     pd.DataFrame().to_csv(snakemake.output.output_DGE_data)
+    plt.plot()
+    plt.savefig(snakemake.output.output_figure, dpi=300)
 
-# Plot 
-dc.plot_volcano_df(
-    DGE_results_df,
-    x='log2FoldChange',
-    y='padj',
-    top=20,
-    lFCs_thr=1,
-    sign_thr=1e-2,
-    figsize=(4, 4)
-)
-plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
-plt.tight_layout()
-plt.savefig(snakemake.output.output_figure, dpi=300)
+    
