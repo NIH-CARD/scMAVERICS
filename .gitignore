@@ -68,3 +68,4 @@ envs
 figures
 scripts/pygenometracks
 scripts/legacy
+scripts/footprinting
