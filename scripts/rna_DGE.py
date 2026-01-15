@@ -45,22 +45,6 @@ dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
 
-dc.get_metadata_associations(
-    pdata,
-    obs_keys = ['comparison', 'psbulk_n_cells', 'psbulk_counts'],  # Metadata columns to associate to PCs
-    obsm_key='X_pca',  # Where the PCs are stored
-    uns_key='pca_anova',  # Where the results are stored
-    inplace=True,
-)
-
-# CSV pseudobulk
-adata_df = pd.DataFrame(pdata.X)
-sample_cell = pdata.obs[[snakemake.params.sample_key, 'cell_type', disease_param]]
-adata_df.columns = pdata.var_names.to_list()
-adata_df.index = sample_cell.index
-adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
-adata_df.to_csv(snakemake.output.celltype_pseudobulk, index=False)
-
 # Select gene specific profiles
 pdata_genes = dc.filter_by_expr(
     pdata, 

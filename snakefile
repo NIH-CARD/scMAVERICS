@@ -69,28 +69,28 @@ envs = {
 rule all:
     input:
         subtype_control_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'subtype',
             control = 'control',
             disease = ['PD', 'DLB'],
             cell_type = subtypes
         ),
         subtype_disease_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'subtype',
             control = 'PD',
             disease = ['DLB'],
             cell_type = subtypes
         ),
         celltype_control_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'cell_type',
             control = 'control',
             disease = ['PD', 'DLB'],
             cell_type = cell_types
         ),
         celltype_disease_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'cell_type',
             control = 'PD',
             disease = ['DLB'],
@@ -466,8 +466,7 @@ rule DGE:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_pseudobulk.csv'
+        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
     params:
         disease_param = disease_param,
         control = lambda wildcards, output: output[0].split("_")[-3],
@@ -481,7 +480,7 @@ rule DGE:
     threads:
         64
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=180, disk_mb=200000, slurm_partition='quick'
     script:
         'scripts/rna_DGE.py'
 
@@ -725,7 +724,7 @@ rule DAR:
         design_factors = design_covariates,
         control = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4]
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
         envs['decoupler']
@@ -902,12 +901,19 @@ rule motif_enrichment:
 
 rule differential_motif_enrichment:
     input:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
         cell_type_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
         TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
         ref_genome = reference_genome
     output:
-        differential_motif_dataframe = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_differential_motif.csv'
+        differential_motif_dataframe = work_dir+'/data/DMEs/{separating_cluster}/DME_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
+    params:
+        disease_param = disease_param,
+        design_factors = design_covariates,
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
         envs['snapatac2']
     resources:
@@ -918,7 +924,7 @@ rule differential_motif_enrichment:
 rule DAR_CCAN_modules:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv'
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
     output:
         output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv'
     singularity:
@@ -936,7 +942,7 @@ rule disease_gsea:
         cell_disease_GSEA =  work_dir+'/data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
     params:
         disease_param = disease_param,
-        control = disease = lambda wildcards, output: output[0].split("_")[-3],
+        control = lambda wildcards, output: output[0].split("_")[-3],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         disease = lambda wildcards, output: output[0].split("_")[-2]
