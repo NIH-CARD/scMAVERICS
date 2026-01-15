@@ -449,17 +449,17 @@ rule DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+        output_DGE_data = work_dir + '/data/DGEs/cell_type/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
         output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
         celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        control = control,
+        disease = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
         sample_key=sample_key,
         design_factors = design_covariates,
-        separating_cluster = 'cell_type'
     singularity:
         envs['decoupler']
     threads:
@@ -468,6 +468,35 @@ rule DGE:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/rna_DGE.py'
+
+rule combine_DGE:
+    input:
+        output_DGE_data = expand(
+            work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
+            cell_type = cell_types,
+            disease = diseases
+            )
+    output:
+        merged_DGE_data = work_dir + '/data/significant_genes/rna_{sep_param}_unfiltered_gene_hits.csv',
+    singularity:
+        envs['cell_cell_communication']
+    
+        
+    
+
+rule differential_cell_cell_communication:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
+    output:
+        differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
+    params:
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        disease_param = disease_param,
+        sep_param = lambda wildcards, output: output[0].split("_")[-3],
+    script:
+        'scripts/rna_differential_cell_cell_communication.py'
+    
 
 
 rule cistopic_pseudobulk:
