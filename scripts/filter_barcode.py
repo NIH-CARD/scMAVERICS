@@ -9,13 +9,13 @@ cell_barcodes = pd.read_csv(df_path)
 cell_type = sys.argv[2]
 sample = sys.argv[3]
 print(cell_barcodes[
-    (cell_barcodes['cell_type'] == cell_type) & 
+    (cell_barcodes['celltype'] == cell_type) & 
     (cell_barcodes['sample'] == sample)].shape)
 # Where to save the output
 output_path = sys.argv[4]
 
 barcodes = cell_barcodes[
-    (cell_barcodes['cell_type'] == cell_type) & 
+    (cell_barcodes['celltype'] == cell_type) & 
     (cell_barcodes['sample'] == sample)]['barcode'].to_list()
 print(barcodes)
 

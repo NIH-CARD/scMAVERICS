@@ -11,7 +11,7 @@ control_adata = adata[adata.obs[snakemake.params.disease_param] == snakemake.par
 # Run rank_aggregate
 li.mt.cellphonedb(
     control_adata,
-    groupby='cell_type',
+    groupby='celltype',
     #resource=cellphone_resource,
     resource_name='consensus',
     expr_prop=0.1,

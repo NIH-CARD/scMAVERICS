@@ -28,10 +28,10 @@ cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=snakemake
 # Assign metadata
 cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][i] + '_' + cistopic_obj.cell_data['sample_id'][i] for i in range(len(cistopic_obj.cell_data))]
 
-barcode2celltype = cell_data['cell_type'].to_dict()
+barcode2celltype = cell_data['celltype'].to_dict()
 barcode2disease = cell_data[snakemake.params.disease_param].to_dict()
 
-cistopic_obj.cell_data['cell_type'] = [barcode2celltype[x] for x in cistopic_obj.cell_data['atlas_identifier']]
+cistopic_obj.cell_data['celltype'] = [barcode2celltype[x] for x in cistopic_obj.cell_data['atlas_identifier']]
 cistopic_obj.cell_data[snakemake.params.disease_param] = [barcode2disease[x] for x in cistopic_obj.cell_data['atlas_identifier']]
 
 # Export sample
@@ -58,7 +58,7 @@ transfer_params = [
     'cisTopic_nr_frag',
     'sample_id',
     'barcode',
-    'cell_type', 
+    'celltype', 
     snakemake.params.disease_param]
 
 # Convert variable metadata to DataFrame to be transfered 

@@ -10,7 +10,7 @@ adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
 sc.pl.umap(
     adata,
-    color='cell_type',
+    color='celltype',
     legend_loc='on data',
     show=False
 )
@@ -20,9 +20,9 @@ plt.savefig(snakemake.output.course_celltype)
 sns.displot(
     adata.obs, 
     x="n_genes_by_counts",
-    row="cell_type",
+    row="celltype",
     binwidth=10, 
-    hue='cell_type',
+    hue='celltype',
     height=.75, 
     aspect=4,
     kde=True,
@@ -31,10 +31,10 @@ plt.xlim(0, 10000)
 plt.savefig(snakemake.output.course_counts)
 
 cell_type_min = {}
-for cell_type in adata.obs['cell_type'].drop_duplicates():
+for cell_type in adata.obs['celltype'].drop_duplicates():
     print(f'Working on cell type {cell_type}')
 
-    cell_counts = adata[adata.obs['cell_type'] == cell_type].obs['n_genes_by_counts']
+    cell_counts = adata[adata.obs['celltype'] == cell_type].obs['n_genes_by_counts']
     # Return minimum values
     kde = scipy.stats.gaussian_kde(cell_counts)
     x_range = np.linspace(min(cell_counts), max(cell_counts), 1000)
@@ -56,7 +56,7 @@ for cell_type in adata.obs['cell_type'].drop_duplicates():
     else:
         cell_type_min[cell_type] = 0
 
-bad_cells = sum([(adata.obs['cell_type'] == x) & (adata.obs['n_genes_by_counts'] < cell_type_min[x]) for x in cell_type_min.keys()])
+bad_cells = sum([(adata.obs['celltype'] == x) & (adata.obs['n_genes_by_counts'] < cell_type_min[x]) for x in cell_type_min.keys()])
 bad_bools = [True if x > 0 else False for x in bad_cells]
 
 adata.obs['bad_cells'] = bad_bools

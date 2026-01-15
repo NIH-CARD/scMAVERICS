@@ -7,6 +7,7 @@ import snapatac2 as snap
 
 # Import cell type atac anndata object
 cell_type_atac = sc.read_h5ad(snakemake.input.cell_type_atac)
+cell_type_atac = cell_type_atac[cell_type_atac.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type]
 
 # Import cell type and disease specific DARs
 cell_type_DARs = pd.read_csv(snakemake.input.output_DAR_data)
@@ -23,19 +24,14 @@ depleted_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).i
 
 cell_disease_motifs = snap.tl.motif_enrichment(
     motifs=tf_motifs,
-    regions={'up': enriched_peaks, 'down': depleted_peaks},
+    regions={'up': enriched_peaks},
     background=cell_type_DARs['peak'].values,
     genome_fasta=snakemake.input.ref_genome,
     method='hypergeometric'
 )
 # Split out up and down regulated motifs
-up_df = cell_disease_motifs['up'].to_pandas()
-up_df['regulation'] = 'up'
+cell_disease_motif_df = cell_disease_motifs['up'].to_pandas()
 
-down_df = cell_disease_motifs['down'].to_pandas()
-down_df['regulation'] = 'down'
-
-cell_disease_motif_df = pd.concat([up_df, down_df])
 cell_disease_motif_df['-log10(p-value)'] = -np.log10(cell_disease_motif_df['adjusted p-value'])
 
 # Export dataframe

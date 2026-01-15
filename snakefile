@@ -84,14 +84,14 @@ rule all:
         ),
         celltype_control_vs_disease_DGE_data = expand(
             work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'cell_type',
+            separating_cluster = 'celltype',
             control = 'control',
             disease = ['PD', 'DLB'],
             cell_type = cell_types
         ),
         celltype_disease_vs_disease_DGE_data = expand(
             work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'cell_type',
+            separating_cluster = 'celltype',
             control = 'PD',
             disease = ['DLB'],
             cell_type = cell_types
@@ -480,7 +480,7 @@ rule DGE:
     threads:
         64
     resources:
-        runtime=180, disk_mb=200000, slurm_partition='quick'
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/rna_DGE.py'
 
@@ -529,7 +529,7 @@ rule cistopic_pseudobulk:
             work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
             cell_type = cell_types)
     params:
-        pseudobulk_param = 'cell_type',
+        pseudobulk_param = 'celltype',
         samples=samples,
         sample_param_name = sample_key,
         cell_types = cell_types
@@ -890,7 +890,7 @@ rule motif_enrichment:
         motif_enrichment = work_dir+'/data/motif_enrichment.csv'
     params:
         control = control,
-        cell_type = 'cell_type',
+        cell_type = 'celltype',
         disease_param = disease_param
     singularity:
         envs['snapatac2']
@@ -1018,8 +1018,8 @@ rule barcode_filter:
 
 def filter_celltype_condition_samples_seq(wildcards):
     df = pd.read_csv(work_dir+'/data/barcode_cell_annotation.csv')
-    df = df[(df['cell_type'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)][['cell_type', seq_batch_key, 'sample', 'disease']].drop_duplicates()
-    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'cell_type'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
+    df = df[(df['celltype'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)][['celltype', seq_batch_key, 'sample', 'disease']].drop_duplicates()
+    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'celltype'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
 
 rule celltype_sample_filter_bam:
     input:
