@@ -717,16 +717,16 @@ rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{control}_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{control}_{disease}_pseudobulk.csv'
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{separating_cluster}_{cell_type}_{control}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        separating_cluster = 'cell_type',
         design_factors = design_covariates,
+        control = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-4]
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
         envs['decoupler']
     threads:
