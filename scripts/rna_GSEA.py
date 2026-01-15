@@ -8,7 +8,7 @@ import gseapy as gp
 # Load in cell type AnnData object
 adata = sc.read_h5ad(snakemake.input.adata_path)
 
-adata = adata[adata.obs[snakemake.params.cell_param] == snakemake.params.cell_type]
+adata = adata[adata.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type]
 
 # Filter based on condition to test
 diseaes_adata = adata[adata.obs[snakemake.params.disease_param].isin([snakemake.params.control, snakemake.params.disease])]

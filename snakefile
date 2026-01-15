@@ -933,34 +933,13 @@ rule disease_gsea:
         adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         ontologies = work_dir+'/input/ontologies.csv'
     output:
-        cell_disease_GSEA =  work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_GSEA_genes.csv'
+        cell_disease_GSEA =  work_dir+'/data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
     params:
         disease_param = disease_param,
-        control = control,
-        cell_param = 'cell_type',
+        control = disease = lambda wildcards, output: output[0].split("_")[-3],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        disease = lambda wildcards, output: output[0].split("_")[-3]
-    singularity:
-        envs['great_gsea']
-    threads:
-        64
-    resources:
-        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
-    script:
-        'scripts/rna_GSEA.py'
-
-rule disease_subtype_gsea:
-    input:
-        adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        ontologies = work_dir+'/input/ontologies.csv'
-    output:
-        cell_disease_GSEA =  work_dir+'/data/celltypes/leiden/{cell_type}_{disease}_GSEA_genes.csv'
-    params:
-        disease_param = disease_param,
-        control = control,
-        cell_param = 'subtype',
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        disease = lambda wildcards, output: output[0].split("_")[-3]
+        disease = lambda wildcards, output: output[0].split("_")[-2]
     singularity:
         envs['great_gsea']
     threads:
