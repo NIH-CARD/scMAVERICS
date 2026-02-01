@@ -58,10 +58,10 @@ df = dc.rank_sources_groups(
 annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dict()
 
 # Apply the dictionary to the AnnData object
-adata.obs['cell_type'] = [annotation_dict[clust] for clust in adata.obs['leiden_2']]
+adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs['leiden_2']]
 
 # Save the cell barcode, cluster, cell-type, and batch values to a .csv
-adata.obs[['atlas_identifier', 'leiden_2', 'cell_type', snakemake.params.seq_batch_key]].to_csv(snakemake.output.cell_annotate, index=False)
+adata.obs[['atlas_identifier', 'leiden_2', 'celltype', snakemake.params.seq_batch_key]].to_csv(snakemake.output.cell_annotate, index=False)
 
 
 # Save the annotated AnnData object

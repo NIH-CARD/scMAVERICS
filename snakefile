@@ -7,8 +7,8 @@ import os
 
 
 """File locations"""
-data_dir = '' # Define the data directory, explicitly
-work_dir = '' # Define the working directory, explictly as the directory of this pipeline
+data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
+work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
 metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
@@ -21,8 +21,11 @@ samples = pd.read_csv(metadata_table)[sample_key].tolist()
 disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
+disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
+reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -31,8 +34,21 @@ doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
 
-"""Subcluster values, extracted manually after"""
-leiden_clusters =['0', '6', '1', '5', '24', '26', '20', '13', '28', '32', '27', '34', '15', '11', '30', '7', '21', '36', '4', '19', '25', '37', '8', '17', '18', '9', '14', '38', '35', '3', '33', '31', '16', '39', '41', '42', '2', '23', '43', '44', '45','40']
+"""Subcluster values, currated after celltyping"""
+subtypes = [
+    'Astro-ADGRV1+', 'Astro-IF', 'Astro-proto',
+    'DaN-HSP90AA1', 'DaN-NTN1',
+    'EC',
+    'EpC',
+    'ExN-GRIA1', 'ExN-GRIK1', 'ExN-RIT2',
+    'FB',
+    'InN-MEF2C', 'InN-ORB', 'InN-RMST', 'InN-SV2C',
+    'MG-CAM','MG-DAM', 'MG-DIM', 'MG-homeo', 'MG-mit',
+    'OPC-APOD', 'OPC-GPC6', 'OPC-SLC44A1', 'OPC-TPST1',
+    'Oligo-LAMA', 'Oligo-RBFOX1',
+    'PC',
+    'TC'
+    ]
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -45,29 +61,19 @@ envs = {
     'scenicplus': 'envs/scenicplus.sif',
     'decoupler': 'envs/decoupler.sif',
     'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif'
+    'atac_fragment': 'envs/atac_fragment.sif',
+    'great_gsea': 'envs/great_gsea.sif',
+    'tobias': 'envs/tobias.sif'
     }
 
 rule all:
     input:
-        output_DAR_data = expand(
-            work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
-            cell_type = leiden_clusters,
-            disease = diseases),
-"""
-output_DGE_data = expand(
-    work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
-    cell_type = leiden_clusters,
-    disease = ['DLB']
-    ),
-output_leiden_DAR_data = expand(
-    work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
-    cell_type = leiden_clusters,
-    disease = diseases
-),"""
-        
+       circe_network = expand(
+        work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
+        cell_type = cell_types
+       )
 
-"""# This needs to be forced to run once
+# This needs to be forced to run once
 rule cellbender:
     input:
         rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
@@ -124,7 +130,7 @@ rule plot_qc_rna:
         ribo_figure = work_dir+'/figures/QC_ribo_pct.png',
         gene_counts_figure = work_dir+'/figures/QC_gene_counts.png',
         doublet_figure = work_dir+'/figures/QC_doublet.png',
-        genes_by_counts = work_dir+'figures/QC_genes_by_counts.png'
+        genes_by_counts = work_dir+'/figures/QC_genes_by_counts.png'
     singularity:
         envs['singlecell']
     resources:
@@ -206,7 +212,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -253,8 +259,20 @@ rule feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
-        model_history = work_dir+'/model_elbo/rna_model_history.csv'
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
+    singularity:
+        envs['singlecell']
+    resources:
+        runtime=360, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/feature_selection.py'
+
+rule rna_model:
+    input:
+        hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
+    output:
+        hvg_rna_anndata = work_dir+'/atlas/04_modeled_hvg_anndata_rna.h5ad',
+        model_history = work_dir+'/data/model_elbo/rna_model_history.csv'
     params:
         model = work_dir+'/data/models/rna_v2/',
         sample_key = sample_key
@@ -349,7 +367,7 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-rule second_pass_annotate:
+"""rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
         gene_markers = gene_markers_file
@@ -363,7 +381,7 @@ rule second_pass_annotate:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'
+        work_dir+'/scripts/annotate.py'"""
 
 rule gene_linear_regression:
     input:
@@ -385,6 +403,21 @@ rule gene_linear_regression:
         runtime=1440, disk_mb=200000, mem_mb=200000
     script:
         'scripts/linear_regression_genes.py'
+
+rule cell_cell_communication:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+    output:
+        cell_cell_communication_data = work_dir+'/data/CCC/combined/CCC_celltype_results.csv'
+    params:
+        control = control,
+        disease_param = disease_param
+    threads:
+        64
+    resources:
+        disk_mb=200000, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/cell_cell_communication.py'
 
 rule peak_linear_regression:
     input:
@@ -408,27 +441,56 @@ rule DGE:
     input:
         rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/significant_genes/rna/rna_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{cell_type}_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/{cell_type}/rna_{cell_type}_{disease}_pseudobulk.csv'
+        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
     params:
         disease_param = disease_param,
-        control = control,
+        control = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
         sample_key=sample_key,
         design_factors = design_covariates,
-        separating_cluster = 'cell_type'
     singularity:
         envs['decoupler']
     threads:
         64
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/rna_DGE.py'
 
+rule combine_DGE:
+    input:
+        output_DGE_data = expand(
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'subtype',
+            control = 'control',
+            disease = ['PD', 'DLB'],
+            cell_type = subtypes
+            )
+    output:
+        unfiltered_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_unfiltered_results.csv',
+        merged_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_results.csv'
+    singularity:
+        envs['decoupler']
+    script:
+        'scripts/merge_DGE.py'
 
+
+rule differential_cell_cell_communication:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
+    output:
+        differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
+    params:
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        disease_param = disease_param,
+        sep_param = lambda wildcards, output: output[0].split("_")[-3],
+    script:
+        'scripts/rna_differential_cell_cell_communication.py'
+    
 rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
@@ -443,7 +505,7 @@ rule cistopic_pseudobulk:
             work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
             cell_type = cell_types)
     params:
-        pseudobulk_param = 'cell_type',
+        pseudobulk_param = 'celltype',
         samples=samples,
         sample_param_name = sample_key,
         cell_types = cell_types
@@ -481,10 +543,8 @@ rule consensus_peaks:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     singularity:
         envs['scenicplus']
-    threads:
-        32
     resources:
-        runtime=240, mem_mb=100000, disk_mb=500000
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         'scripts/MACS_consensus.py'
     
@@ -581,6 +641,7 @@ rule create_bigwig:
 rule celltype_bed:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
@@ -627,34 +688,26 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
-rule export_celltypes:
-    input:
-        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
-    singularity:
-        envs['singlecell']
-    resources:
-        runtime=240, mem_mb=300000
-    script:
-        'scripts/export_celltype.py'
-
 rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/{cell_type}/atac_{cell_type}_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{disease}_pseudobulk.csv'
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/atac_{separating_cluster}_{cell_type}_{control}_{disease}_pseudobulk.csv'
     params:
         disease_param = disease_param,
-        control = control,
+        design_factors = design_covariates,
+        control = lambda wildcards, output: output[0].split("_")[-3],
         disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3]
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
         envs['decoupler']
     threads:
-        64
+        16
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/atac_DAR.py'
    
@@ -669,9 +722,9 @@ rule atac_coaccessibilty:
     singularity:
         envs['circe']
     threads:
-        8
+        16
     resources:
-        runtime=960, mem_mb=300000
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
 
@@ -739,6 +792,7 @@ rule create_bigwig_cell_disease:
 rule celltype_bed_cell_disease:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
     singularity:
         envs['atac_fragment']
     output:
@@ -788,10 +842,10 @@ rule export_atac_cell_disease:
 
 rule atac_coaccessibilty_cell_disease:
     input:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
-        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_circe_network.csv'
     params:
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
@@ -801,101 +855,272 @@ rule atac_coaccessibilty_cell_disease:
     resources:
         runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
-        'scripts/circe_by_celltype.py'"""
+        'scripts/circe_by_celltype.py'
 
-rule leiden_DGE:
+rule motif_enrichment:
     input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
+        ref_genome = reference_genome,
+        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme'
     output:
-        output_DGE_data = work_dir + '/data/significant_genes/rna/leiden/rna_leiden_{cell_type}_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/leiden/rna_leiden_{cell_type}_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/leiden/rna_leiden_{cell_type}_{disease}_pseudobulk.csv'
+        motif_enrichment = work_dir+'/data/motif_enrichment.csv'
     params:
-        disease_param = disease_param,
         control = control,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        sample_key=sample_key,
-        design_factors = design_covariates,
-        separating_cluster = 'leiden_2'
+        cell_type = 'celltype',
+        disease_param = disease_param
     singularity:
-        envs['decoupler']
-    threads:
-        64
+        envs['snapatac2']
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=240, disk_mb=300000, mem_mb=200000
     script:
-        'scripts/rna_DGE.py'
+        'scripts/atac_motif_enrichment.py'
 
-"""rule leiden_disease_vs_disease_DGE:
+rule differential_motif_enrichment:
     input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+        cell_type_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
+        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
+        ref_genome = reference_genome
     output:
-        output_DGE_data = work_dir + '/data/significant_genes/rna/leiden/rna_{cell_type}_PD_vs_{disease}_DGE.csv',
-        output_figure = work_dir + '/figures/leiden/rna_leiden_{cell_type}_PD_vs_{disease}_DGE.svg',
-        celltype_pseudobulk = work_dir+'/data/celltypes/leiden/rna_leiden_{cell_type}_PD_vs_{disease}_pseudobulk.csv'
+        differential_motif_dataframe = work_dir+'/data/DMEs/{separating_cluster}/DME_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
     params:
         disease_param = disease_param,
-        control = 'PD',
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        sample_key=sample_key,
         design_factors = design_covariates,
-        separating_cluster = 'leiden_2'
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
-        envs['decoupler']
-    threads:
-        64
+        envs['snapatac2']
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=240, disk_mb=300000, mem_mb=200000
     script:
-        'scripts/rna_DGE.py'
+        'scripts/differential_motif_enrichment.py'
 
-
-rule DAR_disease_vs_disease_leiden:
+rule DAR_CCAN_modules:
     input:
-        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_PD_vs_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_PD_vs_{disease}_pseudobulk.csv'
+        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv'
+    singularity:
+        envs['circe']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/atac_DAR_CCANs.py'
+
+rule disease_gsea:
+    input:
+        adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        ontologies = work_dir+'/input/ontologies.csv'
+    output:
+        cell_disease_GSEA =  work_dir+'/data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
     params:
         disease_param = disease_param,
-        control = 'PD',
-        sample_key=sample_key,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = design_covariates,
-        separating_cluster = 'leiden_2'
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        disease = lambda wildcards, output: output[0].split("_")[-2]
     singularity:
-        envs['decoupler']
+        envs['great_gsea']
     threads:
         64
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
     script:
-        'scripts/atac_DAR.py'"""
+        'scripts/rna_GSEA.py'
 
-rule DAR_leiden:
+rule disease_great:
     input:
-        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+        DAR_path =  work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        tss_file =  work_dir+'/input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'/input/chr_size.bed',
+        annotation_file =  work_dir+'/input/ontologies.csv',
     output:
-        output_DAR_data = work_dir+'/data/significant_genes/atac/leiden/atac_{cell_type}_{disease}_DAR.csv',
-        output_figure = work_dir+'/figures/leiden/atac_{cell_type}_{disease}_DAR.svg',
-        cell_specific_pseudo = work_dir+'/data/celltypes/leiden/atac_leiden_{cell_type}_{disease}_pseudobulk.csv'
+        cell_disease_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_DAR_peaks.bed',
+        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv'
+    singularity:
+        envs['great_gsea']
+    resources:
+        runtime=2880
+    script:
+        'scripts/atac_GREAT.py'
+
+rule barcode_merge:
+    input:
+        cell_annotate = work_dir+'/data/rna_cell_annot.csv',
+        metadata_table = metadata_table
+    output:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
     params:
         disease_param = disease_param,
-        control = control,
-        sample_key=sample_key,
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-3],
-        design_factors = [],
-        separating_cluster = 'leiden_2'
+        sample_key = sample_key
+    resources:
+        slurm_partition='quick' 
+    run:
+        import pandas as pd
+        metadata_df = pd.read_csv(input.metadata_table)
+        sample_disease = dict(zip(metadata_df[params.sample_key], metadata_df[params.disease_param]))
+        cell_barcodes = pd.read_csv(input.cell_annotate)
+        cell_barcodes['sample'] = ['_'.join(x.split('_')[1:]) for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes['disease'] = [sample_disease[x] for x in cell_barcodes['sample']]
+        cell_barcodes['barcode'] = [x.split('_')[0] for x in cell_barcodes['atlas_identifier']]
+        cell_barcodes.to_csv(output.annotate_metadata_table, index=False)
+
+rule filter_celltype_condition_samples:
+    input:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    output:
+        batch_sample_celltype_disease_df = work_dir+'/data/batch_sample_celltype_disease.csv'
+    params:
+        seq_batch_key = seq_batch_key
+    run:
+        import pandas as pd
+        annotate_metadata_table = pd.read_csv(input.annotate_metadata_table)
+        combindation_df = annotate_metadata_table.groupby([params.seq_batch_key, 'sample', 'cell_type', 'disease']).count().reset_index()
+        bscd_df = combindation_df[combindation_df['barcode'] != 0][[params.seq_batch_key, 'sample', 'cell_type', 'disease']]
+        bscd_df.to_csv(output.batch_sample_celltype_disease_df, index=False)
+
+rule barcode_filter:
+    input:
+        annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
+    output:
+        cell_disease_barcodes = temp(work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt')
+    resources:
+        slurm_partition='quick'
+    shell:
+        "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {output.cell_disease_barcodes}"
+
+def filter_celltype_condition_samples_seq(wildcards):
+    df = pd.read_csv(work_dir+'/data/barcode_cell_annotation.csv')
+    df = df[(df['celltype'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)][['celltype', seq_batch_key, 'sample', 'disease']].drop_duplicates()
+    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'celltype'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
+
+rule celltype_sample_filter_bam:
+    input:
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt',
+        input_bam = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_possorted_bam.bam'
+    output:
+        sample_filter_bam = data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.bam",
+        output_header = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}_header"),
+        output_body = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}_body.sam"),
+        output_sam = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.sam")
     singularity:
-        envs['decoupler']
+        envs['atac_fragment']
+    threads:
+        16
+    resources:
+        slurm_partition='quick'
+    shell:
+        "samtools view -H {input.input_bam} -@ 16 > {output.output_header} \n"
+        "samtools view {input.input_bam} -@ 16 | LC_ALL=C grep -F -f {input.cell_disease_barcodes} > {output.output_body} \n"
+        "cat {output.output_header} {output.output_body} > {output.output_sam} \n"
+        "samtools view -b {output.output_sam} -@ 16 > {output.sample_filter_bam}"
+
+rule pseudobulk_bams:
+    input:
+        sample_filter_bam = filter_celltype_condition_samples_seq
+    output:
+        sorted_pseudobulk_bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
+        presorted_pseudobulk_bam = temp(work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_presort.bam')
+    params:
+        batch_sample_celltype_disease_df = work_dir+'/data/batch_sample_celltype_disease.csv'
+    singularity:
+        envs['atac_fragment']
+    threads:
+        16
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        "samtools cat {input.sample_filter_bam} -o {output.presorted_pseudobulk_bam} \n"
+        "samtools sort {output.presorted_pseudobulk_bam} -@ 16 -o {output.sorted_pseudobulk_bam}"
+
+rule celltype_disease_ATACorrect:
+    input:
+        sorted_pseudobulk_bam = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}.bam',
+        blacklist = work_dir + '/input/hg38-blacklist.bed',
+        cell_type_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        ref_genome = reference_genome
+    output:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw'
+    params:
+        ATACorrect_outdir = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect',
+        prefix = '{cell_type}_{disease}'
+    singularity:
+        envs['tobias']
+    threads:
+        16
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS ATACorrect --bam {input.sorted_pseudobulk_bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
+
+rule celltype_disease_score_bigwig:
+    input:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
+        regions = work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+    output:
+        footprinted_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
+    singularity:
+        envs['tobias']
     threads:
         64
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
-    script:
-        'scripts/atac_DAR.py'
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.footprinted_bigwig} --cores {threads}'
+
+rule control_comparison_score_bigwig:
+    input:
+        corrected_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_corrected.bw',
+        regions = work_dir+'/data/consensus_regions.bed'
+    output:
+        control_footprint_bigwig = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw'
+    singularity:
+        envs['tobias']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=300000
+    shell:
+        'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.control_footprint_bigwig} --cores {threads}'
+
+rule disease_footprinting:
+    input:
+        motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
+        control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_ATACorrect/{cell_type}_{control}_corrected.bw',
+        disease_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
+        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        genome=reference_genome
+    output:
+        control_disease_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt'
+    params:
+        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect'
+    singularity:
+        envs['tobias']
+    threads:
+        16
+    resources:
+        runtime=180, mem_mb=200000, slurm_partition='quick'
+    shell:
+        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
+
+rule control_footprinting:
+    input:
+        motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
+        control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
+        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        genome=reference_genome
+    output:
+        control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt'
+    params:
+        outdir=work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect'
+    singularity:
+        envs['tobias']
+    threads:
+        16
+    resources:
+        runtime=180, mem_mb=200000, slurm_partition='quick'
+    shell:
+        'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'

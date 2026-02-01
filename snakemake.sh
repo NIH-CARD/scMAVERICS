@@ -4,12 +4,9 @@
 #SBATCH --mem-per-cpu=32G
 #SBATCH --time 96:00:00
 
-
 module purge
 module load apptainer
 module load snakemake/7.7.0
-
-
 
 # Pull profile, this will only run once, and is required for running on Biowulf
 git clone https://github.com/NIH-HPC/snakemake_profile.git
@@ -20,8 +17,9 @@ apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatch
 apptainer pull --disable-cache envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.9
 apptainer pull --disable-cache envs/circe.sif oras://quay.io/adamcatchingdti/circe.sif:0.9
 apptainer pull --disable-cache envs/atac_fragment.sif oras://quay.io/adamcatchingdti/atac_fragment.sif:0.9
-
+apptainer pull --disable-cache envs/great_gsea.sif oras://quay.io/adamcatchingdti/great_gsea.sif:0.9
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
+apptainer pull --disable-cache envs/tobias.sif docker://naotokubota/tobias:0.13.3
 
 # Load singularity
 module load singularity

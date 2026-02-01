@@ -19,7 +19,7 @@ The modules of Scanpy (https://github.com/scverse/scanpy), SCVI (https://github.
 
 Copy this repository to where you will be working with your data. This folder will be where output data is stored, while intermediary files will be stored in a separate folder to be defined by the user. It is important that the output of your CellRanger-ARC run has the format: `<data_dir>/<sample>/`!
 
-#### Required inputs:
+### Required inputs:
 - Metadata file in .csv format, example in `input/example_metadata.csv`. A minimal metadata file should include:
   - Sequencing batch, called Use_batch in example (indicating the separate sequencing folder for each run of `CellRanger-ARC`, denoted batch"Sequencing batch>")
   - Sample ID, called Sample in the example, indicates where name of each sample
@@ -27,16 +27,23 @@ Copy this repository to where you will be working with your data. This folder wi
     - Names of the control condition, called 'control' in the example
     - A list of conditions to compare to the control, called 'diseases' in the example
 - Cell-typing table with marker genes, in .csv format, see example in `input/example_marker_genes.csv`
-- Directory of the CellRanger output, the data here is the output of `CellRanger`, where each sample is contained in a separate data directory folder; starting with `<data_dir>/<sample>/raw_feature_bc_matrix.h5` for each sample
-
+- Directory of the CellRanger output, the data here is the output of `CellRanger`, the raw data required includes;
+    - `data_dir/{sample}/raw_feature_bc_matrix.h5`
+    - `data_dir/{sample}/atac_fragments.tsv.gz`
+    - `data_dir/{sample}/atac_possorted_bam.bam`
+ 
 In addition, the `snakefile` requires modifications to fit your project. The top section "Parameter" should be modified for your dataset, include quality control values, where the input metadata and cell/cell gene marker files are stored. Input files should have their values match the parameters section.
 
-#### Outputs:
-- RNA and ATAC Multiome atlas object (multiome_atlas.h5ad)
-- List of differentially expressed genes and accessible regions (data/significant_genes/(rna or atac)/(celltype)_(disease)_(DGE or DAR).csv
-- Preprocessed and QC-filtered AnnData objects for each sample
+### Outputs:
+- RNA and ATAC Multiome atlas object
+- DEG tables
+- DAR tables
+- Motif enrichment
+- Footprinting results
+- Co-accessibility networks
+- Functional enrichment (GSEA, GREAT)
 
-#### Current version:
+### Current version:
 - Uses Singularity images for reproducible runs (scVI and poissonVI modeling will be fast utilizing a GPU-enabled environment)
 - Snakemake runs steps until all output files are created
 - Genes used for celltyping are input from `input/example_marker_genes.csv`
@@ -47,77 +54,87 @@ In addition, the `snakefile` requires modifications to fit your project. The top
 
 Once set up, this complete pipeline can be run by simply typing `bash snakemake.sh` in terminal in an HPC running Slurm. This is a work in progress and has not been tested on other devices. 
 
-### Ambient RNA correction (rule cellbender)
+# Pipeline Steps
 
-Cellbender is used to correct for ambient RNA in the unfiltered RNA .h5 output of CellRanger. This can be run without GPUs, but it is incredibly slow. Current configuration allows for using Biowulf GPUs.
+## RNA Steps
 
-### RNA processing (rule preprocess) 
+### RNA (Transcriptomic) Preprocessing
+- Ambient RNA correction (Cellbender)
+- Per-Sample RNA Processing
+  - Creation of per-sample AnnData objects in Scanpy
+  - Metadata integration
+    - Gene counts
+    - %Mt and %Rb
+    - Doublet score (scrublet)  
+- QC filtering (%Mt, %Rb, doublet score, min. # genes)
+- Merge filtered samples  
 
-Transcriptomic data from CellRanger-ARC-2.0 ('''cellbender_gex_counts_filtered.h5''') is read in and processed with Scanpy. QC metrics of percent mitochondria/ribosomal RNA, doublet probability, and cell cycle.
+### RNA Dimensionality Reduction & Annotation
+- Feature Selection & Modeling
+  - Highly variable gene selection 
+  - GPU-enabled scVI modeling (two-stage: initial & after cluster/cell-type QC)
+  - UMAP dimensionality reduction and leiden clustering  
+- Cell-Type Annotation
+  - Marker-based annotation
+  - Leiden-cluster QC
+  - Cell-type specific QC
+  - Rerun feature selection and modeling  
 
-### RNA QC (rule filter_rna) 
+### RNA-Based Data Analysis
+- Pseudobulking by cell-type 
+- Differential Expression
+- Regression Analyses
+- Gene set enrichment analysis (GSEA)
+- Cell-cell communication
 
-Parameters from the processing step are used to filter the cells from each samples based on percent mitochondrial transcripts, probability of being a doublet, and the minimum number of genes observed per cell.
+## ATAC steps
 
-### Individual RNA sample merging into atlas (rule merge_filtered_rna)
+### ATAC (Chromatin Accessibility) Preprocessing
+- Per-Sample ATAC Processing
+  - Create ATAC AnnData objects from fragment files
+  - Metadata integration
+    - Fragment counts
+    - TSSE score
+- ATAC-specific QC visualization
+  - Min. number of fragments
+- Joint RNA–ATAC filtering per sample
+- Merge filtered samples  
 
-Each individual RNA AnnData object are merged into a single QC-filtered object for downstream analysis. This isn't required to be run in a normal workflow.
+### Peak Calling & Chromatin Modeling
 
-### ATAC processing (rule atac_preprocess)
+- Sort ATAC fragments by cell-type, subtype
+  - Generate bigWig tracks (raw + normalized)
+- Call ATAC peaks via MACS2
+  - cell-type +/- disease state
+- Consensus peak calling across cell-types
+- Merge and count peaks into cellxpeak AnnData object
+- Dimensionality reduction with PoissonVI
 
-ATAC fragment data is converted into an AnnData object with bins used as the measured variable in each cell. One object is created for each sample.
+### Cell-Type–Specific ATAC Analyses
 
-### ATAC QC (rule filter_atac) 
+- Pseudobulk ATAC matrices produced for each comparison
+- Differential Accessibility (DAR)
+- Co-accessibility Networks
+- Cicero/CIRCE used to infer co-accessible peak networks
+- CCAN (cis-co-accessibility network) modules extracted
+- DARs mapped onto CCANs
 
-Cells in each sample's ATAC object are filtered for a minimum number of bins per cell. 
+### Regulatory & Motif Analyses (Beyond Transcriptomics)
 
-### Filtering RNA and ATAC data (rule filter_atac) 
+- Global and differential motif enrichment using JASPAR motifs
+Motifs tested within DARs
+- ATAC Footprinting (TOBIAS)
+  - ATACorrect bias correction
+  - Footprint scoring
+  - Differential footprinting
 
-Each sample's QC-filtered RNA and ATAC AnnData objects are filtered for the same cells observed in both samples. Final AnnData objects are saved with a '''03_''' prefix.
+### Functional Interpretation of ATAC Results
 
-### Individual RNA sample merging into atlas (rule merge_multiome_rna)
+- GREAT Analysis
+- Map DARs to nearby genes
+- Ontology and pathway enrichment for regulatory regions
+- Cell-type- and disease-specific GREAT outputs
 
-ATAC-filtered RNA samples are merged from rule filter_atac prior to modeling.
+## Multiome Integration & Final Outputs
+- RNA + ATAC merged into a MuData object
 
-### RNA modeling (rule rna_model) 
-
-Filtered RNA samples are merged into an atlas and multidimensional scaling is performed. A copy of the atlas is made with mitochondiral and ribosomal transcripts removed and only the most variable genes kept. SCVI is used to model the embed dimensions of the atlas, with batch correction, followed by KNN, leiden clustering, and UMAP scaling.
-
-### Cell-typing (rule annotate) 
-
-Cell types of the modeled and clustered RNA atlas are estimated using over-representation analysis and a currated list of cell gene markers.
-
-### Fragment pseudobulk (rule cistopic_pseudobulk)
-
-Use the cell annotated barcodes from the RNA atlas annotation to add fragments into all fragments for all cell types
-
-### Peak calling by cell type (rule MACS2_peak_call)
-
-Call peaks using MACS2 for each cell type, based on pseudobulked fragments
-
-### Consensus peak calling (rule consensus_peaks)
-
-Create consensus peaks from cell type peaks
-
-### Peak by cell AnnData creation (rule cistopic_create_objects)
-
-Populate AnnData objects with fragments contained by peak, by sample
-
-### Create peak atlas (rule cistopic_merge_objects)
-
-Concatenate peak AnnData objects into one object
-
-### Model ATAC peaks (rule atac_peaks_model)
-
-Use poissonVI to model ATAC peaks
-
-### Merging to one multiome object (rule multiome_output) 
-
-Both atlases are merged into a single muon AnnData object for portability.
-
-### Separate atlas into individual celltypes (rule export_celltypes) 
-
-Slice the multiome atlas into individual RNA and ATAC AnnData objects by celltype
-
-### Differential Gene Expression and Differentially Accessible Chromatin (rule DGE and DAR) 
-From the individual RNA and ATAC AnnData objects, separated by celltype, pseudobulk and compare the expression of RNA transcripts and ATAC availability, export lists of genes/genome bins with fold-changes and p-values, as well as pseudobulked objects

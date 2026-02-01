@@ -5,7 +5,7 @@ import scanpy as sc
 mdata = mu.read_h5mu(snakemake.input.merged_multiome)
 
 # Split out only the celltype AnnData, and reduce the size of the object
-mdata = mdata[mdata['RNA'].obs['cell_type'] == snakemake.params.cell_type].copy()
+mdata = mdata[mdata['RNA'].obs['celltype'] == snakemake.params.cell_type].copy()
 
 # Split out the RNA AnnData
 rna = mdata['RNA'].copy()
@@ -17,8 +17,4 @@ atac = mdata['ATAC'].copy()
 rna.write_h5ad(snakemake.output.celltype_rna, compression='gzip')
 
 # Write the atac data out
-<<<<<<< HEAD
 atac.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
-=======
-atac.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
->>>>>>> origin/main

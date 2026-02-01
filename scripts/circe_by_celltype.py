@@ -8,6 +8,7 @@ adata.var['start'] = adata.var['start'].astype(int)
 adata.var['end'] = adata.var['end'].astype(int)
 adata.var['chr'] = adata.var['chromosome']
 
+# Convert
 adata = ci.metacells.compute_metacells(
     adata, 
     method='sum', 
@@ -20,19 +21,20 @@ final_score = ci.sliding_graphical_lasso(
     n_samples=50,
     n_samples_maxtry=100,
     max_alpha_iteration=500,
-    verbose=True
+    verbose=True,
+    njobs=snakemake.threads
 )
 
 adata.varp['atac_network'] = final_score
 
+# Compute the co-accessibility network
+ci.add_region_infos(adata, sep=(':', '-'))
+ci.compute_atac_network(adata, njobs=snakemake.threads)
+
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
 
-# Compute the co-accessibility network
-atac = ci.add_region_infos(adata, sep=(':', '-'))
-ci.compute_atac_network(atac)
-
 # Extract the network and find CCANs modules
-circe_network = ci.extract_atac_links(atac)
+circe_network = ci.extract_atac_links(adata)
 
 circe_network['Peak1'] = circe_network['Peak1'].str.replace(':', '_').str.replace('-', '_')
 circe_network['Peak2'] = circe_network['Peak2'].str.replace(':', '_').str.replace('-', '_')

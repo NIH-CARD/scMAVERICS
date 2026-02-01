@@ -33,7 +33,7 @@ for i, sample in enumerate(samples):
     # Get list of sample and cell type specific barcodes
     barcodes = {
         cell_type: cell_df[
-            (cell_df['cell_type'] == cell_type) &
+            (cell_df['celltype'] == cell_type) &
             (cell_df[sample_key] == sample)]
             ['cell_barcode'].to_list()
         for cell_type in cell_types

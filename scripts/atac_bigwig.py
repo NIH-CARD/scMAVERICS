@@ -16,5 +16,20 @@ combined_bed = pr.PyRanges(
     starts=pseudo_fragment['chromStart'],
     ends=pseudo_fragment['chromEnd']
     )
-combined_bed.to_bigwig(snakemake.output.celltype_bigwig, rpm=False)
-combined_bed.to_bigwig(snakemake.output.celltype_normalized_bigwig, rpm=True)
+
+# Read in Chromosome sizes
+chromosizes = pd.read_csv(
+    '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt', 
+    header=None, 
+    delimiter='\t',
+    names=['Chromosome', 'length']
+    )
+
+combined_bed.to_bigwig(
+    snakemake.output.celltype_bigwig, 
+    chromosome_sizes = dict(zip(chromosizes['Chromosome'], chromosizes['length'])),
+    rpm=False)
+combined_bed.to_bigwig(
+    snakemake.output.celltype_normalized_bigwig,
+    chromosome_sizes = dict(zip(chromosizes['Chromosome'], chromosizes['length'])),
+    rpm=True)

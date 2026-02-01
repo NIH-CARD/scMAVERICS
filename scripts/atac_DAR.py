@@ -55,7 +55,7 @@ pdata_genes = dc.filter_by_expr(
 pdata = pdata[:, pdata_genes].copy()
 
 # Include inference
-inference = DefaultInference(n_cpus=64)
+inference = DefaultInference(n_cpus=snakemake.threads)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
@@ -80,7 +80,8 @@ stat_res.summary()
 # Extract results
 deseq2_results_df = stat_res.results_df
 deseq2_results_df['-log10_padj'] = -np.log10(deseq2_results_df['padj'])
-deseq2_results_df.to_csv(snakemake.output.output_DAR_data)
+deseq2_results_df['peak'] = deseq2_results_df.index.to_list()
+deseq2_results_df.to_csv(snakemake.output.output_DAR_data, index=False)
 
 # Plot
 dc.plot_volcano_df(
