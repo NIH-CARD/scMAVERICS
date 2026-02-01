@@ -68,34 +68,10 @@ envs = {
 
 rule all:
     input:
-        subtype_control_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            control = 'control',
-            disease = ['PD', 'DLB'],
-            cell_type = subtypes
-        ),
-        subtype_disease_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            control = 'PD',
-            disease = ['DLB'],
-            cell_type = subtypes
-        ),
-        celltype_control_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
-            control = 'control',
-            disease = ['PD', 'DLB'],
-            cell_type = cell_types
-        ),
-        celltype_disease_vs_disease_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
-            control = 'PD',
-            disease = ['DLB'],
-            cell_type = cell_types
-        )
+       circe_network = expand(
+        work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
+        cell_type = cell_types
+       )
 
 # This needs to be forced to run once
 rule cellbender:
