@@ -30,16 +30,15 @@ plots
 # Ignore the actual files inside input
 input/old_files
 input/*.csv
+
 # Webpages are generated but not updated to this Github
 webpages
 
 # Don't include TF-associated files yet
-
-BINDectect_output
+input/*.pfm
 input/*.bed
 input/*.meme
 input/*.jaspar
-
 
 # No need to show my mistakes (logs) to the world
 logs
