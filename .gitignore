@@ -34,9 +34,12 @@ input/*.csv
 webpages
 
 # Don't include TF-associated files yet
-input/*.pfm
-input/*.jaspar
+
 BINDectect_output
+input/*.bed
+input/*.meme
+input/*.jaspar
+
 
 # No need to show my mistakes (logs) to the world
 logs
