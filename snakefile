@@ -7,21 +7,19 @@ import os
 
 
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
+data_dir = '/data/CARD_singlecell/Sidransky_GBA/brain_multiome/Sidransky_NF_Lewy/' # Define the data directory, explicitly
+work_dir = '/data/CARD_singlecell/Sidransky_SN_PFC' # Define the working directory, explictly as the directory of this pipeline
+metadata_table = work_dir+'/input/example_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
 seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
-sample_key = 'Sample_ID' # Key for samples, required in aggregating while preserving sample info
-batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
+sample_key = 'folder names' # Key for samples, required in aggregating while preserving sample info
 
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'Primary Diagnosis' # Name of the disease parameter
+disease_param = 'Pathology' # Name of the disease parameter
 control = 'control' # Define disease states
-diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
-disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
+diseases = ['PD'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
@@ -34,21 +32,6 @@ doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
 
-"""Subcluster values, currated after celltyping"""
-subtypes = [
-    'Astro-ADGRV1+', 'Astro-IF', 'Astro-proto',
-    'DaN-HSP90AA1', 'DaN-NTN1',
-    'EC',
-    'EpC',
-    'ExN-GRIA1', 'ExN-GRIK1', 'ExN-RIT2',
-    'FB',
-    'InN-MEF2C', 'InN-ORB', 'InN-RMST', 'InN-SV2C',
-    'MG-CAM','MG-DAM', 'MG-DIM', 'MG-homeo', 'MG-mit',
-    'OPC-APOD', 'OPC-GPC6', 'OPC-SLC44A1', 'OPC-TPST1',
-    'Oligo-LAMA', 'Oligo-RBFOX1',
-    'PC',
-    'TC'
-    ]
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -68,31 +51,30 @@ envs = {
 
 rule all:
     input:
-       circe_network = expand(
-        work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
-        cell_type = cell_types
-       )
+        rna_anndata = expand(
+            work_dir+'/data/{sample}/outs/cellbender_gex_counts_filtered.h5',
+            sample=samples)
 
 # This needs to be forced to run once
 rule cellbender:
     input:
-        rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
+        rna_anndata =data_dir+'{sample}/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'{sample}/'
     output:
-        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+        rna_anndata = work_dir+'/data/{sample}/outs/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}'
     resources:
-        runtime=1440, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=1440, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
-        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir+'{sample}/outs/cellbender_gex_counts_filtered.h5'
     output:
-        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -106,9 +88,8 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad', 
+            work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad', 
             zip,
-            batch=batches,
             sample=samples
             )
     output:
@@ -147,9 +128,9 @@ rule plot_qc_rna:
 
 rule filter_rna:
     input:        
-        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     output:
-        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad'
+        rna_anndata = work_dir+'/data/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -165,9 +146,9 @@ rule filter_rna:
 rule merge_filtered_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
             zip,
-            batch=batches,
+
             sample=samples
             )
     output:
@@ -183,9 +164,9 @@ rule merge_filtered_rna:
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'{sample}/atac_fragments.tsv.gz'
+        fragment_file=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
-        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata=data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -196,9 +177,8 @@ rule atac_preprocess:
 rule merge_unfiltered_atac:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad', 
+            data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
             zip,
-            batch=batches,
             sample=samples
             )
     output:
@@ -212,7 +192,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -224,11 +204,11 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
-        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        rna_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
+        atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
-        atac_anndata = data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad',
-        rna_anndata = data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad'
+        atac_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_object_atac.h5ad',
+        rna_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -239,9 +219,8 @@ rule filter_atac:
 rule merge_multiome_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
             zip,
-            batch=batches,
             sample=samples
             )
     output:
@@ -460,23 +439,6 @@ rule DGE:
     script:
         'scripts/rna_DGE.py'
 
-rule combine_DGE:
-    input:
-        output_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            control = 'control',
-            disease = ['PD', 'DLB'],
-            cell_type = subtypes
-            )
-    output:
-        unfiltered_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_unfiltered_results.csv',
-        merged_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_results.csv'
-    singularity:
-        envs['decoupler']
-    script:
-        'scripts/merge_DGE.py'
-
 
 rule differential_cell_cell_communication:
     input:
@@ -495,10 +457,9 @@ rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir+'{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
-            batch=batches
             )
     output:
         pseudo_fragment_files = expand(
@@ -551,16 +512,15 @@ rule consensus_peaks:
 rule cistopic_create_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        fragment_file = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+        fragment_file = data_dir+'{sample}/outs/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
-        cistopic_objects = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata=data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        cistopic_objects = data_dir+'{sample}/outs/04_{sample}_cistopic_obj.pkl',
+        cistopic_adata=data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
         sample='{sample}',
-        batch='{batch}',
         seq_batch_key = seq_batch_key,
         sample_key = sample_key,
         disease_param = disease_param
@@ -575,16 +535,14 @@ rule cistopic_merge_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cistopic_objects = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
+            data_dir+'{sample}/outs/04_{sample}_cistopic_obj.pkl',
             zip,
             sample=samples,
-            batch=batches
             ),
         cistopic_adata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
+            data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
             zip,
             sample=samples,
-            batch=batches
             )
     output:
         merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
@@ -665,10 +623,9 @@ rule export_atac_cell:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
-            batch=batches
             )
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
@@ -732,10 +689,9 @@ rule fragments_pseudobulk_cell_disease:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir+'{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
-            batch=batches
             )
     output:
         pseudo_fragment_files = expand(
@@ -816,10 +772,9 @@ rule export_atac_cell_disease:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
         fragment_files=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir+'{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
-            batch=batches
             )
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
