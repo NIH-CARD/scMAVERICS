@@ -64,7 +64,7 @@ envs
 # WHOLE FOLDERS TO IGNORE
 # * = ignore all files here (keeps an empty folder instead, which will skip the exclusions)
 .cache
-.footconfig
+.fontconfig
 
 # EXCLUSIONS
 # Anything from the whole folders being ignored that should be included
