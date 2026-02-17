@@ -12,12 +12,12 @@ atac = atac[atac.obs['n_fragment'] > snakemake.params.min_peak_counts].copy()
 atac = atac[atac.obs['tsse'] > snakemake.params.min_tsse].copy()
 
 # Add the consolidated cell-barcode 'atlas_identifier'
-rna_barcodes = rna_adata.obs_names
-atac_barcodes = atac_adata.obs_names
+rna_barcodes = rna.obs_names
+atac_barcodes = atac.obs_names
 
 # Subset RNA and ATAC objects based on the overlap of values
-rna_adata = rna_adata[rna_adata.obs_names.isin(atac_barcodes)].copy()
-atac_adata = atac_adata[atac_adata.obs_names.isin(rna_barcodes)].copy()
+rna = rna[rna.obs_names.isin(atac_barcodes)].copy()
+atac = atac[atac.obs_names.isin(rna_barcodes)].copy()
 
 rna.write_h5ad(filename=snakemake.output.rna_anndata, compression='gzip')
 atac.write_h5ad(filename=snakemake.output.atac_anndata, compression='gzip')
