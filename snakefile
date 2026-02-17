@@ -30,7 +30,8 @@ mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitoch
 ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be ribosomal
 doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
-min_peak_counts = 500 # Minimum number of fragments per cell
+min_peak_counts = 1000 # Minimum number of fragments per cell
+min_tsse = 2.5 # Minimum enrichment for transcription start sites
 
 
 """========================================================================="""
@@ -51,30 +52,28 @@ envs = {
 
 rule all:
     input:
-        rna_anndata = expand(
-            work_dir+'/data/{sample}/outs/cellbender_gex_counts_filtered.h5',
-            sample=samples)
-
+        merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
+            
 # This needs to be forced to run once
 rule cellbender:
     input:
-        rna_anndata =data_dir+'{sample}/outs/raw_feature_bc_matrix.h5',
-        cwd = data_dir+'{sample}/'
+        rna_anndata =data_dir+'{sample}/outs/raw_feature_bc_matrix.h5'
     output:
-        rna_anndata = work_dir+'/data/{sample}/outs/cellbender_gex_counts_filtered.h5'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/cellbender_gex_counts_filtered.h5'
     params:
-        sample='{sample}'
+        sample='{sample}',
+        cwd = work_dir+'/data/samples/{sample}/'
     resources:
         runtime=1440, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {params.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
-        rna_anndata = data_dir+'{sample}/outs/cellbender_gex_counts_filtered.h5'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/cellbender_gex_counts_filtered_filtered.h5'
     output:
-        rna_anndata = work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -88,7 +87,7 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata=expand(
-            work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad', 
+            work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_rna.h5ad', 
             zip,
             sample=samples
             )
@@ -128,9 +127,9 @@ rule plot_qc_rna:
 
 rule filter_rna:
     input:        
-        rna_anndata = work_dir+'/data/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     output:
-        rna_anndata = work_dir+'/data/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -146,7 +145,7 @@ rule filter_rna:
 rule merge_filtered_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
+            work_dir+'/data/samples/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
             zip,
 
             sample=samples
@@ -166,7 +165,7 @@ rule atac_preprocess:
     input:
         fragment_file=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
-        atac_anndata=data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata=work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -177,7 +176,7 @@ rule atac_preprocess:
 rule merge_unfiltered_atac:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
+            work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
             zip,
             sample=samples
             )
@@ -192,7 +191,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata = work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -204,11 +203,14 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
-        rna_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
+        atac_anndata = work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
-        atac_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_object_atac.h5ad',
-        rna_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad'
+        atac_anndata = work_dir+'/data/samples/{sample}/outs/03_{sample}_anndata_object_atac.h5ad',
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad'
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse
     singularity:
         envs['snapatac2']
     resources:
@@ -219,7 +221,7 @@ rule filter_atac:
 rule merge_multiome_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
+            work_dir+'/data/samples/{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
             zip,
             sample=samples
             )

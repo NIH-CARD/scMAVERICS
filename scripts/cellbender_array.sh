@@ -15,6 +15,7 @@ module load CUDA/12.1
 
 # The temp directory is hardcoded in CellBender for where checkpoint files are output
 export TMPDIR=$2
+mkdir -p
 echo $TMPDIR
 
 # Iterate through the array of sample directories

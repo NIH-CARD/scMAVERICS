@@ -4,11 +4,13 @@ import snapatac2 as snap
 # Load in data 
 
 # Important that ATAC is read in using snapATAC2
-atac = snap.read(snakemake.input.atac_anndata) 
+atac = sc.read_h5ad(snakemake.input.atac_anndata) 
 # RNA can be read in the normal Scanpy way
 rna = sc.read_h5ad(snakemake.input.rna_anndata)
-# Filter cells with less than 1000 counts
-snap.pp.filter_cells(atac, min_counts=500)
+# Filter cells with less than the input number of counts
+atac = atac[atac.obs['n_fragment'] > snakemake.params.min_peak_counts].copy()
+# Filter out based on minimum number of TSSE
+atac = atac[atac.obs['tsse'] > snakemake.params.min_tsse].copy()
 
 # List of RNA barcodes
 rna_in_atac = [x for x in rna.obs_names if x in atac.obs_names]

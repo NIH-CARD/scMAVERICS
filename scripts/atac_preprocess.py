@@ -13,7 +13,7 @@ adata = snap.pp.import_data(
         n_jobs=2)
 
 # Get the fragment distribution (for later QC)
-_ = snap.pl.frag_size_distr(adata, show=False)
+#_ = snap.pl.frag_size_distr(adata, show=False)
 # Get the transcription start sites 
 snap.metrics.tsse(adata, snap.genome.hg38)
 
