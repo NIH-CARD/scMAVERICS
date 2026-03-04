@@ -21,40 +21,44 @@ disease_param = snakemake.params.disease_param
 adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
-pdata = dc.get_pseudobulk(
-    adata,
+pdata = dc.pp.pseudobulk(
+    SN_adata,
     sample_col=snakemake.params.sample_key,
-    groups_col=disease_param,
+    groups_col=snakemake.params.separating_cluster,
     layer='counts',
-    mode='sum',
-    min_cells=10,
-    min_counts=10
+    mode='sum'
 )
 
+dc.pp.filter_samples(pdata, min_cells=10, min_counts=1000)
+
 # Store raw counts in layers
-pdata.layers['counts'] = pdata.X.copy()
+pdata.layers["counts"] = pdata.X.copy()
 
 # Normalize, scale and compute pca
 sc.pp.normalize_total(pdata, target_sum=1e4)
 sc.pp.log1p(pdata)
 sc.pp.scale(pdata, max_value=10)
+sc.tl.pca(pdata)
 
 # Return raw counts to X
-dc.swap_layer(pdata, 'counts', X_layer_key=None, inplace=True)
+dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
+
+dc.pl.filter_by_expr(
+    adata=pdata,
+    group=disease_param,
+    min_count=10,
+    min_total_count=15,
+    large_n=10,
+    min_prop=0.7,
+)
+dc.pl.filter_by_prop(
+    adata=pdata,
+    min_prop=0.1,
+    min_smpls=2,
+)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
-
-# Select gene specific profiles
-pdata_genes = dc.filter_by_expr(
-    pdata, 
-    group='comparison', 
-    min_count=10, 
-    min_total_count=15
-    )
-
-# Subset valuable genes
-pdata = pdata[:, pdata_genes].copy()
 
 # Determine the number of cpus to use
 inference = DefaultInference(n_cpus=64)

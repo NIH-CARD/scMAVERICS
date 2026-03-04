@@ -71,14 +71,14 @@ rule cellbender:
         sample='{sample}',
         cwd = work_dir+'/data/samples/{sample}/'
     resources:
-        runtime=1440, mem_mb=300000, gpu=1, gpu_model='v100x'
+        runtime=1440, mem_mb=200000, gpu=1, gpu_model='a100'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {params.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
-        rna_anndata = work_dir+'/data/samples/{sample}/outs/cellbender_gex_counts_filtered_filtered.h5'
+        rna_anndata = work_dir+'/data/samples/{sample}/outs/cellbender_gex_counts_filtered.h5'
     output:
         rna_anndata = work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     singularity:
@@ -170,7 +170,7 @@ rule merge_filtered_rna:
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
+        fragment_file=work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz'
     output:
         atac_anndata=work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
