@@ -14,7 +14,7 @@ git clone https://github.com/NIH-HPC/snakemake_profile.git
 # Pull the containers
 apptainer pull --disable-cache envs/snapatac2.sif oras://quay.io/adamcatchingdti/snapatac2
 apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu:0.8
-apptainer pull --disable-cache envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:0.9
+apptainer pull --disable-cache envs/decoupler.sif oras://quay.io/adamcatchingdti/decoupler.sif:1.0
 apptainer pull --disable-cache envs/circe.sif oras://quay.io/adamcatchingdti/circe.sif:0.9
 apptainer pull --disable-cache envs/atac_fragment.sif oras://quay.io/adamcatchingdti/atac_fragment.sif:0.9
 apptainer pull --disable-cache envs/great_gsea.sif oras://quay.io/adamcatchingdti/great_gsea.sif:0.9
