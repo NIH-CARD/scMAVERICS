@@ -1,0 +1,20 @@
+Tissue from both regions	Sample_ID	Genotype	Region	Date	Sample number	Sample cohort	Full sample code	Single cell notes	Sex	Age	PMI	Storage years	Pathology
+Y	NSB 01-106	L444P/D409H+Rec 7	Frontal Cortex	7/25/23	10	ES	ES10		F	53	19	22	GD/PD
+N	1050		Frontal Cortex	7/25/23	11	ES	ES11		M	54	NA	NA	
+N	DMN02.08	N370S/c208delC	Frontal Cortex	7/24/23	4	ES	ES4		M	58	13	21	GD
+Y	MNG-06-197	84GG/N370S	Frontal Cortex	7/24/23	7	ES	ES7	OCT embedded	M	59	24	11	GD/PD
+Y	MNG14-373	N370S/84GG	Frontal Cortex	7/24/23	5	ES	ES5	“Dirty”	F	61	8	9	GD/PD
+Y	MNG 17-457	N370S/c203del	Frontal Cortex	7/24/23	3	ES	ES3	Hard to homogenize/25strokes “Dirty”	F	63	10-12	3	GD
+Y	DMN 89.26	N370S/N370S	Frontal Cortex	7/24/23	1	ES	ES1	OCT embedded	F	64	23	2	GD
+N	NSB 03-156	N370S/L444P	Frontal Cortex	7/24/23	6	ES	ES6	“Dirty”	F	70	12-16	10	GD/PD
+N	Cin-01		Frontal Cortex	7/25/23	9	ES	ES9		M	71	NA	52	GD
+Y	MNG 14-388	N370S/84GG	Frontal Cortex	7/24/23	8	ES	ES8		F	73	22	9	GD/PD
+Y	DMN 87.30	N370S/N370S	Frontal Cortex	7/24/23	2	ES	ES2		M	86	20	21	GD
+Y	DMN 89.26	N370S/N370S	Substantia nigra	9/26/23	12	ES	ES12		M	75	NA	NA	
+Y	DMN 87.30	N370S/N370S	Substantia nigra	9/26/23	13	ES	ES13		F	53	19	22	GD/PD
+Y	MNG 17-457	N370S/c203del	Substantia nigra	9/26/23	14	ES	ES14		F	63	10-12	3	GD
+Y	MNG-06-197	84GG/N370S	Substantia nigra	9/26/23	15	ES	ES15		M	59	24	11	GD/PD
+Y	MNG 14-388	N370S/84GG	Substantia nigra	9/26/23	16	ES	ES16		F	73	22	9	GD/PD
+Y	MNG14-373	N370S/84GG	Substantia nigra	9/26/23	17	ES	ES17		F	61	8	9	GD/PD
+N	1027		Substantia nigra	9/26/23	18	ES	ES18		F	64	23	2	GD
+Y	NSB 01-106	L444P/D409H+Rec 7	Substantia nigra	9/26/23	19	ES	ES19		M	86	20	21	GD

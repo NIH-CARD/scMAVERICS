@@ -16,6 +16,9 @@ sample_value = snakemake.params.sample_param_name
 # Get sample list
 samples = snakemake.params.samples
 
+# Get cell type
+cell_type = snakemake.params.cell_type
+
 # For sample in samples
 for i, sample in enumerate(samples):
     # Define fragment file
@@ -30,7 +33,7 @@ for i, sample in enumerate(samples):
     cell_fragment = {cell_type: pl_fragment.filter(pl_fragment['name'].is_in(cell_type_barcodes[cell_type])) for cell_type in snakemake.params.cell_types}
     # Add the filtered barcodes to the fragments
     print(f'Writing sample {sample}')
-    for j, cell_type in enumerate(snakemake.params.cell_types):
+    for j, cell_type in enumerate(snakemake.params.cell_type):
         with open(snakemake.output.pseudo_fragment_files[j], mode='a') as f:
             cell_fragment[cell_type].write_csv(f, include_header=False, separator='\t')
             f.close()

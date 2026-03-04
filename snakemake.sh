@@ -20,6 +20,7 @@ apptainer pull --disable-cache envs/atac_fragment.sif oras://quay.io/adamcatchin
 apptainer pull --disable-cache envs/great_gsea.sif oras://quay.io/adamcatchingdti/great_gsea.sif:0.9
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 apptainer pull --disable-cache envs/tobias.sif docker://naotokubota/tobias:0.13.3
+apptainer pull --disable-cache envs/muon.sif oras://quay.io/rjiang8/muon:1.1
 
 # Load singularity
 module load singularity
@@ -34,4 +35,4 @@ chmod 777 scripts/atac_model.sh
 chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity
+snakemake --cores all --profile snakemake_profile --use-singularity -n

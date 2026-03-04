@@ -23,7 +23,7 @@ for i, sample in enumerate(samples):
     # Load fragment with polars
     print(f'Loading sample {sample} fragments')
     pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
-    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
+    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score', '.']
     # Get list of sample and cell type specific barcodes
     cell_type_barcodes = {cell_type: cell_df[(cell_df['celltype']== cell_type) & (cell_df[sample_value] == sample)]['cell_barcode'].to_list() for cell_type in snakemake.params.cell_types}
     # Filter on the cell type barcodes
