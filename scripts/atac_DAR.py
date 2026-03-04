@@ -21,48 +21,36 @@ disease_param = snakemake.params.disease_param
 atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
-pdata = dc.get_pseudobulk(
-    atac,
+pdata = dc.pp.pseudobulk(
+    celltype_atac,
     sample_col='sample_id',
-    groups_col=disease_param,
-    mode='sum',
-    min_cells=10,
-    min_counts=10
-    )
+    groups_col=snakemake.params.separating_cluster,
+    mode='sum'
+)
 
-# CSV pseudobulk
-adata_df = pd.DataFrame(pdata.X)
-sample_cell = pdata.obs[['sample_id']]
-adata_df.columns = pdata.var_names.to_list()
-adata_df.index = sample_cell.index
-adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
+# Filter out samples with low number of cells or counts by each param and covariate
+dc.pp.filter_samples(pdata, min_cells=10, min_counts=100)
 
 # Store raw counts in layers
-pdata.layers['counts'] = pdata.X.copy()
+pdata.layers["counts"] = pdata.X.copy()
 
-# Abbreviate diagnosis to avoid space syntax error
-pdata.obs['comparison'] = pdata.obs[disease_param]
+# Normalize, scale and compute pca
+sc.pp.normalize_total(pdata, target_sum=1e4)
+sc.tl.pca(pdata)
 
-# Select gene specific profiles
-pdata_genes = dc.filter_by_expr(
-    pdata, 
-    group='comparison', 
-    min_count=10, 
-    min_total_count=15
-    )
-
-# Subset valuable genes
-pdata = pdata[:, pdata_genes].copy()
+# Return raw counts to X
+dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
 # Include inference
 inference = DefaultInference(n_cpus=snakemake.threads)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
-    adata=pdata,
-    design_factors=snakemake.params.design_factors + ['comparison'],
-    inference=inference,
-)
+        adata=subtype_pdata,
+        design_factors=[disease_param] + snakemake.params.design_covariates,
+        refit_cooks=True,
+        inference=inference,
+    )
 
 # Compute LFCs
 dds.deseq2()
@@ -84,15 +72,15 @@ deseq2_results_df['peak'] = deseq2_results_df.index.to_list()
 deseq2_results_df.to_csv(snakemake.output.output_DAR_data, index=False)
 
 # Plot
-dc.plot_volcano_df(
+dc.pl.plot_volcano_df(
     deseq2_results_df,
     x='log2FoldChange',
     y='padj',
     top=20,
-    lFCs_thr=1,
-    sign_thr=1e-2,
+    thr_stat=1,
+    thr_sign=1e-2,
     figsize=(4, 4)
 )
-plt.title(f'Control vs. {disease_name} in {cell_type}')
+plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
 plt.tight_layout()
 plt.savefig(snakemake.output.output_figure, dpi=300)
