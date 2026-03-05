@@ -196,19 +196,20 @@ rule atac_preprocess:
 rule merge_unfiltered_atac:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad', 
+            work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
             zip,
-            batch=batches,
             sample=samples
             )
     output:
         merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['singlecell']
+    params:
+        samples=samples
     resources:
-        runtime=480, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'/scripts/merge_atac.py'
+        work_dir+'/scripts/merge_anndata.py'
 
 rule plot_qc_atac:
     input:
