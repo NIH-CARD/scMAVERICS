@@ -186,9 +186,11 @@ rule merge_unfiltered_atac:
     output:
         merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['singlecell']
+    params:
+        samples=samples
     resources:
-        runtime=480, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
     script:
         work_dir+'/scripts/merge_anndata.py'
 
