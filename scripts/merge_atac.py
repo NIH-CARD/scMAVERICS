@@ -50,7 +50,7 @@ snap.tl.umap(adataset)
 
 # Save values
 pd.DataFrame(adataset.obsm['X_umap']).to_csv(snakemake.output.umap_data)
-pd.DataFrame(adataset.var[['count', 'selected']])to_csv(snakemake.output.var_data)
+pd.DataFrame(adataset.var[['count', 'selected']]).to_csv(snakemake.output.var_data)
 
 """ THIS AREA FOR INTEGRATING ANNOTATION WITH RNA DATA"""
 # Save the dataframe

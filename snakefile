@@ -55,11 +55,7 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad',
-        atac_anndata = expand(
-            work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad',
-            sample = samples
-        )
+        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
             
 # This needs to be forced to run once
 rule cellbender:
@@ -194,7 +190,7 @@ rule merge_unfiltered_atac:
     resources:
         runtime=480, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'/scripts/merge_atac.py'
+        work_dir+'/scripts/merge_anndata.py'
 
 rule plot_qc_atac:
     input:
