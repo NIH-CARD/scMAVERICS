@@ -23,7 +23,7 @@ disease_param = 'Pathology' # Name of the disease parameter
 control = 'GD' # Define disease states
 diseases = ['GD/PD'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-PFC_celltypes = pd.read_csv(work_dir+'/input/PFC_genes.csv' )['cell type']
+PFC_celltypes = pd.read_csv(work_dir+'/input/PFC_genes.csv')['cell type']
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
@@ -64,14 +64,14 @@ rule all:
 # This needs to be forced to run once
 rule cellbender:
     input:
-        rna_anndata =data_dir+'{sample}/outs/raw_feature_bc_matrix.h5'
+        rna_anndata =work_dir+'/data/samples/{sample}/outs/raw_feature_bc_matrix.h5'
     output:
         rna_anndata = work_dir+'/data/samples/{sample}/outs/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}',
         cwd = work_dir+'/data/samples/{sample}/'
     resources:
-        runtime=1440, mem_mb=200000, gpu=1, gpu_model='a100'
+        runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {params.cwd} {output.rna_anndata}'
 
