@@ -55,7 +55,8 @@ envs = {
 
 rule all:
     input:
-        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
+        consensus_bed = work_dir + '/data/consensus_PFC_regions.bed',
+        merged_atac_anndata = work_dir+'/atlas/04_PFC_modeled_anndata_atac.h5ad'
             
 # This needs to be forced to run once
 rule cellbender:
@@ -184,13 +185,13 @@ rule merge_unfiltered_atac:
             sample=samples
             )
     output:
-        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
     singularity:
         envs['singlecell']
     params:
         samples=samples
     resources:
-        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=120, mem_mb=2000000, disk_mb=10000, slurm_partition='largemem' 
     script:
         work_dir+'/scripts/merge_anndata.py'
 
@@ -354,7 +355,7 @@ rule filtered_UMAP:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
 
-"""############
+############
 # PFC Section
 ############
 rule feature_PFC_selection:
@@ -381,7 +382,7 @@ rule rna_PFC_model:
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=1, gpu_model='v100x'
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
 
@@ -483,11 +484,11 @@ rule second_pass_annotate:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'"""
+        work_dir+'/scripts/annotate.py'
 
 rule gene_linear_regression:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         covariates = work_dir+'/data/covariates.csv'
     output:
         rna_pseudobulk = work_dir+'/data/pseudobulked_rna.csv',
@@ -508,7 +509,7 @@ rule gene_linear_regression:
 
 rule cell_cell_communication:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
     output:
         cell_cell_communication_data = work_dir+'/data/CCC/combined/CCC_celltype_results.csv'
     params:
@@ -541,7 +542,7 @@ rule peak_linear_regression:
 
 rule DGE:
     input:
-        rna_anndata = work_dir + '/atlas/07_PFC_polished_anndata_rna.h5ad'
+        rna_anndata = work_dir + '/atlas/06_PFC_polished_anndata_rna.h5ad'
     output:
         output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
         output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
@@ -565,7 +566,7 @@ rule DGE:
 
 rule differential_cell_cell_communication:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
     output:
         differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
@@ -578,9 +579,9 @@ rule differential_cell_cell_communication:
     
 rule cistopic_pseudobulk:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
+            work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
             zip,
             sample=PFC_samples,
             )
@@ -588,7 +589,7 @@ rule cistopic_pseudobulk:
         pseudo_fragment_files = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_fragments.bed'
     params:
         pseudobulk_param = 'celltype',
-        samples=samples,
+        samples=PFC_samples,
         sample_param_name = sample_key,
         cell_type = lambda wildcards, output: output[0].split("/")[-2]
     singularity:
@@ -632,8 +633,8 @@ rule consensus_peaks:
     
 rule cistopic_create_objects:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
-        fragment_file = data_dir+'{sample}/outs/atac_fragments.tsv.gz',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
+        fragment_file = work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_PFC_regions.bed'
     output:
         cistopic_objects = work_dir+'/data/samples/{sample}/outs/04_{sample}_cistopic_obj.pkl',
@@ -654,11 +655,11 @@ rule cistopic_create_objects:
 
 rule cistopic_merge_objects:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         cistopic_objects = expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_cistopic_obj.pkl',
             zip,
-            sample=samples,
+            sample=PFC_samples,
             ),
         cistopic_adata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
