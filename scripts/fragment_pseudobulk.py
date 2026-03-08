@@ -27,7 +27,7 @@ for i, sample in enumerate(samples):
     # To make sure the same columns are being read in
     num_blank = len(pl_fragment.columns) - 5
     pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score'] + ['.']*num_blank
-    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score'] + ['.']*num_blank']
+    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score'] + ['.']*num_blank
     pl_fragment = pl_fragment[['chrom', 'chromStart', 'chromEnd', 'name', 'score']]
     
     # Get list of sample and cell type specific barcodes
