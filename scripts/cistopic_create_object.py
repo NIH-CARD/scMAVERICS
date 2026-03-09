@@ -14,7 +14,6 @@ cell_data = rna.obs
 # Add the sample_id variable
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
 cell_data['sample_id'] = cell_data[snakemake.params.sample_key]
-sample_batch = cell_data[[snakemake.params.sample_key, snakemake.params.seq_batch_key]].drop_duplicates()
 
 # Path to regions
 path_to_regions = snakemake.input.consensus_bed
