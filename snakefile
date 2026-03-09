@@ -572,7 +572,7 @@ rule cistopic_create_objects:
 
 rule cistopic_merge_objects:
     input:
-        cistopic_adata=expand(
+        atac_anndata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
             sample=PFC_samples,
             )
