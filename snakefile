@@ -577,7 +577,7 @@ rule cistopic_merge_objects:
             sample=PFC_samples,
             )
     output:
-        merged_cistopic_adata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
     params:
         samples = PFC_samples
     singularity:
