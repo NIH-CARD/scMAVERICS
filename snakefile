@@ -561,8 +561,6 @@ rule cistopic_create_objects:
         envs['scenicplus']
     params:
         sample='{sample}',
-        batch='{batch}',
-        seq_batch_key = seq_batch_key,
         sample_key = sample_key,
         disease_param = disease_param
     resources:
