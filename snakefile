@@ -572,22 +572,14 @@ rule cistopic_create_objects:
 
 rule cistopic_merge_objects:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        cistopic_objects = expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-            zip,
-            sample=samples,
-            batch=batches
-            ),
         cistopic_adata=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            zip,
-            sample=samples,
-            batch=batches
+            work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
+            sample=PFC_samples,
             )
     output:
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
-        merged_cistopic_adata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+        merged_cistopic_adata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+    params:
+        samples = PFC_samples
     singularity:
         envs['scenicplus']
     resources:
