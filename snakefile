@@ -13,7 +13,7 @@ metadata_table = work_dir+'/input/metadata.csv' # Define where the metadata data
 gene_markers_file = work_dir+'/input/SN_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
-seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
+seq_batch_key = 'Sample cohort' # Key for sequencing batch, used for directory search
 sample_key = 'folder_names' # Key for samples, required in aggregating while preserving sample info
 
 metadata_df = pd.read_csv(metadata_table)
@@ -358,7 +358,7 @@ rule filtered_UMAP:
 ############
 # PFC Section
 ############
-rule feature_PFC_selection:
+"""rule feature_PFC_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_PFC_filtered_anndata_rna.h5ad'
     output:
@@ -484,7 +484,7 @@ rule second_pass_annotate:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'
+        work_dir+'/scripts/annotate.py'"""
 
 rule gene_linear_regression:
     input:
@@ -597,7 +597,7 @@ rule cistopic_pseudobulk:
     threads:
         64
     resources:
-        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=180, mem_mb=200000, disk_mb=200000, slurm_partition='quick'
     script:
         'scripts/fragment_pseudobulk.py'
 
@@ -643,11 +643,10 @@ rule cistopic_create_objects:
         envs['scenicplus']
     params:
         sample='{sample}',
-        seq_batch_key = seq_batch_key,
         sample_key = sample_key,
         disease_param = disease_param
     resources:
-        runtime=120, mem_mb=250000, slurm_partition='quick'
+        runtime=120, mem_mb=200000, slurm_partition='quick'
     threads:
         16
     script:
@@ -655,20 +654,14 @@ rule cistopic_create_objects:
 
 rule cistopic_merge_objects:
     input:
-        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
-        cistopic_objects = expand(
-            work_dir+'/data/samples/{sample}/outs/04_{sample}_cistopic_obj.pkl',
-            zip,
-            sample=PFC_samples,
-            ),
         cistopic_adata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            zip,
-            sample=samples,
+            sample=PFC_samples,
             )
     output:
-        merged_cistopic_object = work_dir + '/data/pycisTopic/merged_cistopic_object.pkl',
         merged_cistopic_adata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+    params:
+        samples = PFC_samples
     singularity:
         envs['scenicplus']
     resources:
