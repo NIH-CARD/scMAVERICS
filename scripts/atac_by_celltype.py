@@ -18,7 +18,7 @@ cell_data = rna.obs
 print(rna.n_obs)
 
 # Get cell barcodes of the given cell type
-cell_data = cell_data[cell_data['cell_type'] == snakemake.params.cell_type]
+cell_data = cell_data[cell_data[snakemake.params.pseudobulk_param] == snakemake.params.cell_type]
 
 cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
 cell_data['sample_id'] = cell_data[sample_key]
@@ -38,7 +38,7 @@ for sample, fragment_file in cell_type_fragments.items():
     cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
                                                path_to_regions=snakemake.input.cell_bedfile,
                                                valid_bc = cell_data[cell_data['sample_id'] == sample]['barcode'].to_list(),
-                                               n_cpu=1,
+                                               n_cpu=snakemake.threads,
                                                project=sample
                                                )
 
