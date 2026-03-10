@@ -666,6 +666,7 @@ rule export_atac_cell:
     singularity:
         envs['scenicplus']
     params:
+        pseudobulk_param = 'celltype',
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
