@@ -32,10 +32,14 @@ sc.pp.filter_genes(filtered_adata, min_cells=min_cells)
 print("# regions after filtering:", filtered_adata.shape[-1])
 
 # Setup POISSONVI on the data layer
-scvi.external.POISSONVI.setup_anndata(filtered_adata) 
+scvi.external.POISSONVI.setup_anndata(
+    filtered_adata,
+    batch_key='sample_id') 
 
 # Add the parameters of the model
-model = scvi.external.POISSONVI(filtered_adata)
+model = scvi.external.POISSONVI(
+    filtered_adata,
+    latent_distribution = 'normal')
 
 # Train the model
 model.train(
