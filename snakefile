@@ -19,11 +19,13 @@ sample_key = 'folder_names' # Key for samples, required in aggregating while pre
 metadata_df = pd.read_csv(metadata_table)
 samples = metadata_df[sample_key].tolist()
 PFC_samples = metadata_df[metadata_df['Region'] == 'Frontal Cortex'][sample_key].tolist()
+SN_samples = metadata_df[metadata_df['Region'] == 'Substantia nigra'][sample_key].tolist()
 disease_param = 'Pathology' # Name of the disease parameter
 control = 'GD' # Define disease states
 diseases = ['GD/PD'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 PFC_celltypes = pd.read_csv(work_dir+'/input/PFC_genes.csv')['cell type']
+SN_celltypes = pd.read_csv(work_dir+'/input/SN_genes.csv')['cell type']
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
@@ -638,7 +640,7 @@ rule cistopic_create_objects:
         consensus_bed = work_dir + '/data/consensus_PFC_regions.bed'
     output:
         cistopic_objects = work_dir+'/data/samples/{sample}/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata=work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        atac_anndata=work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
@@ -654,12 +656,12 @@ rule cistopic_create_objects:
 
 rule cistopic_merge_objects:
     input:
-        cistopic_adata=expand(
+        atac_anndata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
             sample=PFC_samples,
             )
     output:
-        merged_cistopic_adata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
     params:
         samples = PFC_samples
     singularity:
@@ -688,7 +690,7 @@ rule atac_peaks_model:
 rule multiome_output:
     input:
         merged_atac_anndata = work_dir + '/atlas/04_PFC_modeled_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad'
     output:
         merged_multiome = work_dir+'/atlas/multiome_PFC_atlas.h5mu'
     singularity:
@@ -734,7 +736,7 @@ rule annotate_bed:
 
 rule export_atac_cell:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
@@ -802,7 +804,7 @@ rule atac_coaccessibilty:
 
 rule fragments_pseudobulk_cell_disease:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         fragment_file=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             zip,
