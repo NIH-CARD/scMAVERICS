@@ -22,10 +22,10 @@ PFC_samples = metadata_df[metadata_df['Region'] == 'Frontal Cortex'][sample_key]
 SN_samples = metadata_df[metadata_df['Region'] == 'Substantia nigra'][sample_key].tolist()
 disease_param = 'Pathology' # Name of the disease parameter
 control = 'GD' # Define disease states
-diseases = ['GD/PD'] # Disease states to compare, keep as list of strings, unnecessary 
+diseases = ['GD+PD'] # Disease states to compare, keep as list of strings, unnecessary 
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-PFC_celltypes = pd.read_csv(work_dir+'/input/PFC_genes.csv')['cell type']
-SN_celltypes = pd.read_csv(work_dir+'/input/SN_genes.csv')['cell type']
+PFC_celltypes = pd.read_csv(work_dir+'/input/PFC_genes.csv')['cell type'].drop_duplicates()
+SN_celltypes = pd.read_csv(work_dir+'/input/SN_genes.csv')['cell type'].drop_duplicates()
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
@@ -57,11 +57,16 @@ envs = {
 
 rule all:
     input:
-        consensus_bed = work_dir + '/data/consensus_PFC_regions.bed',
-        merged_atac_anndata = work_dir+'/atlas/04_PFC_modeled_anndata_atac.h5ad'
-            
+        output_DAR_data = expand(
+            work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            separating_cluster='celltype',
+            cell_type = PFC_celltypes,
+            control = 'Control',
+            disease = ['GD', 'GD/PD']
+        )
+
 # This needs to be forced to run once
-rule cellbender:
+"""rule cellbender:
     input:
         rna_anndata =work_dir+'/data/samples/{sample}/outs/raw_feature_bc_matrix.h5'
     output:
@@ -360,7 +365,7 @@ rule filtered_UMAP:
 ############
 # PFC Section
 ############
-"""rule feature_PFC_selection:
+rule feature_PFC_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/03_PFC_filtered_anndata_rna.h5ad'
     output:
@@ -487,7 +492,157 @@ rule second_pass_annotate:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
         work_dir+'/scripts/annotate.py'"""
+rule cistopic_pseudobulk:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/06_SN_polished_anndata_rna.h5ad',
+        fragment_file=expand(
+            work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            sample=SN_samples,
+            )
+    output:
+        pseudo_fragment_files = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_fragments.bed'
+    params:
+        pseudobulk_param = 'celltype',
+        samples=SN_samples,
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=180, mem_mb=200000, disk_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/fragment_pseudobulk.py'
 
+rule cistopic_call_peaks:
+    input:
+        pseudo_fragment_files = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_fragments.bed'
+    output: 
+        xls = work_dir + "/data/SN_celltypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "/data/SN_celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/SN_celltypes/{cell_type}"
+    resources:
+        mem_mb=200000, runtime=2880
+    singularity:
+        envs['scenicplus']
+    shell:
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "/data/SN_celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            cell_type = SN_celltypes
+            )
+    output:
+        consensus_bed = work_dir + '/data/consensus_SN_regions.bed'
+    singularity:
+        envs['scenicplus']
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        'scripts/MACS_consensus.py'
+    
+rule cistopic_create_objects:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/06_SN_polished_anndata_rna.h5ad',
+        fragment_file = work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
+        consensus_bed = work_dir + '/data/consensus_SN_regions.bed'
+    output:
+        cistopic_objects = work_dir+'/data/samples/{sample}/outs/04_{sample}_cistopic_obj.pkl',
+        atac_anndata=work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        sample='{sample}',
+        sample_key = sample_key,
+        disease_param = disease_param
+    resources:
+        runtime=120, mem_mb=200000, slurm_partition='quick'
+    threads:
+        16
+    script:
+        'scripts/cistopic_create_object.py'
+
+rule cistopic_merge_objects:
+    input:
+        atac_anndata=expand(
+            work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
+            sample=SN_samples,
+            )
+    output:
+        merged_atac_anndata = work_dir + '/atlas/03_SN_merged_cistopic_atac.h5ad'
+    params:
+        samples = SN_samples
+    singularity:
+        envs['scenicplus']
+    resources:
+        runtime=960, mem_mb=300000
+    script:
+        'scripts/merge_cistopic_and_adata.py'
+
+rule atac_peaks_model:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_SN_merged_cistopic_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir+'/atlas/04_SN_modeled_anndata_atac.h5ad',
+        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
+    params:
+        atac_model = work_dir+'/data/models/atac/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
+
+rule motif_enrichment:
+    input:
+        atac_anndata = work_dir+'/atlas/04_PFC_modeled_anndata_atac.h5ad',
+        ref_genome = reference_genome,
+        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme'
+    output:
+        motif_enrichment = work_dir+'/data/PFC_motif_enrichment.csv'
+    params:
+        control = control,
+        cell_type = 'celltype',
+        disease_param = disease_param
+    singularity:
+        envs['snapatac2']
+    resources:
+        runtime=240, disk_mb=300000, mem_mb=200000
+    script:
+        'scripts/atac_motif_enrichment.py'
+
+rule DAR:
+    input:
+        atac_anndata = work_dir+'/data/PFC_celltypes/{cell_type}/atac.h5ad'
+    output:
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+        output_figure = work_dir+'/figures/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.svg',
+        cell_specific_pseudo = work_dir+'/data/PFC_celltypes/{cell_type}/atac_{separating_cluster}_{cell_type}_{control}_{disease}_pseudobulk.csv'
+    params:
+        disease_param = disease_param,
+        design_factors = design_covariates,
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+    singularity:
+        envs['decoupler']
+    threads:
+        16
+    resources:
+        runtime=180, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/atac_DAR.py'
+
+"""=== PFC ==="""
+"""
 rule gene_linear_regression:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
@@ -555,7 +710,7 @@ rule DGE:
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
         sample_key=sample_key,
-        design_factors = design_covariates,
+        design_factors = ['PMI', "Sex", "Age", 'psbulk_cells', 'psbulk_counts'],
     singularity:
         envs['decoupler']
     threads:
@@ -740,7 +895,7 @@ rule export_atac_cell:
         cell_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
-            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
+            work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
             )
@@ -749,6 +904,7 @@ rule export_atac_cell:
     singularity:
         envs['scenicplus']
     params:
+        pseudobulk_param = 'celltype',
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
@@ -802,11 +958,12 @@ rule atac_coaccessibilty:
     script:
         'scripts/circe_by_celltype.py'
 
+"""
 rule fragments_pseudobulk_cell_disease:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
+            work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
             zip,
             sample=samples,
             )
@@ -858,7 +1015,7 @@ rule create_bigwig_cell_disease:
     script:
         'scripts/atac_bigwig.py'
 
-"""rule celltype_bed_cell_disease:
+rule celltype_bed_cell_disease:
     input:
         xls = work_dir + "/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
         blacklist = work_dir + '/input/hg38-blacklist.bed'
@@ -867,7 +1024,7 @@ rule create_bigwig_cell_disease:
     output:
         cell_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     script:
-        'scripts/MACS_to_bed.py'"""
+        'scripts/MACS_to_bed.py'
 
 rule annotate_bed_cell_disease:
     input:
@@ -883,7 +1040,7 @@ rule export_atac_cell_disease:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
-        cell_annotated_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{con{disease}_annotated_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
         fragment_files=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             zip,
@@ -910,10 +1067,10 @@ rule export_atac_cell_disease:
 
 rule atac_coaccessibilty_cell_disease:
     input:
-        celltype_atac = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac.h5ad'
+        celltype_atac = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac_circe.h5ad',
-        circe_network = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{control}_{disease}_circe_network.csv'
+        celltype_atac = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
     params:
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
@@ -924,6 +1081,7 @@ rule atac_coaccessibilty_cell_disease:
         runtime=600, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
+"""
 
 rule motif_enrichment:
     input:
@@ -1192,3 +1350,4 @@ rule control_footprinting:
         runtime=180, mem_mb=200000, slurm_partition='quick'
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
+"""
