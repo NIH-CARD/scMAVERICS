@@ -57,12 +57,13 @@ envs = {
 
 rule all:
     input:
-        output_DAR_data = expand(
-            work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
-            separating_cluster='celltype',
-            cell_type = PFC_celltypes,
-            control = 'Control',
-            disease = ['GD', 'GD/PD']
+        celltype_atac = expand(
+            work_dir+'/data/SN_celltypes/{cell_type}/atac.h5ad',
+            cell_type = SN_celltypes
+        ),
+        celltype_normalized_bigwig = expand(
+            work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw',
+            cell_type = SN_celltypes
         )
 
 # This needs to be forced to run once
@@ -641,6 +642,69 @@ rule DAR:
     script:
         'scripts/atac_DAR.py'
 
+rule create_bigwig:
+    input:
+        pseudo_fragment_file = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_fragments.bed'
+    output:
+        celltype_bigwig = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
+    resources:
+        mem_mb=1500000, runtime=960,  slurm_partition='largemem'
+    singularity:
+        envs['atac_fragment']
+    script:
+        'scripts/atac_bigwig.py'
+
+rule celltype_bed:
+    input:
+        xls = work_dir + "/data/SN_celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
+    singularity:
+        envs['atac_fragment']
+    output:
+        cell_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
+
+rule annotate_bed:
+    input:
+        cell_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_peaks.bed'
+    output:
+        cell_annotated_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed'
+    resources:
+        runtime=30, mem_mb=50000, 
+    shell:
+        'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
+
+rule export_atac_cell:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/06_SN_polished_anndata_rna.h5ad',
+        cell_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
+        fragment_files=expand(
+            work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            sample=SN_samples,
+            )
+    output:
+        celltype_atac = work_dir+'/data/SN_celltypes/{cell_type}/atac.h5ad'
+    singularity:
+        envs['scenicplus']
+    params:
+        pseudobulk_param = 'celltype',
+        sample_key = sample_key,
+        seq_batch_key = seq_batch_key,
+        disease_param = disease_param,
+        covariates = design_covariates,
+        samples=samples,
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    threads:
+        8
+    resources:
+        runtime=2880, mem_mb=400000, slurm_partition='largemem'
+    script:
+        'scripts/atac_by_celltype.py'
+
 """=== PFC ==="""
 """
 rule gene_linear_regression:
@@ -961,7 +1025,7 @@ rule atac_coaccessibilty:
 """
 rule fragments_pseudobulk_cell_disease:
     input:
-        merged_rna_anndata = work_dir+'/atlas/06_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_SN_QC_filtered_anndata_rna.h5ad',
         fragment_file=expand(
             work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
             zip,
@@ -1038,7 +1102,7 @@ rule annotate_bed_cell_disease:
 
 rule export_atac_cell_disease:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/data/CARD_singlecell/Sidransky_SN_PFC/atlas/05_SN_QC_filtered_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
         fragment_files=expand(
