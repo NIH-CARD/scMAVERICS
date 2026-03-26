@@ -43,19 +43,20 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
-dc.pl.filter_by_expr(
+dc.pp.filter_by_expr(
     adata=pdata,
-    group=disease_param,
+    group="comparison",
     min_count=10,
     min_total_count=15,
     large_n=10,
     min_prop=0.7,
 )
-dc.pl.filter_by_prop(
+dc.pp.filter_by_prop(
     adata=pdata,
     min_prop=0.1,
     min_smpls=2,
 )
+
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
