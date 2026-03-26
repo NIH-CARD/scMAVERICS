@@ -22,7 +22,7 @@ adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy(
 
 # Get pseudo-bulk profile
 pdata = dc.pp.pseudobulk(
-    SN_adata,
+    adata,
     sample_col=snakemake.params.sample_key,
     groups_col=snakemake.params.separating_cluster,
     layer='counts',
@@ -43,6 +43,10 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
+# Abbreviate diagnosis to avoid space syntax error
+pdata.obs['comparison'] = pdata.obs[disease_param]
+
+
 dc.pp.filter_by_expr(
     adata=pdata,
     group="comparison",
@@ -58,8 +62,6 @@ dc.pp.filter_by_prop(
 )
 
 
-# Abbreviate diagnosis to avoid space syntax error
-pdata.obs['comparison'] = pdata.obs[disease_param]
 
 # Determine the number of cpus to use
 inference = DefaultInference(n_cpus=64)
