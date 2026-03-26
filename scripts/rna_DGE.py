@@ -43,19 +43,20 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
-dc.pl.filter_by_expr(
+dc.pp.filter_by_expr(
     adata=pdata,
-    group=disease_param,
+    group="comparison",
     min_count=10,
     min_total_count=15,
     large_n=10,
     min_prop=0.7,
 )
-dc.pl.filter_by_prop(
+dc.pp.filter_by_prop(
     adata=pdata,
     min_prop=0.1,
     min_smpls=2,
 )
+
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['comparison'] = pdata.obs[disease_param]
@@ -93,13 +94,13 @@ try:
     DGE_results_df.to_csv(snakemake.output.output_DGE_data)
 
     # Plot 
-    dc.plot_volcano_df(
+    dc.pl.volcano(
         DGE_results_df,
         x='log2FoldChange',
         y='padj',
         top=20,
-        lFCs_thr=1,
-        sign_thr=1e-2,
+        thr_stat=1,
+        thr_sign=0.01,
         figsize=(4, 4)
     )
     plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
