@@ -93,13 +93,13 @@ try:
     DGE_results_df.to_csv(snakemake.output.output_DGE_data)
 
     # Plot 
-    dc.plot_volcano_df(
+    dc.pl.volcano(
         DGE_results_df,
         x='log2FoldChange',
         y='padj',
         top=20,
-        lFCs_thr=1,
-        sign_thr=1e-2,
+        thr_stat=1,
+        thr_sign=0.01,
         figsize=(4, 4)
     )
     plt.title(f'{control_name} vs. {disease_name} in {cell_type}')

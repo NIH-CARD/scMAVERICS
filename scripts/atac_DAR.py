@@ -41,6 +41,20 @@ sc.tl.pca(pdata)
 # Return raw counts to X
 dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
+dc.pp.filter_by_expr(
+    adata=pdata,
+    group="disease",
+    min_count=10,
+    min_total_count=15,
+    large_n=10,
+    min_prop=0.7,
+)
+dc.pp.filter_by_prop(
+    adata=pdata,
+    min_prop=0.1,
+    min_smpls=2,
+)
+
 # Include inference
 inference = DefaultInference(n_cpus=snakemake.threads)
 
