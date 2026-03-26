@@ -22,7 +22,7 @@ adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy(
 
 # Get pseudo-bulk profile
 pdata = dc.pp.pseudobulk(
-    SN_adata,
+    adata,
     sample_col=snakemake.params.sample_key,
     groups_col=snakemake.params.separating_cluster,
     layer='counts',
