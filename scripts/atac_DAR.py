@@ -22,7 +22,7 @@ atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
 pdata = dc.pp.pseudobulk(
-    celltype_atac,
+    atac,
     sample_col='sample_id',
     groups_col=snakemake.params.separating_cluster,
     mode='sum'
