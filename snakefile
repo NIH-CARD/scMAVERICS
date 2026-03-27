@@ -65,7 +65,6 @@ envs = {
     'great_gsea': 'envs/great_gsea.sif',
     'tobias': 'envs/tobias.sif'
     }
-
 rule all:
     input:
         subtype_DEG_1 = expand(
@@ -81,8 +80,50 @@ rule all:
             cell_type = subtypes,
             control = 'PD',
             disease = ['DLB']
-        )
-
+        ),
+        celltype_DEG_1 = expand(
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'celltype',
+            cell_type = cell_types,
+            control = control,
+            disease = diseases
+        ),
+        celltype_DEG_2 = expand(
+            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+            separating_cluster = 'celltype',
+            cell_type = cell_types,
+            control = 'PD',
+            disease = ['DLB']
+        ),
+        celltype_DAR_1 = expand(
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            separating_cluster = 'celltype',
+            cell_type = cell_types,
+            control = control,
+            disease = diseases
+        ),
+        celltype_DAR_2 = expand(
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            separating_cluster = 'celltype',
+            cell_type = cell_types,
+            control = 'PD',
+            disease = ['DLB']
+        ),
+        subtype_DAR_1 = expand(
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            separating_cluster = 'subtype',
+            cell_type = subtypes,
+            control = control,
+            disease = diseases
+        ),
+        subtype_DAR_2 = expand(
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            separating_cluster = 'subtype',
+            cell_type = subtypes,
+            control = 'PD',
+            disease = ['DLB']
+        ),
+#output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -501,7 +542,7 @@ rule differential_cell_cell_communication:
     script:
         'scripts/rna_differential_cell_cell_communication.py'
     
-rule cistopic_pseudobulk:
+"""rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
@@ -519,6 +560,33 @@ rule cistopic_pseudobulk:
         samples=samples,
         sample_param_name = sample_key,
         cell_types = cell_types
+    singularity:
+        envs['atac_fragment']
+    threads:
+        64
+    resources:
+        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/fragment_pseudobulk.py'"""
+
+rule cistopic_subtype_pseudobulk:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        fragment_file=expand(
+            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            sample=samples,
+            batch=batches
+            )
+    output:
+        pseudo_fragment_files = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
+            cell_type = subtypes)
+    params:
+        pseudobulk_param = 'celltype',
+        samples=samples,
+        sample_param_name = sample_key,
+        cell_types = subtypes
     singularity:
         envs['atac_fragment']
     threads:
@@ -688,7 +756,7 @@ rule export_atac_cell:
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
-        covariates = design_covariates,
+        covariates = ['Sex', 'Age', 'Use_batch', 'Brain_bank', 'subtype', 'celltype', 'Sample_ID', 'Primary Diagnosis', ''],
         samples=samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
@@ -711,15 +779,17 @@ rule DAR:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        cell_subtype = lambda wildcards, output: output[0].split("_")[-4].split('-')[-1] if len(output[0].split("_")[-4].split('-')) == 2 else '',
     singularity:
         envs['decoupler']
     threads:
-        16
+        32
     resources:
         runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/atac_DAR.py'
-   
+
+
 rule atac_coaccessibilty:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
