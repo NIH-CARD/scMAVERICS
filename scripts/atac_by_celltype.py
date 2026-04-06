@@ -29,7 +29,7 @@ fragment_files = snakemake.input.fragment_files
 samples = snakemake.params.samples
 fragment_dict = dict(zip(samples, fragment_files))
 
-cell_type_samples = [x for x in cell_sample_batch['sample_id'].to_list()]
+cell_type_samples = [str(x) for x in cell_sample_batch['sample_id'].to_list()]
 cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
 
 adatas = []
