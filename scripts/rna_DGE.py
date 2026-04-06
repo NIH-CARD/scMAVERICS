@@ -30,6 +30,7 @@ dc.pp.filter_samples(pdata, min_cells=10)
 
 # Abbreviate diagnosis to avoid space syntax error
 pdata.obs['diagnosis'] = pdata.obs[disease_param]
+
 # Store raw counts in layers
 pdata.layers["counts"] = pdata.X.copy()
 
@@ -65,7 +66,7 @@ inference = DefaultInference(n_cpus=64)
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
     adata=pdata,
-    design_factors=snakemake.params.design_factors + ['comparison'],
+    design_factors=snakemake.params.design_factors + ['diagnosis'],
     refit_cooks=True,
     inference=inference,
 )
@@ -78,7 +79,7 @@ try:
     # Extract contrast between control and disease states
     stat_res = DeseqStats(
         dds,
-        contrast=['comparison', disease_name, control_name],
+        contrast=['diagnosis', disease_name, control_name],
         inference=inference,
     )
 
