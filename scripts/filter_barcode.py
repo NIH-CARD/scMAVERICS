@@ -5,6 +5,9 @@ import sys
 df_path = sys.argv[1]
 cell_barcodes = pd.read_csv(df_path)
 
+# Cast sample to string
+cell_barcodes['sample'] = cell_barcodes['sample'].astype(str)
+
 # Define filtering parameters
 cell_type = sys.argv[2]
 sample = sys.argv[3]
