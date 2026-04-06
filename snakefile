@@ -502,14 +502,12 @@ rule cistopic_pseudobulk:
             batch=batches
             )
     output:
-        pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
-            cell_type = cell_types)
+        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     params:
         pseudobulk_param = 'celltype',
         samples=samples,
-        sample_param_name = sample_key,
-        cell_types = cell_types
+        sample_key = sample_key,
+        cell_type = lambda wildcards: wildcards.cell_type
     singularity:
         envs['atac_fragment']
     threads:
@@ -556,7 +554,7 @@ rule cistopic_create_objects:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
         cistopic_objects = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata=data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        atac_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
@@ -574,12 +572,12 @@ rule cistopic_merge_objects:
     input:
         atac_anndata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            sample=PFC_samples,
+            sample=samples,
             )
     output:
-        merged_atac_anndata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     params:
-        samples = PFC_samples
+        samples = samples
     singularity:
         envs['scenicplus']
     resources:
@@ -738,7 +736,7 @@ rule fragments_pseudobulk_cell_disease:
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
-        sample_param_name = sample_key,
+        sample_key = sample_key,
         cell_types = cell_types,
         diseases = diseases + [control],
         disease_param = disease_param

@@ -18,7 +18,7 @@ control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
 # Subset to cell type
-atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
+celltype_atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
 pdata = dc.pp.pseudobulk(
@@ -46,7 +46,7 @@ inference = DefaultInference(n_cpus=snakemake.threads)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
-        adata=subtype_pdata,
+        adata=pdata,
         design_factors=[disease_param] + snakemake.params.design_covariates,
         refit_cooks=True,
         inference=inference,
