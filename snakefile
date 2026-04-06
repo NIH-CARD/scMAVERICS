@@ -484,7 +484,7 @@ rule second_pass_annotate:
         gene_markers = gene_markers_file
     output:
         merged_rna_anndata = work_dir+'/atlas/07_PFC_polished_anndata_rna.h5ad',
-        cell_annotate = work_dir+'/data/rna_cell_annot.csv'
+        cell_annotate = work_dir+'/data/rna_SN_cell_annot.csv'
     params:
         seq_batch_key = seq_batch_key
     singularity:
@@ -678,7 +678,8 @@ rule annotate_bed:
 
 rule export_atac_cell:
     input:
-        merged_rna_anndata = work_dir+'/atlas/06_SN_polished_anndata_rna.h5ad',
+        #merged_rna_anndata = work_dir+'/atlas/06_SN_polished_anndata_rna.h5ad',
+        cell_annotate = work_dir+'/data/rna_SN_cell_annot.csv',
         cell_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_peaks.bed',
         cell_annotated_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
@@ -696,7 +697,7 @@ rule export_atac_cell:
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
         covariates = design_covariates,
-        samples=samples,
+        samples=SN_samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
         8

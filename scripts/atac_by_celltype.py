@@ -13,14 +13,12 @@ seq_batch_key = snakemake.params.seq_batch_key
 disease_param = snakemake.params.disease_param
 
 # Read in rna observation data
-rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
-cell_data = rna.obs
-print(rna.n_obs)
+cell_data = pd.read_csv(snakemake.input.cell_annotate)
 
 # Get cell barcodes of the given cell type
 cell_data = cell_data[cell_data[snakemake.params.pseudobulk_param] == snakemake.params.cell_type]
 
-cell_data['barcode'] = [x.split('_')[0] for x in cell_data.index]
+cell_data['barcode'] = [x.split('_')[0] for x in cell_data['atlas_identifier']]
 cell_data['sample_id'] = cell_data[sample_key]
 cell_sample_batch = cell_data[['sample_id', seq_batch_key]].drop_duplicates()
 
