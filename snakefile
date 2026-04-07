@@ -684,7 +684,6 @@ rule export_atac_cell:
         cell_annotated_bedfile = work_dir + '/data/SN_celltypes/{cell_type}/{cell_type}_annotated_peaks.bed',
         fragment_files=expand(
             work_dir+'/data/samples/{sample}/outs/atac_fragments.tsv.gz',
-            zip,
             sample=SN_samples,
             )
     output:

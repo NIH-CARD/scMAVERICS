@@ -13,7 +13,7 @@ seq_batch_key = snakemake.params.seq_batch_key
 disease_param = snakemake.params.disease_param
 
 # Read in rna observation data
-cell_data = pd.read_csv(snakemake.input.cell_annotate)
+cell_data = pd.read_csv(snakemake.input.cell_annotate, index_col=0)
 
 # Get cell barcodes of the given cell type
 cell_data = cell_data[cell_data[snakemake.params.pseudobulk_param] == snakemake.params.cell_type]
@@ -33,11 +33,12 @@ cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
 adatas = []
 print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
+    print(sample, type(sample))
     cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
                                                path_to_regions=snakemake.input.cell_bedfile,
-                                               valid_bc = cell_data[cell_data['sample_id'] == sample]['barcode'].to_list(),
+                                               valid_bc = cell_data[cell_data['sample_id'] == str(sample)]['barcode'].to_list(),
                                                n_cpu=snakemake.threads,
-                                               project=sample
+                                               project=str(sample)
                                                )
 
     cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][x] + '_' + cistopic_obj.cell_data['sample_id'][x] for x in range(len(cistopic_obj.cell_data))]
