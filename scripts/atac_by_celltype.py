@@ -24,7 +24,7 @@ cell_sample_batch = cell_data[['sample_id', seq_batch_key]].drop_duplicates()
 
 # Get fragment files and corresponding samples
 fragment_files = snakemake.input.fragment_files
-samples = snakemake.params.samples
+samples = [str(x) for x in snakemake.params.samples]
 fragment_dict = dict(zip(samples, fragment_files))
 
 cell_type_samples = [str(x) for x in cell_sample_batch['sample_id'].to_list()]
@@ -33,28 +33,30 @@ cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
 adatas = []
 print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
-    print(sample, type(sample))
-    cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
-                                               path_to_regions=snakemake.input.cell_bedfile,
-                                               valid_bc = cell_data[cell_data['sample_id'] == str(sample)]['barcode'].to_list(),
-                                               n_cpu=snakemake.threads,
-                                               project=str(sample)
-                                               )
+    barcode_list = filtered_celltype_data[filtered_celltype_data['sample_id'] == str(sample)]['barcode'].to_list()
+    if len(barcode_list) != 0:
+        print(sample, type(sample))
+        cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
+                                                path_to_regions=snakemake.input.cell_bedfile,
+                                                valid_bc = cell_data[cell_data['sample_id'] == str(sample)]['barcode'].to_list(),
+                                                n_cpu=snakemake.threads,
+                                                project=str(sample)
+                                                )
 
-    cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][x] + '_' + cistopic_obj.cell_data['sample_id'][x] for x in range(len(cistopic_obj.cell_data))]
-    adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
-    adata.obs = pd.merge(
-        left=cistopic_obj.cell_data,
-        right=cell_data[cell_data[sample_key] == sample][[disease_param, 'Age', seq_batch_key, 'PMI', 'atlas_identifier']],
-        left_on='atlas_identifier',
-        right_on='atlas_identifier')
-    adata.var.index = cistopic_obj.region_names
-    adata.var['chromosome'] = [x.split(':')[0] for x in adata.var.index]
-    adata.var['start'] = [x.split(':')[1].split('-')[0] for x in adata.var.index]
-    adata.var['end'] = [x.split(':')[1].split('-')[1] for x in adata.var.index]
-    adata.var['peak length'] = [int(x.split(':')[1].split('-')[1]) - int(x.split(':')[1].split('-')[0]) for x in adata.var.index]
-    adatas.append(adata)
-    print(f"Done with sample {sample}")
+        cistopic_obj.cell_data['atlas_identifier'] = [cistopic_obj.cell_data['barcode'][x] + '_' + cistopic_obj.cell_data['sample_id'][x] for x in range(len(cistopic_obj.cell_data))]
+        adata = ad.AnnData(cistopic_obj.fragment_matrix.T)
+        adata.obs = pd.merge(
+            left=cistopic_obj.cell_data,
+            right=cell_data[cell_data[sample_key] == sample][[disease_param, 'Age', seq_batch_key, 'PMI', 'atlas_identifier']],
+            left_on='atlas_identifier',
+            right_on='atlas_identifier')
+        adata.var.index = cistopic_obj.region_names
+        adata.var['chromosome'] = [x.split(':')[0] for x in adata.var.index]
+        adata.var['start'] = [x.split(':')[1].split('-')[0] for x in adata.var.index]
+        adata.var['end'] = [x.split(':')[1].split('-')[1] for x in adata.var.index]
+        adata.var['peak length'] = [int(x.split(':')[1].split('-')[1]) - int(x.split(':')[1].split('-')[0]) for x in adata.var.index]
+        adatas.append(adata)
+        print(f"Done with sample {sample}")
 
 adata = ad.concat(join='outer', adatas=adatas)
 
