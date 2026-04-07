@@ -33,7 +33,7 @@ cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
 adatas = []
 print(f'Iterating through {len(cell_type_samples)} samples')
 for sample, fragment_file in cell_type_fragments.items():
-    barcode_list = filtered_celltype_data[filtered_celltype_data['sample_id'] == str(sample)]['barcode'].to_list()
+    barcode_list = cell_data[cell_data['sample_id'] == str(sample)]['barcode'].to_list()
     if len(barcode_list) != 0:
         print(sample, type(sample))
         cistopic_obj = create_cistopic_object_from_fragments(path_to_fragments=fragment_file,
