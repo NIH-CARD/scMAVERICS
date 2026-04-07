@@ -67,59 +67,17 @@ envs = {
     }
 rule all:
     input:
-        subtype_DEG_1 = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            cell_type = subtypes,
-            control = control,
-            disease = diseases
-        ),
-        subtype_DEG_2 = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            cell_type = subtypes,
-            control = 'PD',
-            disease = ['DLB']
-        ),
-        celltype_DEG_1 = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
-            cell_type = cell_types,
-            control = control,
-            disease = diseases
-        ),
-        celltype_DEG_2 = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
-            cell_type = cell_types,
-            control = 'PD',
-            disease = ['DLB']
-        ),
         celltype_DAR_1 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'celltype',
             cell_type = cell_types,
             control = control,
             disease = diseases
         ),
         celltype_DAR_2 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
             separating_cluster = 'celltype',
             cell_type = cell_types,
-            control = 'PD',
-            disease = ['DLB']
-        ),
-        subtype_DAR_1 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
-            separating_cluster = 'subtype',
-            cell_type = subtypes,
-            control = control,
-            disease = diseases
-        ),
-        subtype_DAR_2 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
-            separating_cluster = 'subtype',
-            cell_type = subtypes,
             control = 'PD',
             disease = ['DLB']
         ),
@@ -756,7 +714,7 @@ rule export_atac_cell:
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
-        covariates = ['Sex', 'Age', 'Use_batch', 'Brain_bank', 'subtype', 'celltype', 'Sample_ID', 'Primary Diagnosis', ''],
+        covariates = ['Sex', 'Age', 'Use_batch', 'Brain_bank', 'subtype', 'celltype', 'Sample_ID', 'Primary Diagnosis'],
         samples=samples,
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     threads:
@@ -770,7 +728,7 @@ rule DAR:
     input:
         atac_anndata = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     output:
-        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
+        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
         output_figure = work_dir+'/figures/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.svg',
     params:
         disease_param = disease_param,
@@ -779,7 +737,7 @@ rule DAR:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
-        cell_subtype = lambda wildcards, output: output[0].split("_")[-4].split('-')[-1] if len(output[0].split("_")[-4].split('-')) == 2 else '',
+        #cell_subtype = lambda wildcards, output: output[0].split("_")[-4].split('-')[-1] if len(output[0].split("_")[-4].split('-')) == 2 else '',
     singularity:
         envs['decoupler']
     threads:
