@@ -27,7 +27,7 @@ cell_sample_batch = cell_data[['sample_id', seq_batch_key]].drop_duplicates()
 # Get fragment files and corresponding samples
 fragment_files = snakemake.input.fragment_files
 samples = snakemake.params.samples
-fragment_dict = dict(zip(samples, fragment_files))
+fragment_dict = [str(x) for x in dict(zip(samples, fragment_files))]
 
 cell_type_samples = [str(x) for x in cell_sample_batch['sample_id'].to_list()]
 cell_type_fragments = {key: fragment_dict[key] for key in cell_type_samples}
