@@ -18,7 +18,7 @@ control_name = snakemake.params.control
 disease_param = snakemake.params.disease_param
 
 # Subset to cell type
-atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
+celltype_atac = atac[atac.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
 # Get pseudo-bulk profile
 pdata = dc.pp.pseudobulk(
@@ -30,6 +30,9 @@ pdata = dc.pp.pseudobulk(
 
 # Filter out samples with low number of cells or counts by each param and covariate
 dc.pp.filter_samples(pdata, min_cells=10, min_counts=100)
+
+# Abbreviate diagnosis to avoid space syntax error
+pdata.obs['diagnosis'] = pdata.obs[disease_param]
 
 # Store raw counts in layers
 pdata.layers["counts"] = pdata.X.copy()
@@ -46,7 +49,7 @@ inference = DefaultInference(n_cpus=snakemake.threads)
 
 # Design the differential expression analysis with covariates
 dds = DeseqDataSet(
-        adata=subtype_pdata,
+        adata=pdata,
         design_factors=[disease_param] + snakemake.params.design_covariates,
         refit_cooks=True,
         inference=inference,
@@ -58,7 +61,7 @@ dds.deseq2()
 # Extract contrast between control and disease state
 stat_res = DeseqStats(
     dds,
-    contrast=['comparison', disease_name, control_name],
+    contrast=['diagnosis', disease_name, control_name],
     inference=inference,
 )
 
