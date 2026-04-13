@@ -705,6 +705,23 @@ rule export_atac_cell:
     script:
         'scripts/atac_by_celltype.py'
 
+rule atac_coaccessibilty:
+    input:
+        celltype_atac = work_dir+'/data/SN_celltypes/{cell_type}/atac.h5ad'
+    output:
+        celltype_atac = work_dir+'/data/SN_celltypes/{cell_type}/atac_circe.h5ad',
+        circe_network = work_dir+'/data/SN_celltypes/{cell_type}/circe_network_{cell_type}.csv'
+    params:
+        cell_type = lambda wildcards, output: output[0].split('/')[-2]
+    singularity:
+        envs['circe']
+    threads:
+        16
+    resources:
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
+
 """=== PFC ==="""
 """
 rule gene_linear_regression:
