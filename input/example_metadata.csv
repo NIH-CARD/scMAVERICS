@@ -1,6 +1,0 @@
-Sample,Homogenizing_batch,Library_batch,Sequencing_batch,Repeated,Use_batch,Age,PMI,Ethnicity,Race,Brain_bank,Short Diagnosis,Sample,Sex,SampleID,Age_drop,Sex_drop,PMI_drop,Primary Diagnosis,Brain bank
-2543,2,2,0,0,0,50.5,14.5,Not Hispanic or Latino,Black or African-American,HBCC,Control,2543,Male,2543,50.5,Male,14.5,control,HBCC
-2587,9,8,1,0,1,50.6,25.5,Not Hispanic or Latino,Black or African-American,HBCC,Control,2587,Male,2587,50.6,Male,25.5,control,HBCC
-2287,11,9,1,0,1,50.9,50.5,Not Hispanic or Latino,Black or African-American,HBCC,Control,2287,Female,2287,50.9,Female,50.5,control,HBCC
-1424,15,12,2,0,2,51.6,58.0,Not Hispanic or Latino,Black or African-American,HBCC,Control,1424,Male,1424,51.6,Male,58,control,HBCC
-1431,5,5,0,1,0,51.7,43.5,Not Hispanic or Latino,Black or African-American,HBCC,Control,1431,Male,1431,51.7,Male,43.5,control,HBCC

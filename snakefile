@@ -7,18 +7,18 @@ import os
 
 
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
-work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
+data_dir = '/data/CARD_singlecell/Brain_atlas/PSP_cortex/' # Define the data directory, explicitly
+work_dir = '/data/CARD_singlecell/PSP_multiome' # Define the working directory, explictly as the directory of this pipeline
+metadata_table = work_dir+'/input/metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
-seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
-sample_key = 'Sample_ID' # Key for samples, required in aggregating while preserving sample info
+seq_batch_key = 'batch' # Key for sequencing batch, used for directory search
+sample_key = 'folder_name' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'Primary Diagnosis' # Name of the disease parameter
+disease_param = 'Neurological_dx' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
@@ -33,23 +33,7 @@ ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be riboso
 doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 500 # Minimum number of fragments per cell
-
-"""Subcluster values, currated after celltyping"""
-subtypes = [
-    'Astro-ADGRV1+', 'Astro-IF', 'Astro-proto',
-    'DaN-HSP90AA1', 'DaN-NTN1',
-    'EC',
-    'EpC',
-    'ExN-GRIA1', 'ExN-GRIK1', 'ExN-RIT2',
-    'FB',
-    'InN-MEF2C', 'InN-ORB', 'InN-RMST', 'InN-SV2C',
-    'MG-CAM','MG-DAM', 'MG-DIM', 'MG-homeo', 'MG-mit',
-    'OPC-APOD', 'OPC-GPC6', 'OPC-SLC44A1', 'OPC-TPST1',
-    'Oligo-LAMA', 'Oligo-RBFOX1',
-    'PC',
-    'TC'
-    ]
-
+subtypes = []
 """========================================================================="""
 """                                  Workflow                               """
 """========================================================================="""
@@ -68,18 +52,20 @@ envs = {
 
 rule all:
     input:
-       circe_network = expand(
-        work_dir+'/data/celltypes/{cell_type}/circe_network_{cell_type}.csv',
-        cell_type = cell_types
+       rna_anndata = expand(
+        data_dir + '{batch}/Multiome/{sample}/outs/cellbender_gex_counts_filtered.h5',
+        zip,
+        sample = samples,
+        batch = batches
        )
 
 # This needs to be forced to run once
 rule cellbender:
     input:
-        rna_anndata =data_dir+'{sample}/raw_feature_bc_matrix.h5',
-        cwd = data_dir+'{sample}/'
+        rna_anndata =data_dir+'{batch}/Multiome/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
+        cwd = data_dir+'{batch}/Multiome/{sample}-ARC/outs/'
     output:
-        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir + '{batch}/Multiome/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}'
     resources:
@@ -574,12 +560,12 @@ rule cistopic_merge_objects:
     input:
         atac_anndata=expand(
             work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            sample=PFC_samples,
+            sample=samples,
             )
     output:
         merged_atac_anndata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
     params:
-        samples = PFC_samples
+        samples = samples
     singularity:
         envs['scenicplus']
     resources:
