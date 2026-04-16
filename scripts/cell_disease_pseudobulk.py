@@ -16,42 +16,31 @@ disease_param = snakemake.params.disease_param
 
 # Get snakemake params
 samples = snakemake.params.samples
-diseases = snakemake.params.diseases
+disease = snakemake.params.disease
 cell_types = snakemake.params.cell_types
+
+# Filter samples list
+sample_list = cell_df[cell_df[disease_param] == disease][sample_key].drop_duplicates().to_list()
 
 # For sample in samples
 for i, sample in enumerate(samples):
-    # Find sample diagnosis
-    disease = cell_df[cell_df[sample_key] == sample][disease_param].drop_duplicates().values[0]
-    disease_index = diseases.index(disease)
-    # Define fragment file
-    bed_location = snakemake.input.fragment_file[i]
-    # Load fragment with polars
-    print(f'Loading sample {sample} fragments')
-    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
-    pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
-    # Get list of sample and cell type specific barcodes
-    barcodes = {
-        cell_type: cell_df[
-            (cell_df['celltype'] == cell_type) &
-            (cell_df[sample_key] == sample)]
-            ['cell_barcode'].to_list()
-        for cell_type in cell_types
-    }
-    # Filter on the cell type barcodes
-    cell_fragment = {
-        cell_type: pl_fragment.filter(pl_fragment['name'].is_in(barcodes[cell_type]))
-        for cell_type in cell_types
-    }
-    # Add the filtered barcodes to the fragments
-    print(f'Writing sample {sample}')
-    for j, cell_type in enumerate(cell_types):
-        print(f'{cell_type}, {disease}, {snakemake.output.pseudo_fragment_files[j * len(diseases) + disease_index]}')
-        with open(snakemake.output.pseudo_fragment_files[j * len(diseases) + disease_index], mode='a') as f:
+    # Filter out samples read in, this should be replaced at some point with 
+    # a smaller input fragment/sample lists
+    if sample in sample_list:
+        # Define fragment file
+        bed_location = snakemake.input.fragment_file[i]
+        # Load fragment with polars
+        print(f'Loading sample {sample} fragments')
+        pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
+        pl_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
+        # Get list of sample and cell type specific barcodes
+        barcodes = cell_df[(cell_df['celltype'] == cell_type) & (cell_df[sample_key] == sample)]['cell_barcode'].to_list()
+
+        # Filter on the cell type barcodes
+        cell_fragment = pl_fragment.filter(pl_fragment['name'].is_in(barcodes))
+        # Add the filtered barcodes to the fragments
+        print(f'Writing sample {sample}')
+    
+        with open(snakemake.output.pseudo_fragment_files, mode='a') as f:
             cell_fragment[cell_type].write_csv(f, include_header=False, separator='\t')
             f.close()
-    print(f'Sample {sample} has been added')
-
-# Uncomment once singularity image is updated
-#bigwig_path = f'/data/CARD_singlecell/PFC_atlas/data/celltypes/{cell_type}_test.bw'
-#combined_bed.to_bigwig(bigwig_path, rpm=True)

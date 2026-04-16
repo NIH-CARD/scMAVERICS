@@ -20,7 +20,7 @@ batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 disease_param = 'Primary Diagnosis' # Name of the disease parameter
 control = 'control' # Define disease states
-diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
+diseases = ['PD', 'LBD'] # Disease states to compare, keep as list of strings, unnecessary 
 disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Sex', 'Age', 'Use_batch', 'Brain_bank', 'psbulk_cells'] # Design factors/covariates for DGEs and DARs
@@ -67,20 +67,11 @@ envs = {
     }
 rule all:
     input:
-        celltype_DAR_1 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
+        celltype_atac = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad',
             cell_type = cell_types,
-            control = control,
-            disease = diseases
-        ),
-        celltype_DAR_2 = expand(
-            work_dir + '/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'celltype',
-            cell_type = cell_types,
-            control = 'PD',
-            disease = ['DLB']
-        ),
+            disease = ['control', 'LBD', 'PD']
+        )
 #output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
 # This needs to be forced to run once
 rule cellbender:
@@ -392,6 +383,24 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/annotate.py'"""
 
+rule cell_fraction_plot_and_test:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        fraction_boxplot = work_dir+'/figures/cell_count_by_disease_and_celltype_boxplot.svg',
+        corrected_ztest_results = work_dir+'/data/celltype_fraction_ztest_results.csv'
+    params:
+        sample_key = sample_key,
+        disease_param = disease_param,
+        separating_cluster = 'celltype',
+        control = 'control',
+        diseases = ['PD', 'LBD'],
+        separating_value_dict = dict(zip(['control', 'PD', 'LBD'], ['#7f7f7f', '#5ab4e5', '#d36027']))
+    singularity:
+        envs['singlecell']
+    script:
+        work_dir + '/scripts/cell_fraction_test_plot.py'
+
 rule gene_linear_regression:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
@@ -525,7 +534,7 @@ rule differential_cell_cell_communication:
     resources:
         runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/fragment_pseudobulk.py'"""
+        'scripts/fragment_pseudobulk.py'
 
 rule cistopic_subtype_pseudobulk:
     input:
@@ -763,7 +772,7 @@ rule atac_coaccessibilty:
     resources:
         runtime=1440, mem_mb=1500000, slurm_partition='largemem'
     script:
-        'scripts/circe_by_celltype.py'
+        'scripts/circe_by_celltype.py'"""
 
 rule fragments_pseudobulk_cell_disease:
     input:
@@ -775,17 +784,13 @@ rule fragments_pseudobulk_cell_disease:
             batch=batches
             )
     output:
-        pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
-            cell_type=cell_types,
-            disease=diseases + [control]
-        )
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
         sample_param_name = sample_key,
-        cell_types = cell_types,
-        diseases = diseases + [control],
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease,
         disease_param = disease_param
     singularity:
         envs['atac_fragment']
@@ -841,7 +846,7 @@ rule annotate_bed_cell_disease:
     input:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotatedpeaks.bed'
     resources:
         runtime=30, mem_mb=50000, 
     shell:
@@ -851,7 +856,7 @@ rule export_atac_cell_disease:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotatedpeaks.bed',
         fragment_files=expand(
             data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
             zip,
