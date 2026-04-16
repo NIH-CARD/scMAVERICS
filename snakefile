@@ -746,17 +746,13 @@ rule fragments_pseudobulk_cell_disease:
             batch=batches
             )
     output:
-        pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed',
-            cell_type=cell_types,
-            disease=diseases + [control]
-        )
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
-        sample_key = sample_key,
-        cell_types = cell_types,
-        diseases = diseases + [control],
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease,
         disease_param = disease_param
     singularity:
         envs['atac_fragment']
