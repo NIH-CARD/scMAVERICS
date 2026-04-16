@@ -13,7 +13,7 @@ metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the meta
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
-seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search
+seq_batch_key = 'Use_batch' # Key for sequencing batch, used for directory search`
 sample_key = 'Sample_ID' # Key for samples, required in aggregating while preserving sample info
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 
@@ -383,6 +383,24 @@ rule filtered_UMAP:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
         work_dir+'/scripts/annotate.py'"""
+
+rule cell_fraction_plot_and_test:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        fraction_boxplot = work_dir+'/figures/cell_count_by_disease_and_celltype_boxplot.svg',
+        corrected_ztest_results = work_dir+'/data/celltype_fraction_ztest_results.csv'
+    params:
+        sample_key = sample_key,
+        disease_param = disease_param,
+        separating_cluster = 'celltype',
+        control = 'control',
+        diseases = ['PD', 'LBD'],
+        separating_value_dict = dict(zip(['control', 'PD', 'LBD'], ['#7f7f7f', '#5ab4e5', '#d36027']))
+    singularity:
+        envs['singlecell']
+    script:
+        work_dir + '/scripts/cell_fraction_test_plot.py'
 
 rule gene_linear_regression:
     input:
