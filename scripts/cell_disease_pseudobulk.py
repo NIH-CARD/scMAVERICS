@@ -42,5 +42,5 @@ for i, sample in enumerate(samples):
         print(f'Writing sample {sample}')
     
         with open(snakemake.output.pseudo_fragment_files, mode='a') as f:
-            cell_fragment[cell_type].write_csv(f, include_header=False, separator='\t')
+            cell_fragment.write_csv(f, include_header=False, separator='\t')
             f.close()
