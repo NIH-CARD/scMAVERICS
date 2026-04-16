@@ -795,9 +795,9 @@ rule fragments_pseudobulk_cell_disease:
     singularity:
         envs['atac_fragment']
     threads:
-        64
+        16
     resources:
-        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/cell_disease_pseudobulk.py'
 

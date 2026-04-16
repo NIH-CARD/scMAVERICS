@@ -17,7 +17,7 @@ disease_param = snakemake.params.disease_param
 # Get snakemake params
 samples = snakemake.params.samples
 disease = snakemake.params.disease
-cell_types = snakemake.params.cell_types
+cell_type = snakemake.params.cell_type
 
 # Filter samples list
 sample_list = cell_df[cell_df[disease_param] == disease][sample_key].drop_duplicates().to_list()
