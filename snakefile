@@ -71,8 +71,19 @@ rule all:
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad',
             cell_type = cell_types,
             disease = ['control', 'LBD', 'PD']
+        ),
+        circe_network = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv',
+            cell_type = cell_types,
+            disease = ['control', 'LBD', 'PD']
+        ),
+"""        control_disease_motif_data = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
+            cell_type = cell_types,
+            control = 'control',
+            disease = ['PD', 'LBD']
         )
-#output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
+"""
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -871,23 +882,23 @@ rule export_atac_cell_disease:
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
-        covariates = design_covariates,
+        covariates = ['Sex', 'Age', 'Use_batch', 'Brain_bank', 'subtype', 'celltype', 'Sample_ID', 'Primary Diagnosis'],
         samples=samples,
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease
     threads:
-        8
+        16
     resources:
-        runtime=1440, mem_mb=400000, slurm_partition='largemem'
+        runtime=1440, mem_mb=200000, slurm_partition='norm'
     script:
         'scripts/atac_by_celltype.py'
 
 rule atac_coaccessibilty_cell_disease:
     input:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac.h5ad'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
     output:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_atac_circe.h5ad',
-        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_circe_network.csv'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad',
+        circe_network = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv'
     params:
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
@@ -895,7 +906,7 @@ rule atac_coaccessibilty_cell_disease:
     threads:
         8
     resources:
-        runtime=600, mem_mb=400000, slurm_partition='largemem'
+        runtime=1200, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
 
