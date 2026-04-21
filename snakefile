@@ -63,27 +63,12 @@ envs = {
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
-    'tobias': 'envs/tobias.sif'
+    'tobias': 'envs/tobias.sif',
+    'pychromvar': 'envs/pychromvar.sif'
     }
 rule all:
     input:
-        celltype_atac = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad',
-            cell_type = cell_types,
-            disease = ['control', 'LBD', 'PD']
-        ),
-        circe_network = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_circe_network.csv',
-            cell_type = cell_types,
-            disease = ['control', 'LBD', 'PD']
-        ),
-"""        control_disease_motif_data = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
-            cell_type = cell_types,
-            control = 'control',
-            disease = ['PD', 'LBD']
-        )
-"""
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -667,7 +652,7 @@ rule atac_peaks_model:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
-
+"""
 rule multiome_output:
     input:
         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
@@ -681,6 +666,21 @@ rule multiome_output:
     script:
         'scripts/merge_muon.py'
 
+rule pychromvar:
+    input:
+        merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',
+        reference_genome = reference_genome
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    singularity:
+        envs['pychromvar']
+    threads:
+        16
+    resources:
+        runtime=960, mem_mb=250000, 
+    script:
+        'scripts/pychromvar.py'
+"""
 rule create_bigwig:
     input:
         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
