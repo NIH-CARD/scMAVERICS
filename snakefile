@@ -63,7 +63,8 @@ envs = {
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
-    'tobias': 'envs/tobias.sif'
+    'tobias': 'envs/tobias.sif',
+    'pychromvar': 'envs/pychromvar.sif'
     }
 
 rule all:
@@ -626,11 +627,26 @@ rule multiome_output:
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     singularity:
-        envs['singlecell']
+        envs['circe']
     resources:
-        runtime=120, mem_mb=300000, slurm_partition='quick' 
+        runtime=120, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/merge_muon.py'
+
+rule pychromvar:
+    input:
+        merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',
+        reference_genome = reference_genome
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    singularity:
+        envs['pychromvar']
+    threads:
+        16
+    resources:
+        runtime=2880, mem_mb=250000
+    script:
+        'scripts/pychromvar.py'
 
 rule create_bigwig:
     input:
