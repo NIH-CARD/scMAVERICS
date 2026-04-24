@@ -660,9 +660,9 @@ rule multiome_output:
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     singularity:
-        envs['singlecell']
+        envs['circe']
     resources:
-        runtime=120, mem_mb=300000, slurm_partition='quick' 
+        runtime=120, mem_mb=400000, slurm_partition='largemem'
     script:
         'scripts/merge_muon.py'
 
@@ -677,7 +677,7 @@ rule pychromvar:
     threads:
         16
     resources:
-        runtime=960, mem_mb=250000, 
+        runtime=960, mem_mb=250000
     script:
         'scripts/pychromvar.py'
 """
@@ -910,46 +910,6 @@ rule atac_coaccessibilty_cell_disease:
     script:
         'scripts/circe_by_celltype.py'
 
-rule motif_enrichment:
-    input:
-        atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        ref_genome = reference_genome,
-        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme'
-    output:
-        motif_enrichment = work_dir+'/data/motif_enrichment.csv'
-    params:
-        control = control,
-        cell_type = 'celltype',
-        disease_param = disease_param
-    singularity:
-        envs['snapatac2']
-    resources:
-        runtime=240, disk_mb=300000, mem_mb=200000
-    script:
-        'scripts/atac_motif_enrichment.py'
-
-rule differential_motif_enrichment:
-    input:
-        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
-        cell_type_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad',
-        TF_motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
-        ref_genome = reference_genome
-    output:
-        differential_motif_dataframe = work_dir+'/data/DMEs/{separating_cluster}/DME_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
-    params:
-        disease_param = disease_param,
-        design_factors = design_covariates,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
-    singularity:
-        envs['snapatac2']
-    resources:
-        runtime=240, disk_mb=300000, mem_mb=200000
-    script:
-        'scripts/differential_motif_enrichment.py'
-
 rule DAR_CCAN_modules:
     input:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
@@ -999,6 +959,15 @@ rule disease_great:
         runtime=2880
     script:
         'scripts/atac_GREAT.py'
+
+rule celltype_overlapping_peaks:
+    input:
+        peak_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
+            condition = diseases + [control]
+        )
+    output:
+        celltype_overlapping_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed'
 
 rule barcode_merge:
     input:

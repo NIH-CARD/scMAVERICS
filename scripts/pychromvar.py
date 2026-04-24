@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-# Import 
+# Import specialized packages
 import scanpy as sc
 import pychromvar as pc
 import muon as mu
@@ -25,7 +25,7 @@ pc.get_bg_peaks(
     n_jobs = snakemake.threads
 )
 
-# Fetch motifs
+# Fetch motifs (modify if non-human)
 jdb_obj = jaspardb(release='JASPAR2024')
 motifs = jdb_obj.fetch_motifs(
     collection = 'CORE',
@@ -34,12 +34,12 @@ motifs = jdb_obj.fetch_motifs(
 # Match motifs in each sample
 pc.match_motif(mdata, motifs=motifs)
 
-# 
+# Return expectation values 
 dev = pc.compute_deviations(mdata, n_jobs = -1)
 
+# Save the motif value AnnData inside the muon object
 mdata.mod['chromvar'] = dev
 mdata.mod['chromvar'].raw = dev
 
-mdata['chromvar'].obs['celltype'] = mdata.mod['rna'].obs['celltype']
-
+# Write the muon object
 mdata.write(snakemake.output.merged_multiome, compression='gzip')
