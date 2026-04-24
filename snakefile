@@ -967,6 +967,22 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
+rule celltype_overlapping_peaks:
+    input:
+        peak_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
+            condition = diseases + [control]
+        )
+    output:
+        celltype_overlapping_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
+        celltype_overlapping_celltype_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
+    singularity:
+        envs['atac_fragment']
+    resources:
+        slurm_partition='quick'
+    script:
+        'scripts/overlapping_peaks.py'
+
 rule barcode_merge:
     input:
         cell_annotate = work_dir+'/data/rna_cell_annot.csv',
@@ -1111,7 +1127,7 @@ rule disease_footprinting:
         motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
         control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_ATACorrect/{cell_type}_{control}_corrected.bw',
         disease_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
-        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        peaks=work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         genome=reference_genome
     output:
         control_disease_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt'
@@ -1130,7 +1146,7 @@ rule control_footprinting:
     input:
         motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
         control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
-        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        peaks=work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         genome=reference_genome
     output:
         control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt'
