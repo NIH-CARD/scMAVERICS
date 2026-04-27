@@ -982,6 +982,31 @@ rule celltype_overlapping_peaks:
         slurm_partition='quick'
     script:
         'scripts/overlapping_peaks.py'
+rule gene_peak_linkage:
+    input:
+        pseudobulked_rna = work_dir+'/atlas/pseudobulked_rna.h5ad',
+        gene_info = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab',
+        gene_tss = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed',
+        atac_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_atac.h5ad',
+            condition = [control] + diseases,
+            allow_missing = True
+        ),
+        circe_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_circe_network.csv',
+            condition = [control] + diseases,
+            allow_missing = True
+        )
+    output:
+        gene_peak_linkage = work_dir+'/data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
+    params:
+        conditions = [control] + diseases
+    singularity:
+        envs['decoupler']
+    resources:
+        slurm_partition='quick'
+    script:
+        'scripts/gene_peak_linkage.py'
 
 rule barcode_merge:
     input:
