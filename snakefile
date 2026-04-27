@@ -69,6 +69,18 @@ envs = {
 rule all:
     input:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+            
+#merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu',
+"""control_disease_motif_data = expand(
+    work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
+    cell_type = cell_types,
+    control = control,
+    disease = diseases),
+disease_disease_motif_data = expand(
+    work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
+    cell_type = cell_types,
+    control = 'PD',
+    disease = 'LBD')"""
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -675,9 +687,9 @@ rule pychromvar:
     singularity:
         envs['pychromvar']
     threads:
-        16
+        64
     resources:
-        runtime=960, mem_mb=250000
+        runtime=2880, mem_mb=250000
     script:
         'scripts/pychromvar.py'
 """
@@ -964,7 +976,8 @@ rule celltype_overlapping_peaks:
     input:
         peak_files = expand(
             work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
-            condition = diseases + [control]
+            condition = diseases + [control], 
+            allow_missing=True
         )
     output:
         celltype_overlapping_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
@@ -975,6 +988,33 @@ rule celltype_overlapping_peaks:
         slurm_partition='quick'
     script:
         'scripts/overlapping_peaks.py'
+
+rule gene_peak_linkage:
+    input:
+        pseudobulked_rna = work_dir+'/atlas/pseudobulked_rna.h5ad',
+        gene_info = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab',
+        gene_tss = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed',
+        atac_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_atac.h5ad',
+            condition = [control] + diseases,
+            allow_missing = True
+        ),
+        circe_files = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_circe_network.csv',
+            condition = [control] + diseases,
+            allow_missing = True
+        )
+    output:
+        gene_peak_linkage = work_dir+'/data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
+    params:
+        conditions = [control] + diseases
+    singularity:
+        envs['decoupler']
+    resources:
+        slurm_partition='quick'
+    script:
+        'scripts/gene_peak_linkage.py'
+
 
 rule barcode_merge:
     input:
@@ -1015,7 +1055,7 @@ rule barcode_filter:
     input:
         annotate_metadata_table = work_dir+'/data/barcode_cell_annotation.csv'
     output:
-        cell_disease_barcodes = temp(work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt')
+        cell_disease_barcodes = work_dir+'/data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt'
     resources:
         slurm_partition='quick'
     shell:
@@ -1023,8 +1063,8 @@ rule barcode_filter:
 
 def filter_celltype_condition_samples_seq(wildcards):
     df = pd.read_csv(work_dir+'/data/barcode_cell_annotation.csv')
-    df = df[(df['celltype'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)][['celltype', seq_batch_key, 'sample', 'disease']].drop_duplicates()
-    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'celltype'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
+    df = df[(df['cell_type'] == wildcards.cell_type) & (df['disease'] == wildcards.disease)][['cell_type', seq_batch_key, 'sample', 'disease']].drop_duplicates()
+    return [data_dir + f"batch{str(df.loc[x, 'Use_batch'])}/Multiome/{str(df.loc[x, 'sample'])}-ARC/outs/atac_{str(df.loc[x, 'cell_type'])}_{str(df.loc[x, 'disease'])}.bam" for x in df.index]
 
 rule celltype_sample_filter_bam:
     input:
@@ -1120,7 +1160,7 @@ rule disease_footprinting:
         motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
         control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_ATACorrect/{cell_type}_{control}_corrected.bw',
         disease_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_corrected.bw',
-        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         genome=reference_genome
     output:
         control_disease_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt'
@@ -1139,7 +1179,7 @@ rule control_footprinting:
     input:
         motifs = work_dir + '/input/jaspar_2024_hsapiens.meme',
         control_bw = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw',
-        peaks=work_dir+'/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+        peaks=work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         genome=reference_genome
     output:
         control_motif_data = work_dir+'/data/celltypes/{cell_type}/{cell_type}_control_BINDetect/bindetect_results.txt'
