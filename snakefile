@@ -1007,7 +1007,8 @@ rule gene_peak_linkage:
     output:
         gene_peak_linkage = work_dir+'/data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
     params:
-        conditions = [control] + diseases
+        conditions = [control] + diseases,
+        celltype = lambda wildcards: wildcards.celltype
     singularity:
         envs['decoupler']
     resources:

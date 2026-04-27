@@ -5,8 +5,8 @@ import decoupler as dc
 import pandas as pd
 import pyranges as pr
 
-conditions = ['control', 'PD', 'LBD']
-celltype = 'MG'
+conditions = snakemake.params.conditions
+celltype = snakemake.params.celltype
 
 # Gene names
 gene_info_df = pd.read_csv(
