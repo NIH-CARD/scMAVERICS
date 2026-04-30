@@ -52,7 +52,7 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad'
+        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -478,10 +478,10 @@ rule cistopic_pseudobulk:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
-            data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
             zip,
-            sample=samples,
-            batch=batches
+            batch=batches,
+            sample=samples
             )
     output:
         pseudo_fragment_files = expand(
@@ -534,11 +534,11 @@ rule consensus_peaks:
 rule cistopic_create_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        fragment_file = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/atac_fragments.tsv.gz',
+        fragment_file = data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     output:
-        cistopic_objects = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
-        cistopic_adata=data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
+        cistopic_objects = data_dir+'{batch}/Multiome/{sample}/out/04_cistopic_obj.pkl',
+        cistopic_adata=data_dir+'{batch}/Multiome/{sample}/outs/04_anndata_peaks_atac.h5ad'
     singularity:
         envs['scenicplus']
     params:
@@ -555,11 +555,13 @@ rule cistopic_create_objects:
 rule cistopic_merge_objects:
     input:
         atac_anndata=expand(
-            work_dir+'/data/samples/{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            sample=samples,
+            data_dir+'{batch}/Multiome/{sample}/outs/04_anndata_peaks_atac.h5ad',
+            zip,
+            batch=batches,
+            sample=samples
             )
     output:
-        merged_atac_anndata = work_dir + '/atlas/03_PFC_merged_cistopic_atac.h5ad'
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
     params:
         samples = samples
     singularity:
