@@ -638,6 +638,8 @@ rule wnn:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     output:
         merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu'
+    singularity:
+        envs['pychromvar']
     params:
         rna_rep = 'X_scvi',
         atac_rep = 'X_spectral',
