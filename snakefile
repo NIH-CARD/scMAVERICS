@@ -633,9 +633,23 @@ rule multiome_output:
     script:
         'scripts/merge_muon.py'
 
+rule wnn:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    output:
+        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu'
+    params:
+        rna_rep = 'X_scvi',
+        atac_rep = 'X_spectral',
+        num_neighbors = 20
+    resources:
+        runtime=480, mem_mb=500000, slurm_partition='largemem'
+    scripts:
+        'scripts/wnn.py'
+
 rule pychromvar:
     input:
-        merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',
+        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
@@ -644,7 +658,7 @@ rule pychromvar:
     threads:
         16
     resources:
-        runtime=2880, mem_mb=250000
+        runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
 
