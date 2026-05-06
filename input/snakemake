@@ -1,0 +1,73 @@
+import pandas as pd
+
+"""File locations"""
+data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/' # Define the data directory, explicitly
+work_dir = '/data/CARD_singlecell/SN_atlas' # Define the working directory, explictly as the directory of this pipeline
+metadata_table = work_dir+'/input/SN_PD_DLB_samples.csv' # Define where the metadata data exists for each sample to be processed
+
+metadata_df = pd.read_csv(metadata_table)
+
+
+samples = metadata_df['sample'].to_list()
+
+batches = metadata_df['Use_batch'].to_list()
+sexes = metdata_df['sex'].to_list()
+fastq_suffixes = metdata_df['fastq_suffix'].to_list()
+
+print(expand('reference_{sex}.txt', sex = sexes))
+
+print(expand('{path}', path=paths))
+
+rule all:
+    input:
+        expand(
+            data_dir + '/data/batch{batch}/{sample}/cellbender_gex_counts_filtered_filtered.h5',
+            zip,
+            sample = samples,
+            batch = batches,
+            sex = sexes
+        ),
+        expand(
+            data_dir + '/data/{study}/{region}/{sample}/{sex}.cpk,
+            zip,
+            sample = samples,
+            batch = batches,
+            sex = sexes
+        )
+
+rule cellranger:
+    input:
+        fastq_input = data_dir + '/data/{study}/{region}/{sample}/FASTQ',
+        reference_input = work_dir + '/input/reference_{sex}.txt
+    output:
+        data_dir + '/data/{study}/{region}/{sample}/cellbender_gex_counts_filtered_filtered.h5',
+        data_dir + '/data/{study}/{region}/{sample}/{sex}.cpk
+    params:
+        
+    shell:
+        "cellranger --input input.fastq_file --reference input.reference_input"
+
+
+# Inside the bash script
+fastq_file=$1
+reference_input=$2
+
+cellranger --input fastq_file --reference reference_input
+
+files = expand(
+    data_dir + '/data/batch{batch}/{sample}/{sample}.fastq',
+    zip,
+    sample = samples,
+    batch = batches
+)
+
+reference_file = expand(
+    work_dir + '/input/reference_{sex}.txt',
+    sex = sexes
+)
+
+
+bash cellranger.sh -i file1 --ref reference_file_M -o 
+bash cellranger.sh -i file2 reference_file_F
+bash cellranger.sh file3 reference_file_M
+

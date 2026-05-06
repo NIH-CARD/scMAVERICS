@@ -98,7 +98,7 @@ del adata.obs['cisTopic_log_nr_acc']
 
 annotated_bed = pd.read_csv(snakemake.input.cell_annotated_bedfile, delimiter='\t').iloc[:, 1:]
 annotated_bed.index = annotated_bed['Chr'].astype(str) + ':' + (annotated_bed['Start']-1).astype(str) + '-' + annotated_bed['End'].astype(str)
-
+"""
 adata.var = pd.merge(
     left=adata.var,
     right=annotated_bed[['Annotation', 'Detailed Annotation', 'Distance to TSS', 'Gene Name', 'Gene Type']],
@@ -107,13 +107,13 @@ adata.var = pd.merge(
 
 # Convert variable columns to categories
 for variable in ['Annotation', 'Detailed Annotation', 'Gene Name', 'Gene Type']:
-    adata.var[variable] = adata.var[variable].astype('category')
+    adata.var[variable] = adata.var[variable].astype('category')"""
 
 for variable in ['start', 'end']:
     adata.var[variable] = adata.var[variable].astype(int)
 
 adata.var['total counts'] = np.array(adata.X.sum(axis=0))[0]
-adata.var['Simple Annotation'] = [str(x).split(' ')[0] for x in adata.var['Annotation']]
+#adata.var['Simple Annotation'] = [str(x).split(' ')[0] for x in adata.var['Annotation']]
 adata.obs['cell_type'] = snakemake.params.cell_type
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')

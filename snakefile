@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 
 """========================================================================="""
 """                                 Parameters                              """
@@ -68,7 +67,12 @@ envs = {
     }
 rule all:
     input:
-        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+        output_DAR_CCAN_data = expand(
+            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
+            cell_type = cell_types,
+            disease = ['control', 'PD', 'LBD']
+        )
+
             
 #merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu',
 """control_disease_motif_data = expand(
@@ -114,7 +118,7 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad', 
+            data_dir+'{batch}/01_{sample}_anndata_object_rna.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -678,21 +682,35 @@ rule multiome_output:
     script:
         'scripts/merge_muon.py'
 
+rule wnn:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
+    output:
+        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu'
+    params:
+        rna_rep = 'X_scvi',
+        atac_rep = 'X_spectral',
+        num_neighbors = 20
+    resources:
+        runtime=480, mem_mb=500000, slurm_partition='largemem'
+    scripts:
+        'scripts/wnn.py'
+
 rule pychromvar:
     input:
-        merged_multiome = work_dir + '/atlas/multiome_atlas.h5mu',
+        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
     singularity:
         envs['pychromvar']
     threads:
-        64
+        16
     resources:
-        runtime=2880, mem_mb=250000
+        runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
-"""
+
 rule create_bigwig:
     input:
         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
@@ -705,7 +723,7 @@ rule create_bigwig:
         envs['atac_fragment']
     script:
         'scripts/atac_bigwig.py'
-
+"""
 rule celltype_bed:
     input:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
@@ -848,7 +866,7 @@ rule create_bigwig_cell_disease:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
     resources:
-        mem_mb=1000000, runtime=400, slurm_partition='largemem'
+        mem_mb=1000000, runtime=180, slurm_partition='largemem'
     singularity:
         envs['atac_fragment']
     script:
