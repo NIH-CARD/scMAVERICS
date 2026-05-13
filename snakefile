@@ -620,6 +620,23 @@ rule atac_peaks_model:
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 
+rule atac_spectral:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    params:
+        num_features = 100000,
+        sample_param = 'sample_id'
+    singularity:
+        envs['snapatac2']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=250000
+    script:
+        'scripts/atac_spectral.py'
+
 rule multiome_output:
     input:
         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
