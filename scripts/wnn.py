@@ -9,7 +9,7 @@ sc.pp.neighbors(
     mdata.mod['atac'],
     n_neighbors=snakemake.params.num_neighbors,
     metric='cosine', 
-    use_rep=snakemake.params.rna_rep
+    use_rep=snakemake.params.atac_rep
 )
 sc.tl.umap(mdata.mod['atac'], min_dist=0.3)
 
@@ -18,7 +18,7 @@ sc.pp.neighbors(
     mdata.mod['rna'], 
     n_neighbors=snakemake.params.num_neighbors,
     metric='cosine', 
-    use_rep=snakemake.params.atac_rep
+    use_rep=snakemake.params.rna_rep
 )
 sc.tl.umap(mdata.mod['atac'], min_dist=0.3)
 
