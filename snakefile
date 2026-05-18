@@ -962,6 +962,28 @@ rule CCAN_modules:
     script:
         'scripts/atac_CCANs.py'
 
+rule ccan_coexpression:
+    input:
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad',
+        output_CCAN_data = work_dir+'/data/celltypes/{cell_type}/atac_{cell_type}_{disease}_CCAN.csv',
+        gene_into = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab',
+        tss_file = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed'
+    output:
+        ccan_gene = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_CCAN_gene_hub.csv',
+        ccan_corr = work_dir+'/data/celltype/{cell_type}/{cell_type}_{disease}_CCAN_correlation.csv'
+    params:
+        random_seed = 107,
+        sample_key = sample_key,
+        disease_param = disease_param,
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease
+    singularity:
+        envs['circe']
+    resources:
+        runtime=180, mem_mb=50000, slurm_partition='quick'
+    script:
+        'scripts/ccan_coexpression.py'
+
 rule disease_gsea:
     input:
         adata_path = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
