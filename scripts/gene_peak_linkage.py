@@ -39,7 +39,7 @@ print('Getting list of co-accessible peaks')
 celltype_condition_atac_dict = {}
 
 # Read in atac anndata object for each sample, 
-for condition, temp_atac in zip(conditions, atac_files):
+for condition, temp_atac in zip(snakemake.params.conditions, snakemake.input.atac_files):
     print(f'Working on {condition} atac file')
     pdata_atac = dc.pp.pseudobulk(
         temp_atac,
