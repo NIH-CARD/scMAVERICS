@@ -950,18 +950,17 @@ rule differential_motif_enrichment:
     script:
         'scripts/differential_motif_enrichment.py'
 
-rule DAR_CCAN_modules:
+rule CCAN_modules:
     input:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad'
     output:
-        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv'
+        output_CCAN_data = work_dir+'/data/celltypes/{cell_type}/atac_{cell_type}_{disease}_CCAN.csv'
     singularity:
         envs['circe']
     resources:
         runtime=240, mem_mb=1000000, slurm_partition='largemem' 
     script:
-        'scripts/atac_DAR_CCANs.py'
+        'scripts/atac_CCANs.py'
 
 rule disease_gsea:
     input:
