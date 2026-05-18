@@ -67,9 +67,9 @@ envs = {
     }
 rule all:
     input:
-        output_DAR_CCAN_data = expand(
-            work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv',
-            cell_type = cell_types,
+        ccan_corr = expand(
+            work_dir+'/data/celltype/{cell_type}/{cell_type}_{disease}_CCAN_correlation.csv',
+            cell_type = ['Astro'],#cell_types,
             disease = ['control', 'PD', 'LBD']
         )
 
@@ -669,6 +669,25 @@ rule atac_peaks_model:
     shell:
         'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
 """
+
+rule atac_spectral:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    params:
+        num_features = 100000,
+        sample_param = 'sample_id'
+    singularity:
+        envs['snapatac2']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=250000
+    script:
+        'scripts/atac_spectral.py'
+    
+    
 rule multiome_output:
     input:
         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
@@ -691,9 +710,11 @@ rule wnn:
         rna_rep = 'X_scvi',
         atac_rep = 'X_spectral',
         num_neighbors = 20
+    singularity:
+        envs['pychromvar']
     resources:
         runtime=480, mem_mb=500000, slurm_partition='largemem'
-    scripts:
+    script:
         'scripts/wnn.py'
 
 rule pychromvar:
@@ -940,18 +961,39 @@ rule atac_coaccessibilty_cell_disease:
     script:
         'scripts/circe_by_celltype.py'
 
-rule DAR_CCAN_modules:
+rule CCAN_modules:
     input:
-        celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac_circe.h5ad',
-        output_DAR_data = work_dir+'/data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv'
+        celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac_circe.h5ad'
     output:
-        output_DAR_CCAN_data = work_dir+'/data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_CCAN_DAR.csv'
+        output_CCAN_data = work_dir+'/data/celltypes/{cell_type}/atac_{cell_type}_{disease}_CCAN.csv'
     singularity:
         envs['circe']
     resources:
         runtime=240, mem_mb=1000000, slurm_partition='largemem' 
     script:
-        'scripts/atac_DAR_CCANs.py'
+        'scripts/atac_CCANs.py'
+
+rule ccan_coexpression:
+    input:
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad',
+        output_CCAN_data = work_dir+'/data/celltypes/{cell_type}/atac_{cell_type}_{disease}_CCAN.csv',
+        gene_into = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab',
+        tss_file = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed'
+    output:
+        ccan_gene = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_CCAN_gene_hub.csv',
+        ccan_corr = work_dir+'/data/celltype/{cell_type}/{cell_type}_{disease}_CCAN_correlation.csv'
+    params:
+        random_seed = 107,
+        sample_key = sample_key,
+        disease_param = disease_param,
+        cell_type = lambda wildcards: wildcards.cell_type,
+        disease = lambda wildcards: wildcards.disease
+    singularity:
+        envs['circe']
+    resources:
+        runtime=180, mem_mb=50000, slurm_partition='quick'
+    script:
+        'scripts/ccan_coexpression.py'
 
 rule disease_gsea:
     input:
