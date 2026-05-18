@@ -1,5 +1,7 @@
 import pandas as pd
 import scanpy as sc
+import numpy as np
+import scipy
 
 """ Define analysis parameters """
 celltype = snakemake.params.cell_type
@@ -167,7 +169,7 @@ non_correlation_data_df = pd.DataFrame(non_ccan_correlation_data, columns=['cell
 # Combined inter- and intra- correlation DataFrames, saving the correlation type
 correlation_data_df['similarity'] = 'intra'
 non_correlation_data_df['similarity'] = 'inter'
-hub_coexpression_df = pd.concat([correlation_data_df, hub_coexpression_df])
+hub_coexpression_df = pd.concat([correlation_data_df, non_correlation_data_df])
 
 # Export to .csv
 hub_coexpression_df.to_csv(snakemake.output.ccan_corr, index=False)
