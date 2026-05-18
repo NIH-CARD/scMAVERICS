@@ -1,5 +1,6 @@
 import pandas as pd
 import scanpy as sc
+import numpy as np
 import scipy
 
 """ Define analysis parameters """
