@@ -68,6 +68,8 @@ overlapping_peaks = pr.concat(celltype_beds).merge()
 peakset_overlap_df = pr.concat([x.join(overlapping_peaks, suffix = '_overlap') for x in celltype_beds]).df
 peakset_overlap_df['overlap peak'] = peakset_overlap_df['Chromosome'].astype(str) + ':' + peakset_overlap_df['Start_overlap'].astype(str) + '-' + peakset_overlap_df['End_overlap'].astype(str)
 peakset_overlap_df['peak'] = peakset_overlap_df['Chromosome'].astype(str) + ':' + peakset_overlap_df['Start'].astype(str) + '-' + peakset_overlap_df['End'].astype(str)
+peakset_overlap = peakset_overlap_df[['peak','overlap peak']]
+peak2overlap = dict(zip(peakset_overlap['peak'], peakset_overlap['overlap peak']))
 
 print('Creating dictionary of co-accessible peaks')
 # Dictionary to store results in 
