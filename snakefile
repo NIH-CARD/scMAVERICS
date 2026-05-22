@@ -637,6 +637,21 @@ rule atac_spectral:
     script:
         'scripts/atac_spectral.py'
 
+rule atac_merged_coaccessibilty:
+    input:
+        celltype_atac = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    output:
+        celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
+        circe_network = work_dir+'/data/circe_network.csv'
+    singularity:
+        envs['circe']
+    threads:
+        16
+    resources:
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
+
 rule multiome_output:
     input:
         merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad',
