@@ -42,7 +42,7 @@ celltype_condition_atac_dict = {}
 for condition, temp_atac in zip(snakemake.params.conditions, snakemake.input.atac_files):
     print(f'Working on {condition} atac file')
     pdata_atac = dc.pp.pseudobulk(
-        temp_atac,
+        sc.read_h5ad(temp_atac),
         sample_col='sample_id',
         groups_col='sample_id',
         mode='sum'
@@ -59,7 +59,7 @@ for condition, temp_atac in zip(snakemake.params.conditions, snakemake.input.ata
 print('Get overlapping peaks')
 
 # Define file names
-file_names = [f'../../data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed' for condition in conditions]
+file_names = snakemake.input.bed_files
 # Read in files
 celltype_beds = [pr.read_bed(x) for x in file_names]
 # Concatenate and merge all overlapping peaks
