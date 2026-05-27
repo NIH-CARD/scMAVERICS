@@ -74,7 +74,7 @@ peak2overlap = dict(zip(peakset_overlap['peak'], peakset_overlap['overlap peak']
 print('Creating dictionary of co-accessible peaks')
 # Dictionary to store results in 
 celltype_condition_coacc_dict = {}
-for condition, circe_file in zip(conditions, circe_files):
+for condition, circe_file in zip(conditions, snakemake.input.circe_files):
     control_network = pd.read_csv(
         circe_file,
         delimiter='\t', 
