@@ -121,10 +121,12 @@ TSS_coaccess_df = TSS_coaccess_df[['peak 1', 'peak 2', 'Start', 'gene name', 'di
 
 # Find overlap peak key when enhancer is peak 2
 peak1enhancer_df = TSS_coaccess_df[TSS_coaccess_df['promoter'] == 'peak 2']
+peak2enhancer_df['overlap promoter peak'] = [peak2overlap[x] for x in peak2enhancer_df['peak 2']]
 peak1enhancer_df['overlap enhancer peak'] = [peak2overlap[x] for x in peak1enhancer_df['peak 1']]
 
 # Find overlap peak key when enhancer is peak 2
 peak2enhancer_df = TSS_coaccess_df[TSS_coaccess_df['promoter'] == 'peak 1']
+peak2enhancer_df['overlap promoter peak'] = [peak2overlap[x] for x in peak2enhancer_df['peak 1']]
 peak2enhancer_df['overlap enhancer peak'] = [peak2overlap[x] for x in peak2enhancer_df['peak 2']]
 
 # Add overlap peak for enhancer
