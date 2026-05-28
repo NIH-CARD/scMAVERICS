@@ -39,10 +39,10 @@ print('Getting list of co-accessible peaks')
 celltype_condition_atac_dict = {}
 
 # Read in atac anndata object for each sample, 
-for condition, temp_atac in zip(conditions, atac_files):
+for condition, temp_atac in zip(snakemake.params.conditions, snakemake.input.atac_files):
     print(f'Working on {condition} atac file')
     pdata_atac = dc.pp.pseudobulk(
-        temp_atac,
+        sc.read_h5ad(temp_atac),
         sample_col='sample_id',
         groups_col='sample_id',
         mode='sum'
@@ -59,7 +59,7 @@ for condition, temp_atac in zip(conditions, atac_files):
 print('Get overlapping peaks')
 
 # Define file names
-file_names = [f'../../data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed' for condition in conditions]
+file_names = snakemake.input.bed_files
 # Read in files
 celltype_beds = [pr.read_bed(x) for x in file_names]
 # Concatenate and merge all overlapping peaks
@@ -68,11 +68,13 @@ overlapping_peaks = pr.concat(celltype_beds).merge()
 peakset_overlap_df = pr.concat([x.join(overlapping_peaks, suffix = '_overlap') for x in celltype_beds]).df
 peakset_overlap_df['overlap peak'] = peakset_overlap_df['Chromosome'].astype(str) + ':' + peakset_overlap_df['Start_overlap'].astype(str) + '-' + peakset_overlap_df['End_overlap'].astype(str)
 peakset_overlap_df['peak'] = peakset_overlap_df['Chromosome'].astype(str) + ':' + peakset_overlap_df['Start'].astype(str) + '-' + peakset_overlap_df['End'].astype(str)
+peakset_overlap = peakset_overlap_df[['peak','overlap peak']]
+peak2overlap = dict(zip(peakset_overlap['peak'], peakset_overlap['overlap peak']))
 
 print('Creating dictionary of co-accessible peaks')
 # Dictionary to store results in 
 celltype_condition_coacc_dict = {}
-for condition, circe_file in zip(conditions, circe_files):
+for condition, circe_file in zip(conditions, snakemake.input.circe_files):
     control_network = pd.read_csv(
         circe_file,
         delimiter='\t', 
@@ -115,14 +117,16 @@ for condition in conditions:
         TSS_coaccess_df = pd.concat([TSS_coaccess_df, promoter_coaccessible])
 TSS_coaccess_df['peak 1'] = TSS_coaccess_df['chr 1'] + ':' + TSS_coaccess_df['start 1'].astype(str) + '-' + TSS_coaccess_df['end 1'].astype(str)
 TSS_coaccess_df['peak 2'] = TSS_coaccess_df['chr 2'] + ':' + TSS_coaccess_df['start 2'].astype(str) + '-' + TSS_coaccess_df['end 2'].astype(str)
-TSS_coaccess_df = TSS_coaccess_df[['peak 1', 'peak 2', 'Start', 'gene name', 'diagnosis', 'promoter']]
+TSS_coaccess_df = TSS_coaccess_df[['peak 1', 'peak 2', 'Start', 'score', 'gene name', 'diagnosis', 'promoter']]
 
 # Find overlap peak key when enhancer is peak 2
 peak1enhancer_df = TSS_coaccess_df[TSS_coaccess_df['promoter'] == 'peak 2']
+peak1enhancer_df['overlap promoter peak'] = [peak2overlap[x] for x in peak1enhancer_df['peak 2']]
 peak1enhancer_df['overlap enhancer peak'] = [peak2overlap[x] for x in peak1enhancer_df['peak 1']]
 
 # Find overlap peak key when enhancer is peak 2
 peak2enhancer_df = TSS_coaccess_df[TSS_coaccess_df['promoter'] == 'peak 1']
+peak2enhancer_df['overlap promoter peak'] = [peak2overlap[x] for x in peak2enhancer_df['peak 1']]
 peak2enhancer_df['overlap enhancer peak'] = [peak2overlap[x] for x in peak2enhancer_df['peak 2']]
 
 # Add overlap peak for enhancer

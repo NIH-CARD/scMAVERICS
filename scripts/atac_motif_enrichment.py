@@ -1,41 +1,40 @@
-# Load in modules
-import numpy as np
-import pandas as pd
-import scanpy as sc
-import snapatac2 as snap
-import pickle
+
+chromvar  = mu.read("../../atlas/multiome_chromvar_atlas.h5mu/mod/chromvar")
+chromvar
+
+DEM_df = pd.DataFrame()
+for celltype in chromvar_df.celltype.drop_duplicates():
+    for comparison in [['control', 'PD'], ['control', 'LBD'], ['PD', 'LBD']]:
+
+        if comparison[0] == 'control':
+            disease_name = comparison[1]
+        else:
+            disease_name = f'{comparison[1]} vs. {comparison[0]}'
+        celltype_comparison_chromvar_df = chromvar_df[(chromvar_df['celltype'] == celltype) & (chromvar_df['diagnosis'].isin(comparison))]
+        celltype_comparison_chromvar_df['batch_bank'] = celltype_comparison_chromvar_df['Use_batch'].astype(str) + '-' + celltype_comparison_chromvar_df['Brain_bank'].astype(str)
+        celltype_comparison_chromvar_df['batch_bank'] = celltype_comparison_chromvar_df['batch_bank'].astype('category')
+
+        # One-hot encode
+        celltype_comparison_chromvar_df['diagnosis_onehot'] = [1 if x == comparison[0] else 0 for x in celltype_comparison_chromvar_df.diagnosis]
+        celltype_comparison_chromvar_df['Sex_onehot'] = [1 if x == 'Male' else 0 for x in celltype_comparison_chromvar_df.Sex]
+        celltype_motif_slope_list = []
+        for TF_motif in TF_motif_names:
+            ccc_model = smf.mixedlm(f"{TF_motif} ~ diagnosis_onehot + Age + Sex_onehot", celltype_comparison_chromvar_df, groups = celltype_comparison_chromvar_df['batch_bank'])
+            mdf = ccc_model.fit(method=["lbfgs"])
+            celltype_motif_slope_list.append([f"{TF_motif}", mdf.params.diagnosis_onehot, mdf.pvalues.diagnosis_onehot, mdf.params.Intercept])
 
 
+            
+        celltype_motif_slope_list
 
-# Import ATAC data
-atac = sc.read_h5ad(snakemake.input.atac_anndata)
+        celltype_motif_slope_df = pd.DataFrame(celltype_motif_slope_list, columns = ['TF motif', 'log2FC', 'p-value', 'intercept'])
+        celltype_motif_slope_df['adj. p-value'] = multitest.multipletests(pvals = celltype_motif_slope_df['p-value'], alpha=0.01, method = 'holm')[1]
+        celltype_motif_slope_df['-log10(adj. p-value)'] = -np.log10(celltype_motif_slope_df['adj. p-value'])
 
-# Filter for only control data
-control_atac = atac[atac.obs[snakemake.params.disease_param] == snakemake.params.control]
+        # Add celltype and condition specific parameters
+        celltype_motif_slope_df['celltype'] = celltype
+        celltype_motif_slope_df['comparison'] = disease_name
 
-# Get marker peaks
-marker_peaks = snap.tl.marker_regions(
-    data = control_atac,
-    groupby = snakemake.params.cell_type, 
-    pvalue = 0.01
-)
+        DEM_df = pd.concat([DEM_df, celltype_motif_slope_df])
 
-# Read in TF motifs (must be MEME format)
-TF_motifs = snap._snapatac2.read_motifs(snakemake.input.TF_motifs)
-
-# Motif enrichment, use CIS-BP TF list
-motifs = snap.tl.motif_enrichment(
-    motifs = TF_motifs,
-    regions = marker_peaks,
-    genome_fasta = snakemake.input.ref_genome
-)
-
-# Read each cell type into a motif
-motif_df = pd.DataFrame()
-for key in motifs.keys():
-    cell_motif = motifs[key].to_pandas()
-    cell_motif[snakemake.params.cell_type] = key
-    motif_df = pd.concat([motif_df, cell_motif])
-
-# Export motif enrichment DataFrame
-motif_df.to_csv(snakemake.output.motif_enrichment, index=False)
+DEM_df[(DEM_df['adj. p-value'] < 0.05) & (abs(DEM_df['log2FC']) > 0.5)].groupby(['celltype', 'comparison']).count()

@@ -62,15 +62,14 @@ envs = {
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
-    'tobias': 'envs/tobias.sif',
+    'tobias': 'envs/tobias.sif', 
     'pychromvar': 'envs/pychromvar.sif'
     }
 rule all:
     input:
-        ccan_corr = expand(
-            work_dir+'/data/celltype/{cell_type}/{cell_type}_{disease}_CCAN_correlation.csv',
-            cell_type = ['Astro'],#cell_types,
-            disease = ['control', 'PD', 'LBD']
+        cell_disease_GREAT = expand(
+            work_dir+'/data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv',
+            cell_type = cell_types
         )
 
             
@@ -686,7 +685,21 @@ rule atac_spectral:
         runtime=1440, mem_mb=250000
     script:
         'scripts/atac_spectral.py'
-    
+
+rule atac_merged_coaccessibilty:
+    input:
+        celltype_atac = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    output:
+        celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
+        circe_network = work_dir+'/data/circe_network.csv'
+    singularity:
+        envs['circe']
+    threads:
+        16
+    resources:
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
     
 rule multiome_output:
     input:
@@ -731,6 +744,12 @@ rule pychromvar:
         runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
+
+"""rule differntial_motif_enrichment:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    output:
+"""
 
 rule create_bigwig:
     input:
@@ -1032,6 +1051,24 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
+rule celltype_great:
+    input:
+        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        tss_file =  work_dir+'/input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'/input/chr_size.bed',
+        annotation_file =  work_dir+'/input/ontologies.csv',
+    output:
+        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv'
+    params:
+        cell_types = cell_types,
+        celltype = lambda wildcards: wildcards.cell_type
+    singularity:
+        envs['great_gsea']
+    resources:
+        runtime=2880
+    script:
+        'scripts/atac_celltype_GREAT.py'
+
 rule celltype_overlapping_peaks:
     input:
         peak_files = expand(
@@ -1063,6 +1100,11 @@ rule gene_peak_linkage:
             work_dir+'/data/celltypes/{celltype}/{celltype}_{condition}_circe_network.csv',
             condition = [control] + diseases,
             allow_missing = True
+        ),
+        bed_files = expand(
+            work_dir + '/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
+            condition = [control] + diseases,
+            allow_missing = True
         )
     output:
         gene_peak_linkage = work_dir+'/data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
@@ -1072,7 +1114,7 @@ rule gene_peak_linkage:
     singularity:
         envs['decoupler']
     resources:
-        slurm_partition='quick'
+        runtime=180, mem_mb=200000,slurm_partition='quick'
     script:
         'scripts/gene_peak_linkage.py'
 
