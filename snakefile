@@ -70,6 +70,10 @@ rule all:
         cell_disease_GREAT = expand(
             work_dir+'/data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv',
             cell_type = cell_types
+        ),
+         celltype_overlapping_celltype_peaks = expand(
+            work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv',
+            celltype = cell_types
         )
 
             
@@ -1077,7 +1081,6 @@ rule celltype_overlapping_peaks:
             allow_missing=True
         )
     output:
-        celltype_overlapping_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         celltype_overlapping_celltype_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
     singularity:
         envs['atac_fragment']
