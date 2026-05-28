@@ -1061,7 +1061,6 @@ rule celltype_overlapping_peaks:
             condition = diseases + [control]
         )
     output:
-        celltype_overlapping_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.bed',
         celltype_overlapping_celltype_peaks = work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
     singularity:
         envs['atac_fragment']
