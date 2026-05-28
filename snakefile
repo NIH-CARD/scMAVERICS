@@ -1036,6 +1036,24 @@ rule disease_great:
     script:
         'scripts/atac_GREAT.py'
 
+rule celltype_great:
+    input:
+        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        tss_file =  work_dir+'/input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'/input/chr_size.bed',
+        annotation_file =  work_dir+'/input/ontologies.csv',
+    output:
+        cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv'
+    params:
+        cell_types = cell_types,
+        celltype = lambda wildcards: wildcards.cell_type
+    singularity:
+        envs['great_gsea']
+    resources:
+        runtime=2880
+    script:
+        'scripts/atac_celltype_GREAT.py'
+
 rule celltype_overlapping_peaks:
     input:
         peak_files = expand(
