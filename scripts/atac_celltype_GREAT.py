@@ -29,7 +29,7 @@ def celltype_peak_filter(included_celltypes, excluded_celltypes=[]):
             new_consensus_peaks = new_consensus_peaks[~(new_consensus_peaks[celltype])]
     return new_consensus_peaks
 
-missing_one_celltype = [x for x in cell_types if x != celltype]
+missing_one_celltype = [x for x in snakemake.params.cell_types if x != celltype]
 celltype_peaks = celltype_peak_filter(included_celltypes=[celltype], excluded_celltypes=missing_one_celltype)
 
 # Create regulatory domain
