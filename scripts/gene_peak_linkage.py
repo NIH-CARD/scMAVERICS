@@ -117,7 +117,7 @@ for condition in conditions:
         TSS_coaccess_df = pd.concat([TSS_coaccess_df, promoter_coaccessible])
 TSS_coaccess_df['peak 1'] = TSS_coaccess_df['chr 1'] + ':' + TSS_coaccess_df['start 1'].astype(str) + '-' + TSS_coaccess_df['end 1'].astype(str)
 TSS_coaccess_df['peak 2'] = TSS_coaccess_df['chr 2'] + ':' + TSS_coaccess_df['start 2'].astype(str) + '-' + TSS_coaccess_df['end 2'].astype(str)
-TSS_coaccess_df = TSS_coaccess_df[['peak 1', 'peak 2', 'Start', 'gene name', 'diagnosis', 'promoter']]
+TSS_coaccess_df = TSS_coaccess_df[['peak 1', 'peak 2', 'Start', 'score', 'gene name', 'diagnosis', 'promoter']]
 
 # Find overlap peak key when enhancer is peak 2
 peak1enhancer_df = TSS_coaccess_df[TSS_coaccess_df['promoter'] == 'peak 2']
