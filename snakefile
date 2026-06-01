@@ -459,26 +459,25 @@ rule peak_linear_regression:
 
 rule DGE:
     input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
+        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
     params:
+        celltype_params = 'celltype',
+        celltypes = cell_types,
         disease_param = disease_param,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        diagnosis_control = ['control', 'PD', 'LBD'],
         sample_key=sample_key,
-        design_factors = design_covariates,
+        formula = "~ Primary Diagnosis + Age + Sex + (1|psbulk_counts) + (1|psbulk_cells) + (1|Use_batch) + (1|Brain_bank)"
     singularity:
-        envs['decoupler']
+        envs['dreampy']
     threads:
         64
     resources:
         runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/rna_DGE.py'
+
 
 rule combine_DGE:
     input:
