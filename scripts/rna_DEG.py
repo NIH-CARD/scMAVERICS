@@ -37,6 +37,7 @@ for i, condition_1 in enumerate(diagnosis_control):
         if i > j:
             comparison_combinations.append([condition_1, condition_2])
 
+all_results = pd.DataFrame()
 for celltype in assays_dict.keys():
     print(f'\n-- {celltype} --')
     assay_pb = assays_dict[celltype]

@@ -676,7 +676,7 @@ rule rna_pseudobulk:
     script:
         'scripts/rna_pseudobulk.py'
 
-rule DGE:
+rule DEG:
     input:
         pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
     output:
