@@ -684,10 +684,11 @@ rule DGE:
     params:
         celltype_params = 'celltype',
         celltypes = cell_types,
-        disease_param = disease_param,
-        diagnosis_control = ['control', 'PD', 'LBD'],
+        diagnosis_param = disease_param,
+        control = control,
+        diagnosis_control = [control] + diseases,
         sample_key=sample_key,
-        formula = "~ Primary Diagnosis + Age + Sex + (1|psbulk_counts) + (1|psbulk_cells) + (1|Use_batch) + (1|Brain_bank)"
+        formula = "~ Primary Diagnosis + Age + Sex + (1|Use_batch) + (1|Brain_bank)"
     singularity:
         envs['dreampy']
     threads:
@@ -695,7 +696,7 @@ rule DGE:
     resources:
         runtime=180, mem_mb=200000, slurm_partition='quick'
     script:
-        'scripts/rna_DGE.py'
+        'scripts/rna_DEG.py'
 
 rule differential_cell_cell_communication:
     input:

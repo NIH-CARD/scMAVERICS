@@ -11,12 +11,12 @@ pb = sc.read_h5ad(snakemake.input.pseudo_rna)
 celltype_param = snakemake.params.celltype_params
 cell_grouping = snakemake.params.celltypes
 diagnosis_param = snakemake.params.diagnosis_param
-diagnosis_control = snakemake.params.diagnosis_values
+diagnosis_control = snakemake.params.diagnosis_control
 
 # Change parameter names from the Decoupler hard-coded values to
 # Dreampy hard-coded values
-dc_pb.obs['n_cells'] = dc_pb.obs['psbulk_cells']
-dc_pb.obs['assays'] = dc_pb.obs[celltype_param]
+pb.obs['n_cells'] = pb.obs['psbulk_cells']
+pb.obs['assays'] = pb.obs[celltype_param]
 
 # Preprocessing
 pb = dp.filter_samples(pb, min_cells=10, min_samples=3)
@@ -42,7 +42,7 @@ for celltype in assays_dict.keys():
     assay_pb = assays_dict[celltype]
     for comparison in comparison_combinations:
         
-        if 'control' in comparison:
+        if snakemake.params.control in comparison:
             disease_name = comparison[0]
         else:
             disease_name = f'{comparison[0]} vs. {comparison[1]}'
