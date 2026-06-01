@@ -707,6 +707,8 @@ rule rna_pseudobulk:
         min_cells = 10
     singularity:
         envs['decoupler']
+    resources:
+        runtime=120, mem_mb=250000, slurm_partition='quick'
     script:
         'scripts/rna_pseudobulk.py'
 
