@@ -696,6 +696,18 @@ rule pychromvar:
     script:
         'scripts/pychromvar.py'
 
+rule rna_pseudobulk:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
+    params:
+        sample_key = 'Sample_ID',
+        separating_cluster = 'celltype',
+        min_cells = 10
+    script:
+        'scripts/rna_pseudobulk.py'
+
 rule create_bigwig:
     input:
         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
