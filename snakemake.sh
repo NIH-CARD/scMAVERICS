@@ -21,6 +21,7 @@ apptainer pull --disable-cache envs/pychromvar.sif oras://quay.io/adamcatchingdt
 apptainer pull --disable-cache envs/great_gsea.sif oras://quay.io/adamcatchingdti/great_gsea.sif:0.9
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 apptainer pull --disable-cache envs/tobias.sif docker://naotokubota/tobias:0.13.3
+apptainer pull --disable-cache envs/dreampy.sif oras://quay.io/adamcatchingdti/dreampy.sif:0.1
 
 # Load singularity
 module load singularity
