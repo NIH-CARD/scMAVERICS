@@ -67,14 +67,7 @@ envs = {
     }
 rule all:
     input:
-        cell_disease_GREAT = expand(
-            work_dir+'/data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv',
-            cell_type = cell_types
-        ),
-         celltype_overlapping_celltype_peaks = expand(
-            work_dir+'/data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv',
-            celltype = cell_types
-        )
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
 
             
 #merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu',
@@ -382,7 +375,7 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-"""rule second_pass_annotate:
+rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
         gene_markers = gene_markers_file
@@ -396,7 +389,7 @@ rule filtered_UMAP:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'"""
+        work_dir+'/scripts/annotate.py'
 
 rule cell_fraction_plot_and_test:
     input:
@@ -421,7 +414,6 @@ rule gene_linear_regression:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         covariates = work_dir+'/data/covariates.csv'
     output:
-        rna_pseudobulk = work_dir+'/data/pseudobulked_rna.csv',
         cell_gene_regression = work_dir+'/data/gene_age_regression.csv'
     params:
         sample_key=sample_key,
@@ -470,59 +462,7 @@ rule peak_linear_regression:
     script:
         'scripts/linear_regression_peaks.py'
 
-rule DGE:
-    input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
-    output:
-        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
-    params:
-        disease_param = disease_param,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
-        sample_key=sample_key,
-        design_factors = design_covariates,
-    singularity:
-        envs['decoupler']
-    threads:
-        64
-    resources:
-        runtime=180, mem_mb=200000, slurm_partition='quick'
-    script:
-        'scripts/rna_DGE.py'
 
-rule combine_DGE:
-    input:
-        output_DGE_data = expand(
-            work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            separating_cluster = 'subtype',
-            control = 'control',
-            disease = ['PD', 'DLB'],
-            cell_type = subtypes
-            )
-    output:
-        unfiltered_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_unfiltered_results.csv',
-        merged_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_results.csv'
-    singularity:
-        envs['decoupler']
-    script:
-        'scripts/merge_DGE.py'
-
-
-rule differential_cell_cell_communication:
-    input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
-    output:
-        differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
-    params:
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        disease_param = disease_param,
-        sep_param = lambda wildcards, output: output[0].split("_")[-3],
-    script:
-        'scripts/rna_differential_cell_cell_communication.py'
     
 """rule cistopic_pseudobulk:
     input:
@@ -606,7 +546,7 @@ rule consensus_peaks:
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
-        'scripts/MACS_consensus.py'
+        'scripts/MACS_consensus.py'"""
     
 rule cistopic_create_objects:
     input:
@@ -655,23 +595,6 @@ rule cistopic_merge_objects:
         runtime=960, mem_mb=300000
     script:
         'scripts/merge_cistopic_and_adata.py'
-
-rule atac_peaks_model:
-    input:
-        merged_atac_anndata = work_dir+'/atlas/03_merged_cistopic_atac.h5ad'
-    output:
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad',
-        atac_model_history = work_dir+'/data/model_elbo/atac_model_history.csv'
-    params:
-        atac_model = work_dir+'/data/models/atac/',
-        sample_key = sample_key
-    threads:
-        64
-    resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
-    shell:
-        'scripts/atac_model.sh {input.merged_atac_anndata} {params.sample_key} {output.atac_model_history} {output.merged_atac_anndata} {params.atac_model}'
-"""
 
 rule atac_spectral:
     input:
@@ -748,6 +671,58 @@ rule pychromvar:
         runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
+
+rule rna_pseudobulk:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
+    params:
+        sample_key = 'Sample_ID',
+        separating_cluster = 'celltype',
+        min_cells = 10
+    singularity:
+        envs['decoupler']
+    resources:
+        runtime=120, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/rna_pseudobulk.py'
+
+rule DGE:
+    input:
+        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+    output:
+        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
+    params:
+        disease_param = disease_param,
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        sample_key=sample_key,
+        design_factors = design_covariates,
+    singularity:
+        envs['decoupler']
+    threads:
+        64
+    resources:
+        runtime=180, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/rna_DGE.py'
+
+rule differential_cell_cell_communication:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
+    output:
+        differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
+    params:
+        disease = lambda wildcards, output: output[0].split("_")[-2],
+        disease_param = disease_param,
+        sep_param = lambda wildcards, output: output[0].split("_")[-3],
+    script:
+        'scripts/rna_differential_cell_cell_communication.py'
 
 """rule differntial_motif_enrichment:
     input:

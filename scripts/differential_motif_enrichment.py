@@ -1,38 +1,73 @@
-# Import modules
-import numpy as np
-import pandas as pd
 import scanpy as sc
-import snapatac2 as snap
+import numpy as np
+import muon as mu
+import pandas as pd
+import scipy
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
+chromvar  = mu.read("../../atlas/multiome_chromvar_atlas.h5mu/mod/chromvar")
 
-# Import cell type atac anndata object
-cell_type_atac = sc.read_h5ad(snakemake.input.cell_type_atac)
-cell_type_atac = cell_type_atac[cell_type_atac.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type]
+chromvar.obs['Sample-celltype'] = chromvar.obs['Sample_ID'].astype(str) + '_' + chromvar.obs['celltype'].astype(str)
+pchromvar = sc.get.aggregate(
+    chromvar, 
+    by='Sample-celltype', 
+    func = 'mean'
+    )
+pchromvar.X = pchromvar.layers['mean']
 
-# Import cell type and disease specific DARs
-cell_type_DARs = pd.read_csv(snakemake.input.output_DAR_data)
+# Create Chromvar DataFrame
+chromvar_df = pchromvar.to_df()
+chromvar_df['celltype'] = [x.split('_')[-1] for x in chromvar_df.index]
+chromvar_df['Sample_ID'] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
 
-# Load in TF motifs
-tf_motifs = snap._snapatac2.read_motifs(snakemake.input.TF_motifs)
+# Map diagnosis back onto DataFrame from RNA data
+sample_diagnosis_dict = dict(zip(rna_adata_df['Sample_ID'].astype(str), rna_adata_df['Primary Diagnosis'].astype(str)))
+chromvar_df['diagnosis'] = [sample_diagnosis_dict[x] for x in chromvar_df['Sample_ID']]
 
-# Return list of top and bottom 5% enriched peaks
-DAR_counts = cell_type_DARs.shape[0] # Total number of peaks
-top_05_num = int(DAR_counts * 0.05) # 5% of the total number
+# Save list of TF motifs
+TF_motif_names = chromvar_df.columns.to_list()
+TF_motif_names = ['_'.join(x.replace("::", "..").replace("-", ".").split('.')) for x in TF_motif_names]
+chromvar_df = chromvar_df.rename(columns=dict(zip(chromvar_df.columns.to_list(), TF_motif_names)))
 
-enriched_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).iloc[:top_05_num]['peak'].values
-depleted_peaks = cell_type_DARs.sort_values('log2FoldChange', ascending=False).iloc[top_05_num:]['peak'].values
-
-cell_disease_motifs = snap.tl.motif_enrichment(
-    motifs=tf_motifs,
-    regions={'up': enriched_peaks},
-    background=cell_type_DARs['peak'].values,
-    genome_fasta=snakemake.input.ref_genome,
-    method='hypergeometric'
+chrom_rna_df = pd.merge(
+    left = prna.to_df(),
+    right = chromvar_df,
+    left_index = True,
+    right_index = True
 )
-# Split out up and down regulated motifs
-cell_disease_motif_df = cell_disease_motifs['up'].to_pandas()
 
-cell_disease_motif_df['-log10(p-value)'] = -np.log10(cell_disease_motif_df['adjusted p-value'])
+disease_control = ['control', 'PD', 'LBD']
+for i, condition_1 in enumerate(disease_control):
+    for j, condition_2 in enumerate(disease_control):
+        if i > j:
+            comparison_combinations.append([condition_1, condition_2])
 
-# Export dataframe
-cell_disease_motif_df.to_csv(snakemake.output.differential_motif_dataframe, index=False)
+# List to append gene-motif links in 
+gene_motif = []#= pd.DataFrame()
+for celltype in cell_types:
+    for comparisons in [['control', 'PD'], ['control', 'LBD'], ['PD', 'LBD']]:
+
+        if comparisons[0] == 'control':
+            comparison = comparisons[1]
+        else:
+            comparison = f'{comparisons[0]} vs. {comparison[1]}'
+        
+        # How many genes and DEMs to correlate
+        condition_genes = sign_DEG_df[(sign_DEG_df['celltype'] == celltype) & (sign_DEG_df['diagnosis'] == comparison)]
+        condition_motifs = sign_DEM_df[(sign_DEM_df['celltype'] == celltype) & (sign_DEM_df['comparison'] == comparison)]
+        if condition_genes.shape[0] != 0 and condition_motifs.shape[0] != 0:
+            print(celltype, comparison, condition_genes.shape[0], condition_motifs.shape[0])
+
+            # For each gene-motif in both conditions, measure the Spearman correlation
+            for diagnosis in comparisons:
+                # Filter for cell type, diagnosis
+                celltype_comparison_df = chrom_rna_df[(chrom_rna_df['celltype'] == celltype) & (chrom_rna_df['diagnosis'] == diagnosis)]
+                for gene in condition_genes.id:
+                    for motif in condition_motifs['TF motif']:
+                        gene_express = celltype_comparison_df[gene]
+                        motif_express = celltype_comparison_df[motif]
+                        stat, p = scipy.stats.spearmanr(gene_express, motif_express)
+
+                        gene_motif.append([celltype, diagnosis, gene, motif, stat, p])
+gene_motif_df = pd.DataFrame(gene_motif, columns = ['celltype', 'diagnosis', 'gene', 'TF motif', 'Spearman rho', 'Spearman p-value'])
