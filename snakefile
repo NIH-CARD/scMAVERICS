@@ -705,6 +705,8 @@ rule rna_pseudobulk:
         sample_key = 'Sample_ID',
         separating_cluster = 'celltype',
         min_cells = 10
+    singularity:
+        envs['decoupler']
     script:
         'scripts/rna_pseudobulk.py'
 
