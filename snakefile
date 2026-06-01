@@ -711,6 +711,22 @@ rule rna_pseudobulk:
     script:
         'scripts/rna_pseudobulk.py'
 
+rule atac_pseudobulk:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    output:
+        pseudo_atac = work_dir+'/atlas/pseudobulked_atac.h5ad'
+    params:
+        sample_key = 'sample_id',
+        separating_cluster = 'celltype',
+        min_cells = 10
+    singularity:
+        envs['decoupler']
+    resources:
+        runtime=120, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/atac_pseudobulk.py'
+
 rule create_bigwig:
     input:
         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
