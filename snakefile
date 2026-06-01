@@ -63,24 +63,12 @@ envs = {
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
     'tobias': 'envs/tobias.sif', 
-    'pychromvar': 'envs/pychromvar.sif'
+    'pychromvar': 'envs/pychromvar.sif',
+    'dreampy': 'envs/dreampy.sif'
     }
 rule all:
     input:
-        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
-
-            
-#merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu',
-"""control_disease_motif_data = expand(
-    work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
-    cell_type = cell_types,
-    control = control,
-    disease = diseases),
-disease_disease_motif_data = expand(
-    work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect/bindetect_results.txt',
-    cell_type = cell_types,
-    control = 'PD',
-    disease = 'LBD')"""
+        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -690,20 +678,18 @@ rule rna_pseudobulk:
 
 rule DGE:
     input:
-        rna_anndata = work_dir + '/atlas/07_polished_anndata_rna.h5ad'
+        pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/DGEs/{separating_cluster}/DGE_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-        output_figure = work_dir + '/figures/{cell_type}/rna_{separating_cluster}_{cell_type}_{control}_{disease}_DGE.svg'
+        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
     params:
+        celltype_params = 'celltype',
+        celltypes = cell_types,
         disease_param = disease_param,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        disease = lambda wildcards, output: output[0].split("_")[-2],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        diagnosis_control = ['control', 'PD', 'LBD'],
         sample_key=sample_key,
-        design_factors = design_covariates,
+        formula = "~ Primary Diagnosis + Age + Sex + (1|psbulk_counts) + (1|psbulk_cells) + (1|Use_batch) + (1|Brain_bank)"
     singularity:
-        envs['decoupler']
+        envs['dreampy']
     threads:
         64
     resources:
