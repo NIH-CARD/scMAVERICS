@@ -68,7 +68,11 @@ envs = {
     }
 rule all:
     input:
-        pseudo_atac = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
+        gene_motif_links = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{diagnosis}_gene_motif_link.csv',
+            cell_type = cell_types,
+            diagnosis = [control] + diseases
+        )
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -742,11 +746,35 @@ rule chromvar_pseudobulk:
     script:
         'scripts/chromvar_pseudobulk.py'
 
-"""rule differntial_motif_enrichment:
+rule differntially_enriched_motifs:
     input:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
     output:
-"""
+        diff_enrich_motif = work_dir + '/data/DEM_results.csv'
+    params:
+        sample_key = 'SampleID',
+        separating_cluster = 'celltype',
+        diagnoses = [control] + diseases
+    script:
+        'scripts/differential_motif_enrichemnt.py'
+
+rule gene_motif_linkage:
+    input:
+        pseudobulk_chromvar = work_dir+'/atlas/pseudobulked_chromvar.h5ad',
+        pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
+    output:
+        gene_motif_links = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{diagnosis}_gene_motif_link.csv'
+    params:
+        diagnosis_param = disease_param,
+        celltype_param = 'celltype',
+        celltype = lambda wildcards: wildcards.cell_type,
+        diagnosis = lambda wildcards: wildcards.diagnosis
+    singularity:
+        envs['decoupler']
+    resources:
+        runtime=180, mem_mb = 50000, slurm_partition = 'quick'
+    script:
+        'scripts/gene_motif_linkage.py'
 
 rule create_bigwig:
     input:

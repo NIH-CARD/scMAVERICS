@@ -6,24 +6,29 @@ import scipy
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
-pchromvar sc.read_h5ad(snakemake.input.pseudobulk_chromvar)
+pchromvar = sc.read_h5ad(snakemake.input.pseudobulk_chromvar)
 
-chromvar.obs['Sample-celltype'] = chromvar.obs['Sample_ID'].astype(str) + '_' + chromvar.obs['celltype'].astype(str)
+# Merged sample-celltype name inputs
+sample_key = snakemake.parms.sample_key
+celltype = snakemake.params.separating_cluster
+
+chromvar.obs['Sample-celltype'] = chromvar.obs[sample_key].astype(str) + '_' + chromvar.obs[celltype].astype(str)
 
 # Create Chromvar DataFrame
 chromvar_df = chromvar.to_df()
-chromvar_df['celltype'] = [x.split('_')[-1] for x in chromvar_df.index]
-chromvar_df['Sample_ID'] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
+chromvar_df[celltype] = [x.split('_')[-1] for x in chromvar_df.index]
+chromvar_df[sample_key] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
 
 # Map diagnosis back onto DataFrame from RNA data
-sample_diagnosis_dict = dict(zip(rna_adata_df['Sample_ID'].astype(str), rna_adata_df['Primary Diagnosis'].astype(str)))
-chromvar_df['diagnosis'] = [sample_diagnosis_dict[x] for x in chromvar_df['Sample_ID']]
+sample_diagnosis_dict = dict(zip(rna_adata_df[sample_key].astype(str), rna_adata_df['Primary Diagnosis'].astype(str)))
+chromvar_df['diagnosis'] = [sample_diagnosis_dict[x] for x in chromvar_df[sample_key]]
 
 # Save list of TF motifs
 TF_motif_names = chromvar_df.columns.to_list()
 TF_motif_names = ['_'.join(x.replace("::", "..").replace("-", ".").split('.')) for x in TF_motif_names]
 chromvar_df = chromvar_df.rename(columns=dict(zip(chromvar_df.columns.to_list(), TF_motif_names)))
 
+# Merge data 
 chrom_rna_df = pd.merge(
     left = prna.to_df(),
     right = chromvar_df,
@@ -31,7 +36,8 @@ chrom_rna_df = pd.merge(
     right_index = True
 )
 
-disease_control = ['control', 'PD', 'LBD']
+disease_control = snakemake.params.input.diagnoses
+comparison_combinations = []
 for i, condition_1 in enumerate(disease_control):
     for j, condition_2 in enumerate(disease_control):
         if i > j:
@@ -40,7 +46,7 @@ for i, condition_1 in enumerate(disease_control):
 # List to append gene-motif links in 
 gene_motif = []#= pd.DataFrame()
 for celltype in cell_types:
-    for comparisons in [['control', 'PD'], ['control', 'LBD'], ['PD', 'LBD']]:
+    for comparisons in comparison_combinations:
 
         if comparisons[0] == 'control':
             comparison = comparisons[1]
