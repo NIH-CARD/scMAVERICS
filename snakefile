@@ -727,6 +727,21 @@ rule atac_pseudobulk:
     script:
         'scripts/atac_pseudobulk.py'
 
+rule chromvar_pseudobulk:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    output:
+        pseudo_atac = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
+    params:
+        sample_key = 'SampleID',
+        separating_cluster = 'celltype'
+    singularity:
+        envs['decoupler']
+    resources:
+        runtime=120, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/chromvar_pseudobulk.py'
+
 rule create_bigwig:
     input:
         pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
