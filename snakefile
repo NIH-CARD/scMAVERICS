@@ -772,7 +772,7 @@ rule gene_motif_linkage:
     singularity:
         envs['decoupler']
     resources:
-        runtime=180, mem_mb = 50000, slurm_partition = 'quick'
+        runtime=120, mem_mb = 50000
     script:
         'scripts/gene_motif_linkage.py'
 

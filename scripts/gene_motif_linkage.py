@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import scanpy as sc
-from scipy.stats import pearsonr,
+from scipy.stats import pearsonr
 from statsmodels.stats.multitest import multipletests
 
 # Import the celltype of interest
@@ -33,6 +33,8 @@ pchromvar_df = pchromvar_df.rename(columns=dict(zip(pchromvar_df.columns.to_list
 # Combine the RNA and TF motif signals
 prna_df = prna.to_df()
 gene_names = prna_df.columns.to_list()
+
+# Add new scripts
 gene_motif_df = pd.merge(
     left = prna_df,
     right = pchromvar_df,
@@ -41,7 +43,7 @@ gene_motif_df = pd.merge(
 )
 gene_motif_df = pd.merge(
     left = gene_motif_df,
-    right = prna.obs[['celltype', diagnosis_param]],
+    right = prna.obs[[celltype_param, diagnosis_param]],
     left_index = True,
     right_index = True
 )
@@ -72,6 +74,7 @@ diagnosis_gene_motif_df['adj. p-value'] = multipletests(
     method = 'holm')[1]
 # Add diagnosis based group to sample
 diagnosis_gene_motif_df['-log10(adj. p-value)'] = -np.log10(diagnosis_gene_motif_df['adj. p-value'])
+celltype_gene_motif_df['r-squared'] = celltype_gene_motif_df['Pearson r'] ** 2
 
 # Export gene-motif linkages
 diagnosis_gene_motif_df.to_csv(snakemake.output.gene_motif_links, index = False)
