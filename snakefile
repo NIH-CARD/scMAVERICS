@@ -731,7 +731,7 @@ rule chromvar_pseudobulk:
     input:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
     output:
-        pseudo_atac = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
+        pseudobulk_chromvar = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
     params:
         sample_key = 'SampleID',
         separating_cluster = 'celltype'
