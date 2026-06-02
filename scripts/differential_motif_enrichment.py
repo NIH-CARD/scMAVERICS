@@ -6,18 +6,12 @@ import scipy
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
-chromvar  = mu.read("../../atlas/multiome_chromvar_atlas.h5mu/mod/chromvar")
+pchromvar sc.read_h5ad(snakemake.input.pseudobulk_chromvar)
 
 chromvar.obs['Sample-celltype'] = chromvar.obs['Sample_ID'].astype(str) + '_' + chromvar.obs['celltype'].astype(str)
-pchromvar = sc.get.aggregate(
-    chromvar, 
-    by='Sample-celltype', 
-    func = 'mean'
-    )
-pchromvar.X = pchromvar.layers['mean']
 
 # Create Chromvar DataFrame
-chromvar_df = pchromvar.to_df()
+chromvar_df = chromvar.to_df()
 chromvar_df['celltype'] = [x.split('_')[-1] for x in chromvar_df.index]
 chromvar_df['Sample_ID'] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
 

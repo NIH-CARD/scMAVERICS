@@ -68,7 +68,7 @@ envs = {
     }
 rule all:
     input:
-        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
+        pseudo_atac = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -645,7 +645,7 @@ rule wnn:
     script:
         'scripts/wnn.py'
 
-rule pychromvar:
+"""rule pychromvar:
     input:
         merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
         reference_genome = reference_genome
@@ -658,7 +658,7 @@ rule pychromvar:
     resources:
         runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
     script:
-        'scripts/pychromvar.py'
+        'scripts/pychromvar.py'"""
 
 rule rna_pseudobulk:
     input:
@@ -726,6 +726,21 @@ rule atac_pseudobulk:
         runtime=120, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/atac_pseudobulk.py'
+
+rule chromvar_pseudobulk:
+    input:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    output:
+        pseudobulk_chromvar = work_dir+'/atlas/pseudobulked_chromvar.h5ad'
+    params:
+        sample_key = 'SampleID',
+        separating_cluster = 'celltype'
+    singularity:
+        envs['decoupler']
+    resources:
+        runtime=120, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/chromvar_pseudobulk.py'
 
 """rule differntial_motif_enrichment:
     input:

@@ -81,4 +81,4 @@ for celltype in assays_dict.keys():
             results[diagnosis_param] = disease_name
 
             all_results = pd.concat([all_results, results])
-all_results.to_csv(snakemake.output.output_DGE_data, compression='gzip')
+all_results.to_csv(snakemake.output.output_DGE_data, index=False)
