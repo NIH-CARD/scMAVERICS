@@ -74,7 +74,7 @@ diagnosis_gene_motif_df['adj. p-value'] = multipletests(
     method = 'holm')[1]
 # Add diagnosis based group to sample
 diagnosis_gene_motif_df['-log10(adj. p-value)'] = -np.log10(diagnosis_gene_motif_df['adj. p-value'])
-celltype_gene_motif_df['r-squared'] = celltype_gene_motif_df['Pearson r'] ** 2
+diagnosis_gene_motif_df['r-squared'] = diagnosis_gene_motif_df['Pearson r'] ** 2
 
 # Export gene-motif linkages
 diagnosis_gene_motif_df.to_csv(snakemake.output.gene_motif_links, index = False)

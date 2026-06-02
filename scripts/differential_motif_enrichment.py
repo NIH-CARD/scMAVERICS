@@ -6,7 +6,21 @@ import scipy
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
-pchromvar = sc.read_h5ad(snakemake.input.pseudobulk_chromvar)
+# Load RNA data
+rna_adata_df = pd.read_csv('../../data/rna_cell_annot.csv')
+rna_adata_df.index = rna_adata_df['Unnamed: 0']
+del rna_adata_df['Unnamed: 0']
+rna_adata_df
+
+chromvar  = mu.read("../../atlas/multiome_chromvar_atlas.h5mu/mod/chromvar")
+
+
+chromvar.obs = pd.merge(
+    left = chromvar.obs,
+    right = rna_adata_df,
+    left_index = True,
+    right_index = True
+)
 
 # Merged sample-celltype name inputs
 sample_key = snakemake.parms.sample_key
@@ -14,14 +28,21 @@ celltype = snakemake.params.separating_cluster
 
 chromvar.obs['Sample-celltype'] = chromvar.obs[sample_key].astype(str) + '_' + chromvar.obs[celltype].astype(str)
 
+pchromvar = sc.get.aggregate(
+    chromvar, 
+    by='Sample-celltype', 
+    func = 'mean'
+    )
+pchromvar.X = pchromvar.layers['mean']
+
 # Create Chromvar DataFrame
-chromvar_df = chromvar.to_df()
-chromvar_df[celltype] = [x.split('_')[-1] for x in chromvar_df.index]
-chromvar_df[sample_key] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
+chromvar_df = pchromvar.to_df()
+chromvar_df['celltype'] = [x.split('_')[-1] for x in chromvar_df.index]
+chromvar_df['Sample_ID'] = ['_'.join(x.split('_')[:-1]) for x in chromvar_df.index]
 
 # Map diagnosis back onto DataFrame from RNA data
-sample_diagnosis_dict = dict(zip(rna_adata_df[sample_key].astype(str), rna_adata_df['Primary Diagnosis'].astype(str)))
-chromvar_df['diagnosis'] = [sample_diagnosis_dict[x] for x in chromvar_df[sample_key]]
+sample_diagnosis_dict = dict(zip(rna_adata_df['Sample_ID'].astype(str), rna_adata_df['Primary Diagnosis'].astype(str)))
+chromvar_df['diagnosis'] = [sample_diagnosis_dict[x] for x in chromvar_df['Sample_ID']]
 
 # Save list of TF motifs
 TF_motif_names = chromvar_df.columns.to_list()
@@ -42,6 +63,9 @@ for i, condition_1 in enumerate(disease_control):
     for j, condition_2 in enumerate(disease_control):
         if i > j:
             comparison_combinations.append([condition_1, condition_2])
+
+
+
 
 # List to append gene-motif links in 
 gene_motif = []#= pd.DataFrame()
