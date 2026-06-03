@@ -1,82 +1,115 @@
-import numpy as np
+import anndata as ad
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 import scanpy as sc
-import dreampy as dp
+import decoupler as dc
+from pydeseq2.dds import DeseqDataSet, DefaultInference
+from pydeseq2.ds import DeseqStats
 
-# Import pseudobulked data as an AnnData object
-# This needs to be Sample-Celltype by gene
-pb = sc.read_h5ad(snakemake.input.pseudo_rna)
+# Open rna
+adata = sc.read_h5ad(snakemake.input.rna_anndata)
 
-# Parameters to slice 
-celltype_param = snakemake.params.celltype_params
-cell_grouping = snakemake.params.celltypes
-diagnosis_param = snakemake.params.diagnosis_param
-diagnosis_control = snakemake.params.diagnosis_values
+# Read in parameters
+cell_type = snakemake.params.cell_type
+disease_name = snakemake.params.disease
+control_name = snakemake.params.control
+disease_param = snakemake.params.disease_param
 
-# Change parameter names from the Decoupler hard-coded values to
-# Dreampy hard-coded values
-dc_pb.obs['n_cells'] = dc_pb.obs['psbulk_cells']
-dc_pb.obs['assays'] = dc_pb.obs[celltype_param]
+# Subset to cell type
+adata = adata[adata.obs[snakemake.params.separating_cluster] == cell_type].copy()
 
-# Preprocessing
-pb = dp.filter_samples(pb, min_cells=10, min_samples=3)
-pb = dp.compute_tmm_factors(pb, assay_col=celltype_param)
-assays = dp.filter_by_expr(pb, assay_col=celltype_param)
+# Get pseudo-bulk profile
+pdata = dc.pp.pseudobulk(
+    SN_adata,
+    sample_col=snakemake.params.sample_key,
+    groups_col=snakemake.params.separating_cluster,
+    layer='counts',
+    mode='sum'
+)
 
-# These variables are needed in the Dreampy analysis
-nf = pb.obs["norm_factors"].values
-geo_mean = np.exp(np.mean(np.log(nf)))
+dc.pp.filter_samples(pdata, min_cells=10, min_counts=1000)
 
-# Assign the split cell types to each 
-assays_dict = dp.filter_by_expr(pb, assay_col=celltype_param)
+# Store raw counts in layers
+pdata.layers["counts"] = pdata.X.copy()
 
-# Create a list of all possible comparisons
-comparison_combinations = []
-for i, condition_1 in enumerate(diagnosis_control):
-    for j, condition_2 in enumerate(diagnosis_control):
-        if i > j:
-            comparison_combinations.append([condition_1, condition_2])
+# Normalize, scale and compute pca
+sc.pp.normalize_total(pdata, target_sum=1e4)
+sc.pp.log1p(pdata)
+sc.pp.scale(pdata, max_value=10)
+sc.tl.pca(pdata)
 
-for celltype in assays_dict.keys():
-    print(f'\n-- {celltype} --')
-    assay_pb = assays_dict[celltype]
-    for comparison in comparison_combinations:
-        
-        if 'control' in comparison:
-            disease_name = comparison[0]
-        else:
-            disease_name = f'{comparison[0]} vs. {comparison[1]}'
-        print(f'\n-- {disease_name} --')
-        comparison_assay_pb = assay_pb[assay_pb.obs[diagnosis_param].isin(comparison)]
+# Return raw counts to X
+dc.pp.swap_layer(adata=pdata, key="counts", inplace=True)
 
-        # log2CPM
-        comparison_assay_pb = dp.log2cpm(comparison_assay_pb)
+dc.pl.filter_by_expr(
+    adata=pdata,
+    group=disease_param,
+    min_count=10,
+    min_total_count=15,
+    large_n=10,
+    min_prop=0.7,
+)
+dc.pl.filter_by_prop(
+    adata=pdata,
+    min_prop=0.1,
+    min_smpls=2,
+)
 
-        if comparison_assay_pb.shape[0] != 0:
+# Abbreviate diagnosis to avoid space syntax error
+pdata.obs['comparison'] = pdata.obs[disease_param]
 
-            # Voom weights
-            comparison_assay_pb = dp.estimate_weights(
-                comparison_assay_pb, formula=snakemake.params.formula, n_jobs=-1,
-            )
+# Determine the number of cpus to use
+inference = DefaultInference(n_cpus=64)
 
-            # Mixed-model fitting
-            fit = dp.fit_models(
-                comparison_assay_pb,
-                formula=snakemake.params.formula,
-                reml=True,
-                n_jobs=snakemake.threads,
-                assay_name=assay_name,
-            )
-            print(f"  fit: {fit}")
+# Design the differential expression analysis with covariates
+dds = DeseqDataSet(
+    adata=pdata,
+    design_factors=snakemake.params.design_factors + ['comparison'],
+    refit_cooks=True,
+    inference=inference,
+)
 
-            # eBayes
-            fit_eb = dp.ebayes(fit)
-            print(f"  eBayes: s2_prior={fit_eb.s2_prior:.4f}, "
-                f"df_prior={fit_eb.df_prior:.1f}")
+# Error handling for singular matrixes (they don't vary across co-variates)
+try:
+    # Compute log-fold changes
+    dds.deseq2()
 
-            # Results table
-            results = dp.get_results(fit_eb, assay_name=assay_name)
-            results[celltype_param] = assay_name
-            results[diagnosis_param] = disease_name
-            all_results = pd.concat([all_results, results])
-all_results.to_csv(snakemake.output.output_DGE_data, compression='gzip')
+    # Extract contrast between control and disease states
+    stat_res = DeseqStats(
+        dds,
+        contrast=['comparison', disease_name, control_name],
+        inference=inference,
+    )
+
+    # Compute Wald test
+    stat_res.summary()
+
+    # Extract results
+    DGE_results_df = stat_res.results_df
+    DGE_results_df[snakemake.params.separating_cluster] = cell_type
+    DGE_results_df['-log10_padj'] = -np.log10(DGE_results_df['padj'])
+    DGE_results_df.to_csv(snakemake.output.output_DGE_data)
+
+    # Plot 
+    dc.plot_volcano_df(
+        DGE_results_df,
+        x='log2FoldChange',
+        y='padj',
+        top=20,
+        lFCs_thr=1,
+        sign_thr=1e-2,
+        figsize=(4, 4)
+    )
+    plt.title(f'{control_name} vs. {disease_name} in {cell_type}')
+    plt.tight_layout()
+    plt.savefig(snakemake.output.output_figure, dpi=300)
+except np.linalg.LinAlgError as err:
+    print('\n\nSingular matrix! No output\n\n')
+    # Output nothing if 
+    pd.DataFrame().to_csv(snakemake.output.output_DGE_data)
+    plt.plot()
+    plt.savefig(snakemake.output.output_figure, dpi=300)
+
+    
