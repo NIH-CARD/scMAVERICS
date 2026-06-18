@@ -64,7 +64,8 @@ envs = {
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
     'tobias': 'envs/tobias.sif',
-    'pychromvar': 'envs/pychromvar.sif'
+    'pychromvar': 'envs/pychromvar.sif',
+    'dreampy': 'envs/dreampy.sif'
     }
 
 rule all:
