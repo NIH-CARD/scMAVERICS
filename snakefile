@@ -80,7 +80,7 @@ rule cellbender:
     params:
         sample='{sample}'
     resources:
-        runtime=1440, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
