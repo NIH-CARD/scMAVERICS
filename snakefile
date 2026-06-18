@@ -677,7 +677,7 @@ rule wnn:
         num_neighbors = 20
     resources:
         runtime=480, mem_mb=500000, slurm_partition='largemem'
-    scripts:
+    script:
         'scripts/wnn.py'
 
 rule pychromvar:
