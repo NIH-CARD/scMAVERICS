@@ -222,11 +222,24 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
-        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
-        atac_anndata = data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad',
-        rna_anndata = data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad'
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad'
+    singularity:
+        envs['snapatac2']
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse
+    script:
+        work_dir+'/scripts/atac_filter.py'
+
+rule filter_rna_atac:
+    input:
+        rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad',
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad'
+    output:
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_atac.h5ad',
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['snapatac2']
     resources:
