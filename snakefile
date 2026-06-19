@@ -62,12 +62,9 @@ envs = {
 
 rule all:
     input:
-        rna_anndata = expand(
-            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5',
-            zip,
-            sample = working_samples,
-            batch = working_batches
-        )
+        modeled_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
 
 
 # This needs to be forced to run once
@@ -87,9 +84,9 @@ rule cellbender:
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
-        rna_anndata = data_dir+'{sample}/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
     output:
-        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -103,7 +100,7 @@ rule rna_preprocess:
 rule merge_unfiltered:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad', 
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -144,9 +141,9 @@ rule plot_qc_rna:
 
 rule filter_rna:
     input:        
-        rna_anndata = data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
     output:
-        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad'
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['singlecell']
     params:
@@ -162,10 +159,10 @@ rule filter_rna:
 rule merge_filtered_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad', 
             zip,
-            batch=batches,
-            sample=samples
+            batch=working_batches,
+            sample=working_samples
             )
     output:
         merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
@@ -182,7 +179,7 @@ rule atac_preprocess:
     input:
         fragment_file=data_dir+'{sample}/atac_fragments.tsv.gz'
     output:
-        atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata=data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -193,9 +190,10 @@ rule atac_preprocess:
 rule merge_unfiltered_atac:
     input:
         rna_anndata=expand(
-            work_dir+'/data/samples/{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad', 
             zip,
-            sample=samples
+            batch=working_batches,
+            sample=working_samples
             )
     output:
         merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
@@ -210,7 +208,7 @@ rule merge_unfiltered_atac:
 
 rule plot_qc_atac:
     input:
-        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -222,11 +220,24 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
-        rna_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
-        atac_anndata = data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad',
-        rna_anndata = data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad'
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad'
+    singularity:
+        envs['snapatac2']
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse
+    script:
+        work_dir+'/scripts/atac_filter.py'
+
+rule filter_rna_atac:
+    input:
+        rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad',
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad'
+    output:
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_atac.h5ad',
+        rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
         envs['snapatac2']
     resources:
@@ -237,10 +248,10 @@ rule filter_atac:
 rule merge_multiome_rna:
     input:
         rna_anndata=expand(
-            data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad', 
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad', 
             zip,
-            batch=batches,
-            sample=samples
+            batch=working_batches,
+            sample=working_samples
             )
     output:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
@@ -255,7 +266,7 @@ rule merge_multiome_rna:
 
 rule feature_selection:
     input:
-        merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
     output:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
