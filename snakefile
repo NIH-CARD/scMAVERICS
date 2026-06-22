@@ -309,6 +309,8 @@ rule feature_selection:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
         envs['singlecell']
+    params:
+        num_hvgenes = 2000
     resources:
         runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -380,6 +382,8 @@ rule filtered_feature_selection:
         hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
     singularity:
         envs['singlecell']
+    params:
+        num_hvgenes = 2000
     resources:
         runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
