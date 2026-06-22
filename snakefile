@@ -9,7 +9,7 @@ import os
 """File locations"""
 data_dir = '/data/CARD_singlecell/Brain_atlas/PCA_Multiome/' # Define the data directory, explicitly
 work_dir = '/data/CARD_singlecell/PCA_multiome' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/metadata.csv' # Define where the metadata data exists for each sample to be processed
+metadata_table = work_dir+'/input/working_metadata.csv' # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
@@ -33,6 +33,7 @@ ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be riboso
 doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
 min_peak_counts = 1000 # Minimum number of fragments per cell
+min_tsse = 2.5 # Minimum transcription start site enrichment
 
 """ Samples processed so far, remove once all samples have been sequenced"""
 working_samples = pd.read_csv(work_dir + '/input/sequenced_samples.csv')['CARD_ID'].to_list()
@@ -62,13 +63,13 @@ envs = {
 
 rule all:
     input:
-        modeled_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad',
-        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
+        work_dir+'/atlas/02_filtered_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir+'/atlas/04_annot_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad',
 
 
 # This needs to be forced to run once
-rule cellbender:
+"""rule cellbender:
     input:
         rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/'
@@ -79,7 +80,7 @@ rule cellbender:
     resources:
         runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'"""
 
 rule rna_preprocess:
     input:
@@ -169,7 +170,7 @@ rule merge_filtered_rna:
     singularity:
         envs['singlecell']
     params:
-        samples=samples
+        samples=working_samples
     resources:
         runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
     script:
@@ -177,34 +178,17 @@ rule merge_filtered_rna:
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'{sample}/atac_fragments.tsv.gz'
+        fragment_file=data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz'
     output:
         atac_anndata=data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
+    threads:
+        8
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         work_dir+'/scripts/atac_preprocess.py'
-
-rule merge_unfiltered_atac:
-    input:
-        rna_anndata=expand(
-            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=working_batches,
-            sample=working_samples
-            )
-    output:
-        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
-    singularity:
-        envs['singlecell']
-    params:
-        samples=samples
-    resources:
-        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
-    script:
-        work_dir+'/scripts/merge_anndata.py'
 
 rule plot_qc_atac:
     input:
@@ -228,8 +212,29 @@ rule filter_atac:
     params:
         min_peak_counts = min_peak_counts,
         min_tsse = min_tsse
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         work_dir+'/scripts/atac_filter.py'
+
+rule merge_filtered_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=working_batches,
+            sample=working_samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/02_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=working_samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
 
 rule filter_rna_atac:
     input:
@@ -243,7 +248,7 @@ rule filter_rna_atac:
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     script:
-        work_dir+'/scripts/atac_filter.py'
+        work_dir+'/scripts/rna_atac_filter.py'
 
 rule merge_multiome_rna:
     input:
@@ -263,6 +268,25 @@ rule merge_multiome_rna:
         runtime=120, mem_mb=300000, disk_mb=10000#, slurm_partition='largemem' 
     script:
         work_dir+'/scripts/merge_anndata.py'
+
+rule merge_multiome_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=working_batches,
+            sample=working_samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=working_samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
 
 rule feature_selection:
     input:
@@ -294,7 +318,7 @@ rule rna_model:
 
 rule UMAP:
     input:
-        merged_rna_anndata = work_dir + '/atlas/03_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
         hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
@@ -376,10 +400,11 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-"""rule second_pass_annotate:
+
+rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
-        gene_markers = gene_markers_file
+        gene_markers = work_dir+'/input/first_pass_genes.csv'
     output:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         cell_annotate = work_dir+'/data/rna_cell_annot.csv'
@@ -390,7 +415,7 @@ rule filtered_UMAP:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'"""
+        work_dir+'/scripts/annotate.py'
 
 rule cell_fraction_plot_and_test:
     input:
@@ -516,6 +541,17 @@ rule differential_cell_cell_communication:
         sep_param = lambda wildcards, output: output[0].split("_")[-3],
     script:
         'scripts/rna_differential_cell_cell_communication.py'
+
+rule atac_label_transfer:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir+'/atlas/04_annot_anndata_atac.h5ad'
+    params:
+        pseudobulk_param = 'celltype'
+    script:
+        'scripts/atac_label_transfer.py'
     
 rule cistopic_pseudobulk:
     input:

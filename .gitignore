@@ -71,3 +71,6 @@ figures
 scripts/pygenometracks
 scripts/legacy
 scripts/footprinting
+
+# Don't know where this came from
+.fontconfig
