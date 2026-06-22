@@ -563,6 +563,8 @@ rule atac_label_transfer:
         merged_atac_anndata = work_dir+'/atlas/04_annot_anndata_atac.h5ad'
     params:
         pseudobulk_param = 'celltype'
+    singularity:
+        envs['singlecell']
     script:
         'scripts/atac_label_transfer.py'
 
