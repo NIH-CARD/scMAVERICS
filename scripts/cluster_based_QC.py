@@ -63,4 +63,4 @@ adata.obs['bad_cells'] = bad_bools
 adata = adata[~adata.obs['bad_cells']].copy()
 
 # Save file
-adata.write_h5ad(snakemake.output.merged_rna_anndata)
+adata.write_h5ad(snakemake.output.merged_rna_anndata, compression='gzip')
