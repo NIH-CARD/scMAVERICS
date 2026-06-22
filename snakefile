@@ -32,7 +32,8 @@ mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitoch
 ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be ribosomal
 doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
 min_genes_per_cell = 250 # Minimum number of unique genes in a cell
-min_peak_counts = 500 # Minimum number of fragments per cell
+min_peak_counts = 1000 # Minimum number of fragments per cell
+min_tsse = 2.5 # Minimum transcription start site enrichment
 subtypes = []
 """========================================================================="""
 """                                  Workflow                               """
@@ -47,12 +48,16 @@ envs = {
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif',
     'great_gsea': 'envs/great_gsea.sif',
-    'tobias': 'envs/tobias.sif'
+    'tobias': 'envs/tobias.sif',
+    'pychromvar': 'envs/pychromvar.sif',
+    'dreampy': 'envs/dreampy.sif'
     }
 
 rule all:
     input:
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_anndata_atac.h5ad'
+        work_dir+'/atlas/02_filtered_anndata_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
+
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -169,29 +174,12 @@ rule atac_preprocess:
         atac_anndata=data_dir+'{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
         envs['snapatac2']
+    threads:
+        8
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         work_dir+'/scripts/atac_preprocess.py'
-
-rule merge_unfiltered_atac:
-    input:
-        rna_anndata=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            )
-    output:
-        merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
-    singularity:
-        envs['singlecell']
-    params:
-        samples=samples
-    resources:
-        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
-    script:
-        work_dir+'/scripts/merge_anndata.py'
 
 rule plot_qc_atac:
     input:
@@ -207,6 +195,40 @@ rule plot_qc_atac:
 
 rule filter_atac:
     input:
+        atac_anndata = data_dir+'{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
+    output:
+        atac_anndata = data_dir+'{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad'
+    singularity:
+        envs['snapatac2']
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        work_dir+'/scripts/atac_filter.py'
+
+rule merge_filtered_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/02_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
+
+rule filter_rna_atac:
+    input:
         rna_anndata = data_dir+'{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
         atac_anndata = data_dir+'{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
@@ -217,7 +239,7 @@ rule filter_atac:
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     script:
-        work_dir+'/scripts/atac_filter.py'
+        work_dir+'/scripts/rna_atac_filter.py'
 
 rule merge_multiome_rna:
     input:
@@ -238,9 +260,28 @@ rule merge_multiome_rna:
     script:
         work_dir+'/scripts/merge_anndata.py'
 
+rule merge_multiome_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs03_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
+
 rule feature_selection:
     input:
-        merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
     output:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
@@ -279,9 +320,9 @@ rule UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-"""rule first_pass_annotate:
+rule first_pass_annotate:
     input:
-        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad',
         gene_markers = work_dir+'/input/first_pass_genes.csv'
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
@@ -293,7 +334,7 @@ rule UMAP:
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'"""
+        work_dir+'/scripts/annotate.py'
 
 rule cluster_based_QC:
     input:
@@ -484,14 +525,12 @@ rule cistopic_pseudobulk:
             sample=samples
             )
     output:
-        pseudo_fragment_files = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed',
-            cell_type = cell_types)
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     params:
         pseudobulk_param = 'celltype',
         samples=samples,
         sample_param_name = sample_key,
-        cell_types = cell_types
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
     singularity:
         envs['atac_fragment']
     threads:
@@ -557,8 +596,8 @@ rule cistopic_merge_objects:
         atac_anndata=expand(
             data_dir+'{batch}/Multiome/{sample}/outs/04_anndata_peaks_atac.h5ad',
             zip,
-            batch=batches,
-            sample=samples
+            batch=batches[:5],
+            sample=samples[:5]
             )
     output:
         merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
