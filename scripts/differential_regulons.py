@@ -10,6 +10,8 @@ for celltype in cell_types:
     for diagnosis in ['control', 'PD' ,'LBD']:
         try:
             celltype_gene_motif = pd.read_csv(work_dir + f'/data/celltypes/{celltype}/{celltype}_{diagnosis}_motif_gene_connect.csv')
+        except FileNotFoundError:
+            print('missing')
 
 celltype_gene_peak_linkage = pd.read_csv(work_dir + f'/data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv')
 
