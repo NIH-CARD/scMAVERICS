@@ -231,6 +231,25 @@ rule filter_atac:
     script:
         work_dir+'/scripts/atac_filter.py'
 
+rule merge_filtered_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=working_batches,
+            sample=working_samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/02_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=working_samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
+
 rule filter_rna_atac:
     input:
         rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad',
@@ -263,6 +282,25 @@ rule merge_multiome_rna:
         runtime=120, mem_mb=300000, disk_mb=10000#, slurm_partition='largemem' 
     script:
         work_dir+'/scripts/merge_anndata.py'
+
+rule merge_multiome_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=working_batches,
+            sample=working_samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=working_samples
+    resources:
+        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
 
 rule feature_selection:
     input:
