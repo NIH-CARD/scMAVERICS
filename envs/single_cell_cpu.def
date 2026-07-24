@@ -16,9 +16,7 @@ From: condaforge/miniforge3
 %post
     # Ensure locales packages installed
     apt-get -y update
-    apt-get install -y locales locales-all
-    apt-get -y install g++
-    conda init bash
+    apt-get install -y locales locales-all g++
 
     # Create target dir for non-root-accessible bashrc
     mkdir -p /opt/etc
@@ -27,7 +25,7 @@ From: condaforge/miniforge3
     ENVNAME='single_cell_cpu'
 
     # Create environment using mamba
-    conda env create -f single_cell_cpu.yml -p /opt/etc/$ENV_NAME
+    mamba env create -f single_cell_cpu.yml \
     
     # Install pip-dependent packages separately
     python -m pip install --use-pep517 adjusttext anndata annoy async-timeout attrs \
@@ -35,13 +33,13 @@ From: condaforge/miniforge3
     dill fastparquet hmmlearn inflect kaleido legendkit \
     more-itertools multiprocess omnipath \
     plotnine polars pooch pydeseq2 pyfaidx rustworkx tbb tcmlib \
-    tenacity texttable typeguard wrapt
+    tenacity texttable typeguard wrapt muon
     
     # Finalize bashrc file
     echo "#! /bin/bash\n\n# script to activate the conda environment" > ~/.bashrc 
     mamba init bash
     echo "echo \"Activating ${ENVNAME}\"" >>  ~/.bashrc
-    echo "\nmamba activate ${ENVNAME}" >> ~/.bashrc
+    echo "\nconda activate ${ENVNAME}" >> ~/.bashrc
 
     # Copy bashrc to non-root-accessible location
     cp ~/.bashrc /opt/etc/bashrc

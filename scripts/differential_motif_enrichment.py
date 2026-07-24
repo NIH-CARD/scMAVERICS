@@ -57,41 +57,38 @@ chrom_rna_df = pd.merge(
     right_index = True
 )
 
-disease_control = snakemake.params.input.diagnoses
-comparison_combinations = []
-for i, condition_1 in enumerate(disease_control):
-    for j, condition_2 in enumerate(disease_control):
-        if i > j:
-            comparison_combinations.append([condition_1, condition_2])
+DEM_df = pd.DataFrame()
+for celltype in chromvar_df.celltype.drop_duplicates():
+    for comparison in [['control', 'PD'], ['control', 'LBD'], ['PD', 'LBD']]:
 
-
-
-
-# List to append gene-motif links in 
-gene_motif = []#= pd.DataFrame()
-for celltype in cell_types:
-    for comparisons in comparison_combinations:
-
-        if comparisons[0] == 'control':
-            comparison = comparisons[1]
+        if comparison[0] == 'control':
+            disease_name = comparison[1]
         else:
-            comparison = f'{comparisons[0]} vs. {comparison[1]}'
-        
-        # How many genes and DEMs to correlate
-        condition_genes = sign_DEG_df[(sign_DEG_df['celltype'] == celltype) & (sign_DEG_df['diagnosis'] == comparison)]
-        condition_motifs = sign_DEM_df[(sign_DEM_df['celltype'] == celltype) & (sign_DEM_df['comparison'] == comparison)]
-        if condition_genes.shape[0] != 0 and condition_motifs.shape[0] != 0:
-            print(celltype, comparison, condition_genes.shape[0], condition_motifs.shape[0])
+            disease_name = f'{comparison[1]} vs. {comparison[0]}'
+        celltype_comparison_chromvar_df = chromvar_df[(chromvar_df['celltype'] == celltype) & (chromvar_df['diagnosis'].isin(comparison))]
+        celltype_comparison_chromvar_df['batch_bank'] = celltype_comparison_chromvar_df['Use_batch'].astype(str) + '-' + celltype_comparison_chromvar_df['Brain_bank'].astype(str)
+        celltype_comparison_chromvar_df['batch_bank'] = celltype_comparison_chromvar_df['batch_bank'].astype('category')
 
-            # For each gene-motif in both conditions, measure the Spearman correlation
-            for diagnosis in comparisons:
-                # Filter for cell type, diagnosis
-                celltype_comparison_df = chrom_rna_df[(chrom_rna_df['celltype'] == celltype) & (chrom_rna_df['diagnosis'] == diagnosis)]
-                for gene in condition_genes.id:
-                    for motif in condition_motifs['TF motif']:
-                        gene_express = celltype_comparison_df[gene]
-                        motif_express = celltype_comparison_df[motif]
-                        stat, p = scipy.stats.spearmanr(gene_express, motif_express)
+        # One-hot encode
+        celltype_comparison_chromvar_df['diagnosis_onehot'] = [1 if x == comparison[0] else 0 for x in celltype_comparison_chromvar_df.diagnosis]
+        celltype_comparison_chromvar_df['Sex_onehot'] = [1 if x == 'Male' else 0 for x in celltype_comparison_chromvar_df.Sex]
+        celltype_motif_slope_list = []
+        for TF_motif in TF_motif_names:
+            ccc_model = smf.mixedlm(f"{TF_motif} ~ diagnosis_onehot + Age + Sex_onehot", celltype_comparison_chromvar_df, groups = celltype_comparison_chromvar_df['batch_bank'])
+            mdf = ccc_model.fit(method=["lbfgs"])
+            celltype_motif_slope_list.append([f"{TF_motif}", mdf.params.diagnosis_onehot, mdf.pvalues.diagnosis_onehot, mdf.params.Intercept])
 
-                        gene_motif.append([celltype, diagnosis, gene, motif, stat, p])
-gene_motif_df = pd.DataFrame(gene_motif, columns = ['celltype', 'diagnosis', 'gene', 'TF motif', 'Spearman rho', 'Spearman p-value'])
+
+            
+        celltype_motif_slope_list
+
+        celltype_motif_slope_df = pd.DataFrame(celltype_motif_slope_list, columns = ['TF motif', 'log2FC', 'p-value', 'intercept'])
+        celltype_motif_slope_df['adj. p-value'] = multitest.multipletests(pvals = celltype_motif_slope_df['p-value'], alpha=0.01, method = 'holm')[1]
+        celltype_motif_slope_df['-log10(adj. p-value)'] = -np.log10(celltype_motif_slope_df['adj. p-value'])
+
+        # Add celltype and condition specific parameters
+        celltype_motif_slope_df['celltype'] = celltype
+        celltype_motif_slope_df['comparison'] = disease_name
+
+        DEM_df = pd.concat([DEM_df, celltype_motif_slope_df])
+DEM_df.to_csv(snakemake.output.diff_enrich_motif)

@@ -68,11 +68,8 @@ envs = {
     }
 rule all:
     input:
-        gene_motif_links = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_{diagnosis}_gene_motif_link.csv',
-            cell_type = cell_types,
-            diagnosis = [control] + diseases
-        )
+        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad',
+
 # This needs to be forced to run once
 rule cellbender:
     input:
@@ -221,6 +218,40 @@ rule plot_qc_atac:
         sample_key=sample_key
     script:
         work_dir+'/scripts/atac_plot_qc.py'
+
+rule filter_atac:
+    input:
+        atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
+    output:
+        atac_anndata = data_dir+'{sample}/02_{sample}_anndata_filtered_atac.h5ad'
+    singularity:
+        envs['snapatac2']
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        work_dir+'/scripts/atac_filter.py'
+
+rule merge_filtered_atac:
+    input:
+        atac_anndata=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'/atlas/02_filtered_anndata_atac.h5ad'
+    singularity:
+        envs['singlecell']
+    params:
+        samples=samples
+    resources:
+        runtime=720, mem_mb=3500000, disk_mb=10000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/merge_atac.py'
 
 rule filter_atac:
     input:
