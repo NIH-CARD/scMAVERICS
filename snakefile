@@ -5,12 +5,13 @@ import os
 """                                 Parameters                              """
 """========================================================================="""
 
+configfile: "config.yaml"
 
 """File locations"""
-data_dir = '/data/CARD_singlecell/Brain_atlas/PSP_cortex/' # Define the data directory, explicitly
-work_dir = '/data/CARD_singlecell/PSP_multiome' # Define the working directory, explictly as the directory of this pipeline
+data_dir = config['data_dir'] # Define the data directory, explicitly
+work_dir = config['work_dir'] # Define the working directory, explictly as the directory of this pipeline
 metadata_table = work_dir+'/input/metadata.csv' # Define where the metadata data exists for each sample to be processed
-gene_markers_file = work_dir+'/input/example_marker_genes.csv' # Define where celltypes/cell marker gene 
+gene_markers_file = work_dir+'/input/first_pass_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
 seq_batch_key = 'batch' # Key for sequencing batch, used for directory search
@@ -24,7 +25,7 @@ diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, u
 disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
-reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+reference_genome = config['reference_genome']
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
 
 """Quality control thresholds"""
@@ -43,20 +44,14 @@ subtypes = []
 envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
-    'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif',
-    'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif',
-    'great_gsea': 'envs/great_gsea.sif',
     'tobias': 'envs/tobias.sif',
-    'pychromvar': 'envs/pychromvar.sif',
-    'dreampy': 'envs/dreampy.sif'
+    'dreampy': 'envs/dreampy.sif',
+    'multiome': 'envs/multiome.sif'
     }
 
 rule all:
     input:
-        work_dir+'/atlas/02_filtered_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
+        multiome_object = work_dir+'/atlas/05_highly_variable_multivi_multiome.h5mu'
 
 
 # This needs to be forced to run once
@@ -223,7 +218,7 @@ rule merge_filtered_atac:
     params:
         samples=samples
     resources:
-        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=720, mem_mb=3500000, disk_mb=10000, slurm_partition='largemem' 
     script:
         work_dir+'/scripts/merge_atac.py'
 
@@ -263,7 +258,7 @@ rule merge_multiome_rna:
 rule merge_multiome_atac:
     input:
         atac_anndata=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs03_{sample}_anndata_filtered_atac.h5ad', 
+            data_dir+'{batch}/Multiome/{sample}/outs/03_{sample}_anndata_object_atac.h5ad', 
             zip,
             batch=batches,
             sample=samples
@@ -291,7 +286,7 @@ rule feature_selection:
     script:
         work_dir+'/scripts/feature_selection.py'
 
-rule rna_model:
+"""rule rna_model:
     input:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     output:
@@ -306,15 +301,15 @@ rule rna_model:
         runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
-
+"""
 rule UMAP:
     input:
-        merged_rna_anndata = work_dir + '/atlas/03_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
         hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
@@ -322,7 +317,7 @@ rule UMAP:
 
 rule first_pass_annotate:
     input:
-        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/04_modeled_anndata_rna.h5ad',
         gene_markers = work_dir+'/input/first_pass_genes.csv'
     output:
         merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad',
@@ -330,7 +325,7 @@ rule first_pass_annotate:
     params:
         seq_batch_key = seq_batch_key
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -344,19 +339,19 @@ rule cluster_based_QC:
         course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
         course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
         work_dir + '/scripts/cluster_based_QC.py'
 
-rule filtered_feature_selection:
+"""rule filtered_feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad'
     output:
         hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -391,7 +386,7 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-"""rule second_pass_annotate:
+rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_polished_anndata_rna.h5ad',
         gene_markers = gene_markers_file
@@ -407,7 +402,137 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/annotate.py'"""
 
-rule gene_linear_regression:
+rule fragment_pseudobulk:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/02_filtered_anndata_atac.h5ad',
+        fragment_file=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+    params:
+        pseudobulk_param = 'celltype',
+        samples=samples,
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
+    singularity:
+        envs['multiome']
+    threads:
+        64
+    resources:
+        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/fragment_pseudobulk.py'
+
+rule cistopic_call_peaks:
+    input:
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+    output: 
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/celltypes/{cell_type}"
+    resources:
+        mem_mb=200000, runtime=2880
+    singularity:
+        envs['multiome']
+    shell:
+        "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            cell_type = cell_types
+            )
+    output:
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        'scripts/MACS_consensus.py'
+
+rule cistopic_merge_objects:
+    input:
+        fragment_file=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            ),
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
+    output:
+        atac_anndata=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad', 
+            zip,
+            batch=batches,
+            sample=samples
+            ),
+        merged_atac_anndata = work_dir + '/atlas/03_consensus_peak_atac.h5ad'
+    params:
+        samples = samples
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=960, mem_mb=300000
+    script:
+        'scripts/merge_from_fragments.py'
+
+rule merge_multiome:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_consensus_peak_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad'
+    output:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        sample_key=sample_key
+    resources:
+        runtime=240, mem_mb=500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/merge_multiome.py'
+
+"""rule multiome_feature_selection:
+    input:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'/atlas/04_highly_variable_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        hvg = 3000,
+        hvp = 20000
+    resources:
+        runtime=480, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/multiome_feature_selection.py'"""
+
+rule multivi:
+    input:
+        multiome_object = work_dir+'/atlas/04_highly_variable_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'/atlas/05_highly_variable_multivi_multiome.h5mu',
+        model_history = work_dir+'/data/model_elbo/multiome_model_history.csv'
+    singularity:
+        envs['multiome']
+    params:
+        model = work_dir+'/data/models/multiome_polish/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
+
+"""rule gene_linear_regression:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
         covariates = work_dir+'/data/covariates.csv'
@@ -515,60 +640,6 @@ rule differential_cell_cell_communication:
     script:
         'scripts/rna_differential_cell_cell_communication.py'
     
-rule cistopic_pseudobulk:
-    input:
-        merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
-        fragment_file=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
-            zip,
-            batch=batches,
-            sample=samples
-            )
-    output:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
-    params:
-        pseudobulk_param = 'celltype',
-        samples=samples,
-        sample_param_name = sample_key,
-        cell_type = lambda wildcards, output: output[0].split("/")[-2]
-    singularity:
-        envs['atac_fragment']
-    threads:
-        64
-    resources:
-        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
-    script:
-        'scripts/fragment_pseudobulk.py'
-
-rule cistopic_call_peaks:
-    input:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
-    output: 
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
-    params:
-        out_dir = work_dir + "/data/celltypes/{cell_type}"
-    resources:
-        mem_mb=200000, runtime=2880
-    singularity:
-        envs['scenicplus']
-    shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
-
-rule consensus_peaks:
-    input:
-        narrow_peaks = expand(
-            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
-            cell_type = cell_types
-            )
-    output:
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
-    singularity:
-        envs['scenicplus']
-    resources:
-        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
-    script:
-        'scripts/MACS_consensus.py'
     
 rule cistopic_create_objects:
     input:
@@ -591,24 +662,7 @@ rule cistopic_create_objects:
     script:
         'scripts/cistopic_create_object.py'
 
-rule cistopic_merge_objects:
-    input:
-        atac_anndata=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs/04_anndata_peaks_atac.h5ad',
-            zip,
-            batch=batches[:5],
-            sample=samples[:5]
-            )
-    output:
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-    params:
-        samples = samples
-    singularity:
-        envs['scenicplus']
-    resources:
-        runtime=960, mem_mb=300000
-    script:
-        'scripts/merge_cistopic_and_adata.py'
+
 
 rule atac_peaks_model:
     input:
@@ -1139,3 +1193,4 @@ rule control_footprinting:
         runtime=180, mem_mb=200000, slurm_partition='quick'
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
+"""

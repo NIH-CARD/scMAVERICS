@@ -7,6 +7,11 @@ import pyranges as pr
 # Read in rna observation data
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
+# Read in atac observation data
+atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
+# Filter so only barcodes in both samples are used for creating fragments
+rna = rna[rna.obs_names.intersection(atac.obs_names)]
+
 # Port cell data from final RNA atlas to cisTopic pseudobulked
 cell_df = rna.obs
 

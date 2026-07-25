@@ -1,0 +1,26 @@
+# Base directories
+data_dir: '/data/CARD_singlecell/Brain_atlas/PSP_cortex/'
+work_dir: '/data/CARD_singlecell/PSP_multiome'
+
+# Reference files
+reference_genome: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+
+# Sample parameters
+sample_key: 'subject'
+separating_key: 'subject'
+control: 'control'
+diagnosis_param: 'Pathologic_diagnosis_of_AD'
+diagnoses:
+    - yes
+    - no
+
+# Celltype
+celltype:
+    - Astrocyte
+
+# Fractions to subsample
+pct_cells:
+    - 100
+    - 30 
+    - 10
+    - 3
