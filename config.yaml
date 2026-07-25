@@ -1,0 +1,31 @@
+"""VERY IMPORTANT THAT YOU CHANGE THESE TO MATCH YOUR DATASET"""
+
+# Base directories
+data_dir: #'/data/CARD_singlecell/Brain_atlas/PSP_cortex/'
+work_dir: #'/data/CARD_singlecell/PSP_multiome'
+
+
+# Reference files
+reference_genome: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+genome_length: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
+metadata: '/input/metadata.csv' # relative to work_dir
+gene_list: '/input/first_pass_genes.csv' # relative to work_dir
+
+# Sample parameters
+seq_batch_key: 'batch'
+sample_key: 'folder_name' 
+disease_param: 'Neurological_dx'
+control_key: 'control'
+diagnoses:
+    - PSP
+covariates:
+    - Age
+    - Sex
+
+# QC thresholds
+mito_thresh: 15
+ribo_thresh: 10
+doublet_thresh: 0.15
+min_genes: 250
+min_peaks: 1000
+min_tsse: 2.5
