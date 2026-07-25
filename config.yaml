@@ -2,25 +2,29 @@
 data_dir: '/data/CARD_singlecell/Brain_atlas/PSP_cortex/'
 work_dir: '/data/CARD_singlecell/PSP_multiome'
 
+
 # Reference files
 reference_genome: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+genome_length: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
+metadata: '/input/metadata.csv' # relative to work_dir
+gene_list: '/input/first_pass_genes.csv' # relative to work_dir
 
 # Sample parameters
-sample_key: 'subject'
-separating_key: 'subject'
-control: 'control'
-diagnosis_param: 'Pathologic_diagnosis_of_AD'
+seq_batch_key: 'batch'
+sample_key: 'folder_name' 
+disease_param: 'Neurological_dx'
+control_key: 'control'
 diagnoses:
-    - yes
-    - no
+    - PSP
+covariates:
+    - Age
+    - Sex
 
-# Celltype
-celltype:
-    - Astrocyte
+# QC thresholds
+mito_thresh: 15
+ribo_thresh: 10
+doublet_thresh: 0.15
+min_genes: 250
+min_peaks: 1000
+min_tsse: 2.5
 
-# Fractions to subsample
-pct_cells:
-    - 100
-    - 30 
-    - 10
-    - 3

@@ -10,31 +10,33 @@ configfile: "config.yaml"
 """File locations"""
 data_dir = config['data_dir'] # Define the data directory, explicitly
 work_dir = config['work_dir'] # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/metadata.csv' # Define where the metadata data exists for each sample to be processed
-gene_markers_file = work_dir+'/input/first_pass_genes.csv' # Define where celltypes/cell marker gene 
+metadata_table = work_dir+config['metadata'] # Define where the metadata data exists for each sample to be processed
+gene_markers_file = work_dir+config['gene_list'] # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
-seq_batch_key = 'batch' # Key for sequencing batch, used for directory search
-sample_key = 'folder_name' # Key for samples, required in aggregating while preserving sample info
-batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
+seq_batch_key = config['seq_batch_key'] # Key for sequencing batch, used for directory search
+sample_key = config['sample_key'] # Key for samples, required in aggregating while preserving sample info
 
+batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
-disease_param = 'Neurological_dx' # Name of the disease parameter
-control = 'control' # Define disease states
-diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
-disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
+
+disease_param = config['disease_param'] # Name of the disease parameter
+control = config['control_key'] # Define disease states
+diagnoses = config['diagnoses'] # Disease states to compare, keep as list of strings, unnecessary 
+#disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
+
 cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
-design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
+design_covariates = config['covariates'] # Design factors/covariates for DGEs and DARs
 reference_genome = config['reference_genome']
-genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
+genome_length = config['genome_length']
 
 """Quality control thresholds"""
-mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
-ribo_percent_thresh = 10 # Maximum percent of genes in a cell that can be ribosomal
-doublet_thresh = 0.15 # Maximum doublet score for a cell, computed by scrublet
-min_genes_per_cell = 250 # Minimum number of unique genes in a cell
-min_peak_counts = 1000 # Minimum number of fragments per cell
-min_tsse = 2.5 # Minimum transcription start site enrichment
+mito_percent_thresh = config['mito_thresh']# Maximum percent of genes in a cell that can be mitochondrial
+ribo_percent_thresh = config['ribo_thresh'] # Maximum percent of genes in a cell that can be ribosomal
+doublet_thresh = config['doublet_thresh'] # Maximum doublet score for a cell, computed by scrublet
+min_genes_per_cell = config['min_genes'] # Minimum number of unique genes in a cell
+min_peak_counts = config['min_peaks'] # Minimum number of fragments per cell
+min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
 subtypes = []
 """========================================================================="""
 """                                  Workflow                               """
@@ -52,7 +54,6 @@ envs = {
 rule all:
     input:
         multiome_object = work_dir+'/atlas/05_highly_variable_multivi_multiome.h5mu'
-
 
 # This needs to be forced to run once
 """rule cellbender:

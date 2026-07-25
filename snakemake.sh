@@ -27,6 +27,7 @@ module load singularity
 chmod 777 scripts/rna_model.sh
 chmod 777 scripts/cellbender_array.sh
 chmod 777 scripts/atac_model.sh
+chmod 777 scripts/multiome_model.sh
 chmod 777 envs/*.sif
 
 # RUN SCRIPT
