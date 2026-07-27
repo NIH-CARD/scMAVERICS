@@ -43,7 +43,6 @@ min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
 
 # Singularity containers to be downloaded from Quay.io, done in snakemake.sh
 envs = {
-    'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'tobias': 'envs/tobias.sif',
     'dreampy': 'envs/dreampy.sif',
@@ -78,7 +77,7 @@ rule rna_preprocess:
     output:
         rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         sample='{sample}',
         sample_key = sample_key
@@ -98,7 +97,7 @@ rule merge_unfiltered:
     output:
         merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=samples
     resources:
@@ -116,7 +115,7 @@ rule plot_qc_rna:
         doublet_figure = work_dir+'/figures/QC_doublet.png',
         genes_by_counts = work_dir+'/figures/QC_genes_by_counts.png'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=960, mem_mb=500000, disk_mb=10000, slurm_partition='largemem' 
     params:
@@ -135,7 +134,7 @@ rule filter_rna:
     output:
         rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         mito_percent_thresh = mito_percent_thresh,
         doublet_thresh = doublet_thresh,
@@ -157,7 +156,7 @@ rule merge_filtered_rna:
     output:
         merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=samples
     resources:
@@ -171,7 +170,7 @@ rule atac_preprocess:
     output:
         atac_anndata=data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
@@ -188,7 +187,7 @@ rule merge_unfiltered_atac:
     output:
         merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=samples
     resources:
@@ -200,7 +199,7 @@ rule plot_qc_atac:
     input:
         atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     resources:
         runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem'
     params:
@@ -214,7 +213,7 @@ rule filter_atac:
     output:
         atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     params:
         min_peak_counts = min_peak_counts,
         min_tsse = min_tsse
@@ -232,7 +231,7 @@ rule merge_filtered_atac:
     output:
         merged_atac_anndata = work_dir+'/atlas/02_filtered_anndata_atac.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=working_samples
     resources:
@@ -248,7 +247,7 @@ rule filter_rna_atac:
         atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_atac.h5ad',
         rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     script:
@@ -265,7 +264,7 @@ rule merge_multiome_rna:
     output:
         merged_rna_anndata = work_dir+'/atlas/03_filtered_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=samples
     resources:
@@ -284,7 +283,7 @@ rule merge_multiome_atac:
     output:
         merged_atac_anndata = work_dir+'/atlas/03_filtered_anndata_atac.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         samples=working_samples
     resources:
@@ -298,7 +297,7 @@ rule feature_selection:
     output:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         num_hvgenes = 2000
     resources:
@@ -329,7 +328,7 @@ rule UMAP:
     output:
         merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
@@ -345,7 +344,7 @@ rule first_pass_annotate:
     params:
         seq_batch_key = seq_batch_key
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -359,7 +358,7 @@ rule cluster_based_QC:
         course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
         course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -371,7 +370,7 @@ rule filtered_feature_selection:
     output:
         hvg_rna_anndata = work_dir+'/atlas/05_hvg_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     params:
         num_hvgenes = 2000
     resources:
@@ -402,7 +401,7 @@ rule filtered_UMAP:
     output:
         merged_rna_anndata = work_dir + '/atlas/06_polished_anndata_rna.h5ad'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
@@ -418,7 +417,7 @@ rule second_pass_annotate:
     params:
         seq_batch_key = seq_batch_key
     singularity:
-        envs['singlecell']
+        envs['multiome']
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -438,7 +437,7 @@ rule cell_fraction_plot_and_test:
         diseases = ['PD', 'LBD'],
         separating_value_dict = dict(zip(['control', 'PD', 'LBD'], ['#7f7f7f', '#5ab4e5', '#d36027']))
     singularity:
-        envs['singlecell']
+        envs['multiome']
     script:
         work_dir + '/scripts/cell_fraction_test_plot.py'
 
@@ -455,7 +454,7 @@ rule gene_linear_regression:
         design_factors = design_covariates,
         cell_types = cell_types
     singularity:
-        envs['decoupler']
+        envs['multiome']
     threads:
         64
     resources:
@@ -488,7 +487,7 @@ rule peak_linear_regression:
     params:
         cell_type = lambda wildcards, output: output[0].split("_")[-2],
     singularity:
-        envs['decoupler']
+        envs['multiome']
     threads:
         64
     resources:
@@ -510,7 +509,7 @@ rule DEG:
         sample_key=sample_key,
         formula = "~ Primary Diagnosis + Age + Sex + (1|Use_batch) + (1|Brain_bank)"
     singularity:
-        envs['dreampy']
+        envs['multiome']
     threads:
         64
     resources:
@@ -531,7 +530,7 @@ rule combine_DGE:
         unfiltered_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_unfiltered_results.csv',
         merged_DGE_data = work_dir + '/data/DGEs/combined/rna_{sep_param}_results.csv'
     singularity:
-        envs['decoupler']
+        envs['multiome']
     script:
         'scripts/merge_DGE.py'
 
@@ -558,7 +557,7 @@ rule atac_label_transfer:
     params:
         pseudobulk_param = 'celltype'
     singularity:
-        envs['singlecell']
+        envs['multiome']
     script:
         'scripts/atac_label_transfer.py'
 
@@ -579,7 +578,7 @@ rule cistopic_pseudobulk:
         sample_key = sample_key,
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     threads:
         64
     resources:
@@ -598,7 +597,7 @@ rule cistopic_call_peaks:
     resources:
         mem_mb=200000, runtime=2880
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
@@ -611,7 +610,7 @@ rule consensus_peaks:
     output:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
@@ -746,7 +745,7 @@ rule cistopic_create_objects:
         cistopic_objects = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_cistopic_obj.pkl',
         atac_anndata = data_dir+'batch{batch}/Multiome/{sample}-ARC/outs/04_{sample}_anndata_peaks_atac.h5ad'
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     params:
         sample='{sample}',
         sample_key = sample_key,
@@ -769,7 +768,7 @@ rule cistopic_merge_objects:
     params:
         samples = samples
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     resources:
         runtime=960, mem_mb=300000
     script:
@@ -800,7 +799,7 @@ rule atac_spectral:
         num_features = 100000,
         sample_param = 'sample_id'
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     threads:
         32
     resources:
@@ -830,7 +829,7 @@ rule multiome_output:
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     singularity:
-        envs['circe']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=400000, slurm_partition='largemem'
     script:
@@ -842,7 +841,7 @@ rule wnn:
     output:
         merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu'
     singularity:
-        envs['pychromvar']
+        envs['multiome']
     params:
         rna_rep = 'X_scvi',
         atac_rep = 'X_spectral',
@@ -859,7 +858,7 @@ rule pychromvar:
     output:
         merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
     singularity:
-        envs['pychromvar']
+        envs['multiome']
     threads:
         16
     resources:
@@ -877,7 +876,7 @@ rule rna_pseudobulk:
         separating_cluster = 'celltype',
         min_cells = 10
     singularity:
-        envs['decoupler']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=250000, slurm_partition='quick'
     script:
@@ -893,7 +892,7 @@ rule atac_pseudobulk:
         separating_cluster = 'celltype',
         min_cells = 10
     singularity:
-        envs['decoupler']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=200000, slurm_partition='quick'
     script:
@@ -908,7 +907,7 @@ rule chromvar_pseudobulk:
         sample_key = 'SampleID',
         separating_cluster = 'celltype'
     singularity:
-        envs['decoupler']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=200000, slurm_partition='quick'
     script:
@@ -926,7 +925,7 @@ rule gene_motif_linkage:
         celltype = lambda wildcards: wildcards.cell_type,
         diagnosis = lambda wildcards: wildcards.diagnosis
     singularity:
-        envs['decoupler']
+        envs['multiome']
     resources:
         runtime=180, mem_mb = 50000, slurm_partition = 'quick'
     script:
@@ -941,7 +940,7 @@ rule create_bigwig:
     resources:
         mem_mb=1500000, runtime=960,  slurm_partition='largemem'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     script:
         'scripts/atac_bigwig.py'
 
@@ -980,7 +979,7 @@ rule export_atac_cell:
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/atac.h5ad'
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     params:
         pseudobulk_param = 'celltype',
         sample_key = sample_key,
@@ -1011,7 +1010,7 @@ rule DAR:
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
-        envs['decoupler']
+        envs['multiome']
     threads:
         16
     resources:
@@ -1028,7 +1027,7 @@ rule atac_coaccessibilty:
     params:
         cell_type = lambda wildcards, output: output[0].split('/')[-2]
     singularity:
-        envs['circe']
+        envs['multiome']
     threads:
         16
     resources:
@@ -1055,7 +1054,7 @@ rule fragments_pseudobulk_cell_disease:
         disease = lambda wildcards: wildcards.disease,
         disease_param = disease_param
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     threads:
         64
     resources:
@@ -1076,7 +1075,7 @@ rule MACS2_peak_cell_disease:
     resources:
         mem_mb=200000, runtime=960
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     shell:
         "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type}_{wildcards.disease} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
@@ -1098,7 +1097,7 @@ rule celltype_bed_cell_disease:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
         blacklist = work_dir + '/input/hg38-blacklist.bed'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     output:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     script:
@@ -1128,7 +1127,7 @@ rule export_atac_cell_disease:
     output:
         celltype_atac = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{disease}_atac.h5ad'
     singularity:
-        envs['scenicplus']
+        envs['multiome']
     params:
         sample_key = sample_key,
         seq_batch_key = seq_batch_key,
@@ -1153,7 +1152,7 @@ rule atac_coaccessibilty_cell_disease:
     params:
         cell_type = lambda wildcards: wildcards.cell_type
     singularity:
-        envs['circe']
+        envs['multiome']
     threads:
         8
     resources:
@@ -1173,7 +1172,7 @@ rule motif_enrichment:
         cell_type = 'celltype',
         disease_param = disease_param
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     resources:
         runtime=240, disk_mb=300000, mem_mb=200000
     script:
@@ -1195,7 +1194,7 @@ rule differential_motif_enrichment:
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
     singularity:
-        envs['snapatac2']
+        envs['multiome']
     resources:
         runtime=240, disk_mb=300000, mem_mb=200000
     script:
@@ -1207,7 +1206,7 @@ rule CCAN_modules:
     output:
         output_CCAN_data = work_dir+'/data/celltypes/{cell_type}/atac_{cell_type}_{disease}_CCAN.csv'
     singularity:
-        envs['circe']
+        envs['multiome']
     resources:
         runtime=240, mem_mb=1000000, slurm_partition='largemem' 
     script:
@@ -1229,7 +1228,7 @@ rule ccan_coexpression:
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease
     singularity:
-        envs['circe']
+        envs['multiome']
     resources:
         runtime=180, mem_mb=50000, slurm_partition='quick'
     script:
@@ -1248,7 +1247,7 @@ rule disease_gsea:
         cell_type = lambda wildcards, output: output[0].split("_")[-4],
         disease = lambda wildcards, output: output[0].split("_")[-2]
     singularity:
-        envs['great_gsea']
+        envs['multiome']
     threads:
         64
     resources:
@@ -1266,7 +1265,7 @@ rule disease_great:
         cell_disease_peaks = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_DAR_peaks.bed',
         cell_disease_GREAT = work_dir+'/data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv'
     singularity:
-        envs['great_gsea']
+        envs['multiome']
     resources:
         runtime=2880
     script:
@@ -1284,7 +1283,7 @@ rule celltype_great:
         cell_types = cell_types,
         celltype = lambda wildcards: wildcards.cell_type
     singularity:
-        envs['great_gsea']
+        envs['multiome']
     resources:
         runtime=2880
     script:
@@ -1331,7 +1330,7 @@ rule gene_peak_linkage:
         conditions = [control] + diseases,
         celltype = lambda wildcards: wildcards.celltype
     singularity:
-        envs['decoupler']
+        envs['multiome']
     resources:
         slurm_partition='quick'
     script:
@@ -1397,7 +1396,7 @@ rule celltype_sample_filter_bam:
         output_body = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}_body.sam"),
         output_sam = temp(data_dir+"batch{batch}/Multiome/{sample}-ARC/outs/atac_{cell_type}_{disease}.sam")
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     threads:
         16
     resources:
@@ -1417,7 +1416,7 @@ rule pseudobulk_bams:
     params:
         batch_sample_celltype_disease_df = work_dir+'/data/batch_sample_celltype_disease.csv'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     threads:
         16
     resources:
