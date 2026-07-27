@@ -7,11 +7,16 @@ import pyranges as pr
 # Read in rna observation data
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
+# Read in atac observation data
+atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
+# Filter so only barcodes in both samples are used for creating fragments
+rna = rna[rna.obs_names.intersection(atac.obs_names)]
+
 # Port cell data from final RNA atlas to cisTopic pseudobulked
 cell_df = rna.obs
 
 # Metadata specific column names
-sample_key = snakemake.params.sample_key
+sample_value = snakemake.params.sample_param_name
 
 # Get sample list
 samples = snakemake.params.samples
@@ -31,12 +36,12 @@ for i, sample in enumerate(samples):
     pl_fragment = pl_fragment[['chrom', 'chromStart', 'chromEnd', 'name', 'score']]
     
     # Get list of sample and cell type specific barcodes
-    cell_type_barcodes = cell_df[(cell_df[snakemake.params.pseudobulk_param] == snakemake.params.cell_type) & (cell_df[sample_key] == sample)]['cell_barcode'].to_list()
+    cell_type_barcodes = cell_df[(cell_df['celltype']== snakemake.params.cell_type) & (cell_df[sample_value] == sample)]['cell_barcode'].to_list()
     # Filter on the cell type barcodes
     cell_fragment = pl_fragment.filter(pl_fragment['name'].is_in(cell_type_barcodes))
     # Add the filtered barcodes to the fragments
     print(f'Writing sample {sample}')
-    with open(snakemake.output.pseudo_fragment_file, mode='a') as f:
+    with open(snakemake.output.pseudo_fragment_files, mode='a') as f:
         cell_fragment.write_csv(f, include_header=False, separator='\t')
         f.close()
     print(f'Sample {sample} has been added')

@@ -16,5 +16,5 @@ print(adata)
 # Write out the unfiltered dataset
 adata.write_h5ad(
     filename=snakemake.output.merged_atac_anndata, 
-    compression='gzip'
+    #compression='gzip'
     )
