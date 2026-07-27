@@ -626,7 +626,127 @@ rule consensus_peaks:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
         'scripts/MACS_consensus.py'
+
+
+rule merged_consensus_peak_anndata:
+    input:
+        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        fragment_file=expand(
+            data_dir + 'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir + '/atlas/03_consensus_peak_atac.h5ad',
+        output_files = expand(
+            data_dir + 'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad',
+            zip,
+            batch=batches,
+            sample=samples
+            ),
+    singularity:
+        envs['multiome']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=3000000, slurm_partition='largemem'
+    script:
+        'scripts/merge_from_fragments.py'
     
+rule atac_spectral:
+    input:
+        merged_atac_anndata = work_dir + '/atlas/03_consensus_peak_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+    params:
+        num_features = 100000,
+        sample_param = 'sample_id'
+    singularity:
+        envs['multiome']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=250000
+    script:
+        'scripts/atac_spectral.py'
+
+rule atac_merged_coaccessibilty:
+    input:
+        celltype_atac = work_dir + '/atlas/03_consensus_peak_atac.h5ad'
+    output:
+        celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
+        circe_network = work_dir+'/data/circe_network.csv'
+    singularity:
+        envs['multiome']
+    threads:
+        16
+    resources:
+        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        'scripts/circe_by_celltype.py'
+
+rule merge_multiome:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_consensus_peak_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad'
+    output:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        sample_key=sample_key
+    resources:
+        runtime=240, mem_mb=500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/merge_multiome.py'
+        
+rule multiome_feature_selection:
+    input:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'/atlas/04_highly_variable_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        hvg = 3000,
+        hvp = 20000
+    resources:
+        runtime=480, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/multiome_feature_selection.py'
+
+rule multivi:
+    input:
+        multiome_object = work_dir+'/atlas/04_highly_variable_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'/atlas/05_highly_variable_multivi_multiome.h5mu',
+        model_history = work_dir+'/data/model_elbo/multiome_model_history.csv'
+    params:
+        model = work_dir+'/data/models/multiome_polish/',
+        sample_key = sample_key
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+    shell:
+        'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
+
+rule pychromvar:
+    input:
+        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
+        reference_genome = reference_genome
+    output:
+        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+    singularity:
+        envs['multiome']
+    threads:
+        16
+    resources:
+        runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        'scripts/pychromvar.py'
+
 rule cistopic_create_objects:
     input:
         merged_rna_anndata = work_dir+'/atlas/07_polished_anndata_rna.h5ad',
