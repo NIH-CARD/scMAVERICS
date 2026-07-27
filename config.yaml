@@ -1,8 +1,8 @@
 """VERY IMPORTANT THAT YOU CHANGE THESE TO MATCH YOUR DATASET"""
 
 # Base directories
-data_dir: #'/data/CARD_singlecell/Brain_atlas/PSP_cortex/'
-work_dir: #'/data/CARD_singlecell/PSP_multiome'
+data_dir: #'/data/CARD_singlecell/Brain_atlas/PFC_Multiome/CELLRANGER/'
+work_dir: #'/data/CARD_singlecell/PFC_atlas'
 
 
 # Reference files

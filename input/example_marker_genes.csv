@@ -1,8 +1,6 @@
 cell type,official gene symbol
 Astro,AQP4
 Astro,GFAP
-DaN,SLC6A3
-DaN,TH
 EC,CLDN5
 EC,PECAM1
 ExN,SLC17A7
@@ -22,6 +20,4 @@ Oligo,MOG
 Oligo,ST18
 PC,PDGFRB
 PC,KCNJ8
-TC,TRAC
-TC,CD3D
 

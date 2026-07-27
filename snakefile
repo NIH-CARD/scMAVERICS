@@ -36,11 +36,6 @@ doublet_thresh = config['doublet_thresh'] # Maximum doublet score for a cell, co
 min_genes_per_cell = config['min_genes'] # Minimum number of unique genes in a cell
 min_peak_counts = config['min_peaks'] # Minimum number of fragments per cell
 min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
-subtypes = []
-
-batches = working_batches # Read in the list of batches and samples
-
-subtypes = []
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -50,14 +45,9 @@ subtypes = []
 envs = {
     'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
-    'scenicplus': 'envs/scenicplus.sif',
-    'decoupler': 'envs/decoupler.sif',
-    'circe': 'envs/circe.sif',
-    'atac_fragment': 'envs/atac_fragment.sif',
-    'great_gsea': 'envs/great_gsea.sif',
     'tobias': 'envs/tobias.sif',
-    'pychromvar': 'envs/pychromvar.sif',
-    'dreampy': 'envs/dreampy.sif'
+    'dreampy': 'envs/dreampy.sif',
+    'multiome': 'envs/multiome.sif'
     }
 
 rule all:
@@ -70,7 +60,7 @@ rule all:
 # This needs to be forced to run once
 rule cellbender:
     input:
-        rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
+        rna_anndata =data_dir+'batch{batch}/cellranger/{sample}/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/'
     output:
         rna_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
