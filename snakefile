@@ -86,25 +86,6 @@ rule rna_preprocess:
     script:
         work_dir+'/scripts/rna_preprocess.py'
 
-rule merge_unfiltered:
-    input:
-        rna_anndata=expand(
-            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/01_{sample}_anndata_object_rna.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            )
-    output:
-        merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
-    singularity:
-        envs['multiome']
-    params:
-        samples=samples
-    resources:
-        runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
-    script:
-        work_dir+'/scripts/merge_anndata.py'
-
 rule plot_qc_rna:
     input:
         merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
@@ -124,7 +105,6 @@ rule plot_qc_rna:
         min_genes_per_cell = min_genes_per_cell,
         ribo_percent_thresh = ribo_percent_thresh,
         sample_key=sample_key,
-        
     script:
         work_dir+'/scripts/plot_qc_metrics.py'
 

@@ -15,7 +15,7 @@ torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
 mdata = mu.read(sys.argv[1])
-
+mdata
 # Setup SCVI on the data layer
 scvi.model.MULTIVI.setup_mudata(
     mdata,
@@ -37,27 +37,24 @@ mvi_model.train(
     max_epochs=1000,
     lr=1e-3,
     early_stopping=True,
-    batch_size=256,
-    early_stopping_patience=20
+    batch_size=256
 )
 
 # Extract the elbo plot of the model and save the values
-elbo = model.history['elbo_train']
-elbo['elbo_validation'] = model.history['elbo_validation']
+elbo = mvi_model.history['elbo_train']
+elbo['elbo_validation'] = mvi_model.history['elbo_validation']
 elbo.to_csv(sys.argv[3], index=False)
 
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
-adata.obsm['X_multivi'] = model.get_latent_representation()
+mdata.obsm['X_multivi'] = mvi_model.get_latent_representation()
 
 # Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
-sc.pp.neighbors(adata, use_rep='X_multivi')
-sc.tl.umap(adata, min_dist=0.3)
+sc.pp.neighbors(mdata, use_rep='X_multivi')
+sc.tl.umap(mdata, min_dist=0.3)
 # Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
-sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
+sc.tl.leiden(mdata, key_added='leiden')
 
 # Save the anndata object
-adata.write_h5ad(sys.argv[4], compression='gzip')
+mdata.write_h5ad(sys.argv[4], compression='gzip')
 
-model.save(sys.argv[5], overwrite=True)
+mvi_model.save(sys.argv[5], overwrite=True)
