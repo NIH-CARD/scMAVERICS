@@ -52,7 +52,7 @@ mdata.obsm['X_multivi'] = mvi_model.get_latent_representation()
 sc.pp.neighbors(mdata, use_rep='X_multivi')
 sc.tl.umap(mdata, min_dist=0.3)
 # Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(mdata, key_added='leiden')
+sc.tl.leiden(mdata, key_added='leiden', flavor = 'leidenalg')
 
 # Save the anndata object
 mdata.write_h5ad(sys.argv[4], compression='gzip')

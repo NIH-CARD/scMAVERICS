@@ -58,7 +58,11 @@ envs = {
 
 rule all:
     input:
-        multiome_object = work_dir+'/atlas/05_highly_variable_multivi_multiome.h5mu',
+        cell_bedfile = expand(
+            work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
+            cell_type = cell_types
+        ),
+        consensus_bed = work_dir + '/data/consensus_regions.bed'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -636,7 +640,7 @@ rule atac_merged_coaccessibilty:
     script:
         'scripts/circe_by_celltype.py'
 
-rule merge_multiome:
+"""rule merge_multiome:
     input:
         merged_atac_anndata = work_dir+'/atlas/03_consensus_peak_atac.h5ad',
         merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad'
@@ -649,8 +653,23 @@ rule merge_multiome:
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/merge_multiome.py'
-        
+        work_dir+'/scripts/merge_multiome.py'"""
+
+rule merge_multiome:
+    input:
+        merged_atac_anndata = work_dir+'/atlas/03_consensus_peak_atac.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad'
+    output:
+        multiome_object = work_dir+'/atlas/02_merged_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        sample_key=sample_key
+    resources:
+        runtime=1200, mem_mb=500000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/merge_muon.py'
+
 rule multiome_feature_selection:
     input:
         multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu'
@@ -666,7 +685,7 @@ rule multiome_feature_selection:
     script:
         work_dir+'/scripts/multiome_feature_selection.py'
 
-rule multivi:
+"""rule multivi:
     input:
         multiome_object = work_dir+'/atlas/04_highly_variable_multiome.h5mu'
     output:
@@ -681,6 +700,19 @@ rule multivi:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
         'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
+"""
+rule transfer_UMAP:
+    input:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu',
+        hvg_multiome_anndata = work_dir + '/atlas/05_highly_variable_multivi_multiome.h5mu'
+    output:
+        multiome_object = work_dir + '/atlas/06_polished_multiome_rna.h5mu'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/multivi_to_UMAP.py'
 
 rule pychromvar:
     input:
