@@ -14,7 +14,7 @@ scvi.settings.seed = 0
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
-mdata = ad.read_h5ad(sys.argv[1])
+mdata = mu.read(sys.argv[1])
 
 # Setup SCVI on the data layer
 scvi.model.MULTIVI.setup_mudata(
@@ -53,9 +53,7 @@ adata.obsm['X_multivi'] = model.get_latent_representation()
 sc.pp.neighbors(adata, use_rep='X_multivi')
 sc.tl.umap(adata, min_dist=0.3)
 # Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
 sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
 
 # Save the anndata object
 adata.write_h5ad(sys.argv[4], compression='gzip')

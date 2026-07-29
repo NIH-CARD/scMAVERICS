@@ -4,8 +4,7 @@ import scanpy as sc
 import snapatac2 as snap
 import scipy
 
-fragment_files = snakemake.input.fragments
-output_files = snakemake.output.atac_anndata# Read in fragments
+fragment_files = snakemake.input.fragment_fileoutput_files = snakemake.output.atac_anndata# Read in fragments
 adatas = snap.pp.import_fragments(
         fragment_files, 
         file = output_files,
