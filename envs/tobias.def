@@ -1,0 +1,38 @@
+Bootstrap: docker
+From: condaforge/miniforge3
+
+%environment
+    export LC_ALL=en_US.utf-8
+    export LANG=en_US.utf-8
+    export LANGUAGE=en_US.UTF-8
+    # Set BASH_ENV which points to init file loaded during non-interactive shell
+    export BASH_ENV=/opt/etc/bashrc
+    # Force loading of copied bashrc for interactive shell
+    source /opt/etc/bashrc
+%files
+    tobias_env.yml
+%post
+    # Ensure locales packages installed
+    apt-get -y update
+    apt-get install -y locales locales-all
+
+    # Create target dir for non-root-accessible bashrc
+    mkdir -p /opt/etc
+
+    # Define environment name. Doesn't really matter as it's auto-loaded regardless
+    ENVNAME='tobias_env'
+
+    # Create environment using mamba
+    conda env create -f tobias_env.yml \
+    
+    # Finalize bashrc file
+    echo "#! /bin/bash\n\n# script to activate the conda environment" > ~/.bashrc 
+    conda init bash
+    echo "echo \"Activating ${ENVNAME}\"" >>  ~/.bashrc
+    echo "\nmamba activate ${ENVNAME}" >> ~/.bashrc
+
+    # Copy bashrc to non-root-accessible location
+    cp ~/.bashrc /opt/etc/bashrc
+
+# %runscript
+    exec /bin/bash "$@"
