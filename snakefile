@@ -91,7 +91,7 @@ rule rna_preprocess:
     script:
         work_dir+'scripts/rna_preprocess.py'
 
-rule filter_rna:
+rule rna_filter:
     input:        
         rna_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_rna.h5ad'
     output:
@@ -108,7 +108,7 @@ rule filter_rna:
     script: 
         work_dir+'scripts/rna_filter.py'
 
-rule merge_filtered_rna:
+rule rna_merge:
     input:
         rna_anndata=expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
@@ -127,7 +127,7 @@ rule merge_filtered_rna:
     script:
         work_dir+'scripts/rna_merge.py'
 
-rule feature_selection:
+rule rna_feature_selection:
     input:
         merged_rna_anndata = work_dir+'atlas/02_filtered_anndata_rna.h5ad'
     output:
@@ -164,7 +164,7 @@ rule rna_model:
         {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}
         '
 
-rule UMAP:
+rule rna_latent_transfer:
     input:
         merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
         hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
@@ -175,7 +175,7 @@ rule UMAP:
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/scVI_to_UMAP.py'
+        work_dir+'scripts/rna_latent_transfer.py'
 
 rule first_pass_annotate:
     input:
@@ -183,7 +183,6 @@ rule first_pass_annotate:
         gene_markers = work_dir+'input/first_pass_genes.csv'
     output:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad',
-        cell_annotate = work_dir+'data/first_pass_genes.csv'
     params:
         seq_batch_key = seq_batch_key
     singularity:
@@ -191,7 +190,7 @@ rule first_pass_annotate:
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/annotate.py'
+        work_dir+'scripts/rna_annotate.py'
 
 rule cluster_based_QC:
     input:
