@@ -33,3 +33,11 @@ doublet_thresh: 0.15
 min_genes: 250
 min_peaks: 1000
 min_tsse: 2.5
+
+# Latent space parameters
+high_var_gene_num = 2000
+random_number_seed = 0
+num_layers = 2
+num_latent = 30
+max_epoch = 1000
+machine_type = 'gpu'

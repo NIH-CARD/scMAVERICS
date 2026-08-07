@@ -9,7 +9,7 @@ import sys
 
 print(torch.cuda.is_available())
 
-scvi.settings.seed = 0
+scvi.settings.seed = sys.argv[6]
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
@@ -23,15 +23,15 @@ scvi.model.SCVI.setup_anndata(
 model = scvi.model.SCVI(
     adata, 
     dispersion="gene-batch", 
-    n_layers=2, 
-    n_latent=30, 
+    n_layers=sys.argv[7], 
+    n_latent=sys.argv[8], 
     gene_likelihood="nb"
 )
 
 # Train the model
 model.train(
-    max_epochs=1000,
-    accelerator='gpu',  
+    max_epochs=sys.argv[9],
+    accelerator=sys.argv[10],  
     early_stopping=True,
     early_stopping_patience=20
 )
@@ -42,7 +42,6 @@ elbo['elbo_validation'] = model.history['elbo_validation']
 elbo.to_csv(sys.argv[3], index=False)
 
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
-adata.obs['atlas_identifier'] = adata.obs.index.to_list()
 adata.obsm['X_scvi'] = model.get_latent_representation()
 
 # Calculate nearest neighbors and the UMAP from the X_scvi observable matrix

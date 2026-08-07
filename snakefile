@@ -135,11 +135,11 @@ rule feature_selection:
     singularity:
         envs['multiome']
     params:
-        num_hvgenes = 2000
+        num_hvgenes = config['high_var_gene_num']
     resources:
         runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/feature_selection.py'
+        work_dir+'scripts/rna_feature_selection.py'
 
 rule rna_model:
     input:
@@ -149,13 +149,20 @@ rule rna_model:
         model_history = work_dir+'data/model_elbo/rna_model_history.csv'
     params:
         model = work_dir+'data/models/rna/',
-        sample_key = sample_key
+        sample_key = sample_key,
+        random_number_seed = config['random_number_seed'],
+        num_layers = config['num_layers'],
+        num_latent = config['num_latent'],
+        max_epoch = config['max_epoch'],
+        machine_type = config['machine_type']
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
+        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}
+        {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}
+        '
 
 rule UMAP:
     input:
