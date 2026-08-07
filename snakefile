@@ -177,7 +177,7 @@ rule rna_latent_transfer:
     script:
         work_dir+'scripts/rna_latent_transfer.py'
 
-rule first_pass_annotate:
+rule rna_annotate:
     input:
         merged_rna_anndata = work_dir+'atlas/04_modeled_anndata_rna.h5ad',
         gene_markers = work_dir+'input/first_pass_genes.csv'
@@ -192,7 +192,7 @@ rule first_pass_annotate:
     script:
         work_dir+'scripts/rna_annotate.py'
 
-rule cluster_based_QC:
+rule rna_cluster_based_QC:
     input:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad'
     output:
@@ -204,7 +204,7 @@ rule cluster_based_QC:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir + '/scripts/cluster_based_QC.py'
+        work_dir + '/scripts/rna_cluster_based_QC.py'
 
 """========================================================================="""
 """                               ATAC portion                              """

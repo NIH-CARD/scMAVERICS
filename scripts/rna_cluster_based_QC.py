@@ -61,6 +61,7 @@ bad_bools = [True if x > 0 else False for x in bad_cells]
 
 adata.obs['bad_cells'] = bad_bools
 adata = adata[~adata.obs['bad_cells']].copy()
+del adata.obs['bad_cells']
 
 # Save file
 adata.write_h5ad(snakemake.output.merged_rna_anndata, compression='gzip')
