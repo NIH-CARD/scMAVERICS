@@ -206,13 +206,14 @@ rule rna_cluster_based_QC:
     script:
         work_dir + '/scripts/rna_cluster_based_QC.py'
 
+
 """========================================================================="""
 """                               ATAC portion                              """
 """========================================================================="""
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'{sample}/atac_fragments.tsv.gz'
+        fragment_file=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
         atac_anndata=data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
@@ -222,7 +223,7 @@ rule atac_preprocess:
     script:
         work_dir+'scripts/atac_preprocess.py'
 
-rule filter_atac:
+rule atac_filter:
     input:
         atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     output:
@@ -235,36 +236,33 @@ rule filter_atac:
     script:
         work_dir+'scripts/atac_filter.py'
 
-rule merge_filtered_atac:
+rule atac_merge:
     input:
-        atac_anndata=expand(
-            data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad', 
-            sample=samples
+        fragments=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz', 
+            zip,
+            batch=working_batches,
+            sample=working_samples
             )
     output:
-        merged_atac_anndata = work_dir+'atlas/02_filtered_anndata_atac.h5ad'
+        atac_anndata = expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad',
+            zip,
+            batch=working_batches,
+            sample=working_samples
+            ),
+        temp_file = work_dir+'/atlas/temp_filtered_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir+'/atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
     params:
-        samples=samples
+        samples=working_samples
+    threads:
+        64
     resources:
         runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'scripts/merge_atac.py'
-
-
-rule atac_label_transfer:
-    input:
-        merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad'
-    output:
-        merged_atac_anndata = work_dir+'atlas/04_annot_anndata_atac.h5ad'
-    params:
-        pseudobulk_param = 'celltype'
-    singularity:
-        envs['multiome']
-    script:
-        'scripts/atac_label_transfer.py'
+        work_dir+'/scripts/atac_merge.py'
 
 rule cistopic_pseudobulk:
     input:
