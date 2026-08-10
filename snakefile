@@ -264,20 +264,23 @@ rule atac_merge:
     script:
         work_dir+'/scripts/atac_merge.py'
 
-rule cistopic_pseudobulk:
+rule atac_fragment_pseudobulk:
     input:
-        merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/02_filtered_anndata_atac_backup.h5ad',
         fragment_file=expand(
-            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
-            sample=samples,
+            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
             )
     output:
-        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     params:
         pseudobulk_param = 'celltype',
         samples=samples,
-        sample_key = sample_key,
-        cell_type = lambda wildcards: wildcards.cell_type
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
     singularity:
         envs['multiome']
     threads:
@@ -285,9 +288,9 @@ rule cistopic_pseudobulk:
     resources:
         runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/fragment_pseudobulk.py'
+        'scripts/atac_fragment_pseudobulk.py'
 
-rule cistopic_call_peaks:
+rule atac_celltype_call_peaks:
     input:
         pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     output: 
