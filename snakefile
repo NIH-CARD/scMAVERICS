@@ -341,7 +341,7 @@ rule merged_consensus_peak_anndata:
     resources:
         runtime=1440, mem_mb=3000000, slurm_partition='largemem'
     script:
-        'scripts/merge_from_fragments.py'
+        'scripts/atac_merge.py'
     
 rule atac_spectral:
     input:
