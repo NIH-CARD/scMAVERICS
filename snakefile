@@ -458,6 +458,19 @@ rule multivi:
     shell:
         'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
 
+rule transfer_UMAP:
+    input:
+        multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu',
+        hvg_multiome_anndata = work_dir + '/atlas/05_highly_variable_multivi_multiome.h5mu'
+    output:
+        multiome_object = work_dir + '/atlas/06_polished_multiome_rna.h5mu'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        work_dir+'/scripts/multivi_to_UMAP.py'
+
 rule pychromvar:
     input:
         merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
