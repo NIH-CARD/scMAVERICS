@@ -555,27 +555,6 @@ rule cell_fraction_plot_and_test:
     script:
         work_dir + '/scripts/cell_fraction_test_plot.py'
 
-rule gene_linear_regression:
-    input:
-        merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        covariates = work_dir+'data/covariates.csv'
-    output:
-        rna_pseudobulk = work_dir+'data/pseudobulked_rna.csv',
-        cell_gene_regression = work_dir+'data/gene_age_regression.csv'
-    params:
-        sample_key=sample_key,
-        disease_param = disease_param,
-        design_factors = design_covariates,
-        cell_types = cell_types
-    singularity:
-        envs['multiome']
-    threads:
-        64
-    resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
-    script:
-        'scripts/linear_regression_genes.py'
-
 rule cell_cell_communication:
     input:
         merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
@@ -590,24 +569,6 @@ rule cell_cell_communication:
         disk_mb=200000, mem_mb=200000, slurm_partition='quick'
     script:
         'scripts/cell_cell_communication.py'
-
-rule peak_linear_regression:
-    input:
-        celltype_atac = work_dir+'data/celltypes/{cell_type}/atac.h5ad',
-        covariates = '/data/CARD_singlecell/PFC_atlas/data/covariates.csv'
-    output:
-        cell_specific_pseudo = work_dir+'data/celltypes/{cell_type}/pseudobulk_atac.csv',
-        cell_specific_regression = work_dir+'data/celltypes/{cell_type}/peak_age_regression.csv'
-    params:
-        cell_type = lambda wildcards, output: output[0].split("_")[-2],
-    singularity:
-        envs['multiome']
-    threads:
-        64
-    resources:
-        runtime=1440, mem_mb=500000, slurm_partition='largemem'
-    script:
-        'scripts/linear_regression_peaks.py'
 
 rule DEG:
     input:
@@ -631,7 +592,6 @@ rule DEG:
     script:
         'scripts/rna_DEG.py'
 
-
 rule differential_cell_cell_communication:
     input:
         merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
@@ -645,9 +605,80 @@ rule differential_cell_cell_communication:
     script:
         'scripts/rna_differential_cell_cell_communication.py'
 
+rule disease_gsea:
+    input:
+        adata_path = work_dir+'atlas/07_polished_anndata_rna.h5ad',
+        ontologies = work_dir+'input/ontologies.csv'
+    output:
+        cell_disease_GSEA =  work_dir+'data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
+    params:
+        disease_param = disease_param,
+        control = lambda wildcards, output: output[0].split("_")[-3],
+        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
+        cell_type = lambda wildcards, output: output[0].split("_")[-4],
+        disease = lambda wildcards, output: output[0].split("_")[-2]
+    singularity:
+        envs['multiome']
+    threads:
+        64
+    resources:
+        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/rna_GSEA.py'
+
+rule disease_great:
+    input:
+        DAR_path =  work_dir+'data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
+        tss_file =  work_dir+'input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'input/chr_size.bed',
+        annotation_file =  work_dir+'input/ontologies.csv',
+    output:
+        cell_disease_peaks = work_dir+'data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_DAR_peaks.bed',
+        cell_disease_GREAT = work_dir+'data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=2880
+    script:
+        'scripts/atac_GREAT.py'
+
+rule celltype_great:
+    input:
+        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        tss_file =  work_dir+'input/tss_from_great.bed',
+        chr_sizes_file =  work_dir+'input/chr_size.bed',
+        annotation_file =  work_dir+'input/ontologies.csv',
+    output:
+        cell_disease_GREAT = work_dir+'data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv'
+    params:
+        cell_types = cell_types,
+        celltype = lambda wildcards: wildcards.cell_type
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=2880
+    script:
+        'scripts/atac_celltype_GREAT.py'
+
+rule celltype_overlapping_peaks:
+    input:
+        peak_files = expand(
+            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
+            condition = diseases + [control],
+            allow_missing = True
+        )
+    output:
+        celltype_overlapping_celltype_peaks = work_dir+'data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
+    singularity:
+        envs['atac_fragment']
+    resources:
+        slurm_partition='quick'
+    script:
+        'scripts/overlapping_peaks.py'
+
 rule atac_merged_coaccessibilty:
     input:
-        celltype_atac = work_dir + '/atlas/03_consensus_peak_atac.h5ad'
+        celltype_atac = work_dir + '/atlas/multiome_wnn.h5mu'
     output:
         celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
         circe_network = work_dir+'data/circe_network.csv'
@@ -659,77 +690,6 @@ rule atac_merged_coaccessibilty:
         runtime=1440, mem_mb=1500000, slurm_partition='largemem'
     script:
         'scripts/circe_by_celltype.py'
-
-rule cistopic_create_objects:
-    input:
-        merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        fragment_file = data_dir+'{sample}/outs/atac_fragments.tsv.gz',
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
-    output:
-        cistopic_objects = data_dir+'{sample}/outs/04_{sample}_cistopic_obj.pkl',
-        atac_anndata = data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad'
-    singularity:
-        envs['multiome']
-    params:
-        sample='{sample}',
-        sample_key = sample_key,
-        disease_param = disease_param
-    resources:
-        runtime=120, mem_mb=250000, slurm_partition='quick'
-    threads:
-        16
-    script:
-        'scripts/cistopic_create_object.py'
-
-rule merge_objects:
-    input:
-        atac_anndata=expand(
-            data_dir+'{sample}/outs/04_{sample}_anndata_peaks_atac.h5ad',
-            sample=samples,
-            )
-    output:
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-    params:
-        samples = samples
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=960, mem_mb=300000
-    script:
-        'scripts/merge_cistopic_and_adata.py'
-
-rule atac_spectral:
-    input:
-        merged_atac_anndata = work_dir + '/atlas/03_merged_cistopic_atac.h5ad'
-    output:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
-    params:
-        num_features = 100000,
-        sample_param = 'sample_id'
-    singularity:
-        envs['multiome']
-    threads:
-        32
-    resources:
-        runtime=1440, mem_mb=250000
-    script:
-        'scripts/atac_spectral.py'
-
-rule atac_merged_coaccessibilty:
-    input:
-        celltype_atac = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
-    output:
-        celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
-        circe_network = work_dir+'data/circe_network.csv'
-    singularity:
-        envs['circe']
-    threads:
-        16
-    resources:
-        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
-    script:
-        'scripts/circe_by_celltype.py'
-
 
 rule gene_motif_linkage:
     input:
@@ -749,29 +709,41 @@ rule gene_motif_linkage:
     script:
         'scripts/gene_motif_linkage.py'
 
-rule create_bigwig:
+rule gene_peak_linkage:
     input:
-        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudobulked_rna = work_dir+'atlas/pseudobulked_rna.h5ad',
+        gene_info = gene_info,
+        gene_tss = gene_tss,
+        atac_files = expand(
+            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_atac.h5ad',
+            condition = [control] + diseases,
+            allow_missing = True
+        ),
+        circe_files = expand(
+            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_circe_network.csv',
+            condition = [control] + diseases,
+            allow_missing = True
+        ),
+        bed_files = expand(
+            work_dir + '/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
+            condition = [control] + diseases,
+            allow_missing = True
+        )
     output:
-        celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
-    resources:
-        mem_mb=1500000, runtime=960,  slurm_partition='largemem'
+        gene_peak_linkage = work_dir+'data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
+    params:
+        conditions = [control] + diseases,
+        celltype = lambda wildcards: wildcards.celltype
     singularity:
         envs['multiome']
+    resources:
+        slurm_partition='quick'
     script:
-        'scripts/atac_bigwig.py'
+        'scripts/gene_peak_linkage.py'
 
-rule celltype_bed:
-    input:
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-        blacklist = work_dir + '/input/hg38-blacklist.bed'
-    singularity:
-        envs['atac_fragment']
-    output:
-        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
-    script:
-        'scripts/MACS_to_bed.py'
+"""========================================================================="""
+"""                            CELLTYPE portion                             """
+"""========================================================================="""
 
 rule annotate_bed:
     input:
@@ -949,6 +921,10 @@ rule atac_coaccessibilty_cell_disease:
     script:
         'scripts/circe_by_celltype.py'
 
+"""========================================================================="""
+"""                              MOTIF portion                              """
+"""========================================================================="""
+
 rule motif_enrichment:
     input:
         atac_anndata = work_dir+'atlas/04_modeled_anndata_atac.h5ad',
@@ -988,109 +964,6 @@ rule differential_motif_enrichment:
         runtime=240, disk_mb=300000, mem_mb=200000
     script:
         'scripts/differential_motif_enrichment.py'
-
-rule disease_gsea:
-    input:
-        adata_path = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        ontologies = work_dir+'input/ontologies.csv'
-    output:
-        cell_disease_GSEA =  work_dir+'data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
-    params:
-        disease_param = disease_param,
-        control = lambda wildcards, output: output[0].split("_")[-3],
-        separating_cluster = lambda wildcards, output: output[0].split("_")[-5],
-        cell_type = lambda wildcards, output: output[0].split("_")[-4],
-        disease = lambda wildcards, output: output[0].split("_")[-2]
-    singularity:
-        envs['multiome']
-    threads:
-        64
-    resources:
-        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
-    script:
-        'scripts/rna_GSEA.py'
-
-rule disease_great:
-    input:
-        DAR_path =  work_dir+'data/significant_genes/atac/atac_{cell_type}_{control}_{disease}_DAR.csv',
-        tss_file =  work_dir+'input/tss_from_great.bed',
-        chr_sizes_file =  work_dir+'input/chr_size.bed',
-        annotation_file =  work_dir+'input/ontologies.csv',
-    output:
-        cell_disease_peaks = work_dir+'data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_DAR_peaks.bed',
-        cell_disease_GREAT = work_dir+'data/celltypes/{cell_type}/{cell_type}_{control}_{disease}_GREAT_peaks.csv'
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=2880
-    script:
-        'scripts/atac_GREAT.py'
-
-rule celltype_great:
-    input:
-        consensus_bed = work_dir + '/data/consensus_regions.bed',
-        tss_file =  work_dir+'input/tss_from_great.bed',
-        chr_sizes_file =  work_dir+'input/chr_size.bed',
-        annotation_file =  work_dir+'input/ontologies.csv',
-    output:
-        cell_disease_GREAT = work_dir+'data/celltypes/{cell_type}/{cell_type}_GREAT_peaks.csv'
-    params:
-        cell_types = cell_types,
-        celltype = lambda wildcards: wildcards.cell_type
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=2880
-    script:
-        'scripts/atac_celltype_GREAT.py'
-
-rule celltype_overlapping_peaks:
-    input:
-        peak_files = expand(
-            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
-            condition = diseases + [control],
-            allow_missing = True
-        )
-    output:
-        celltype_overlapping_celltype_peaks = work_dir+'data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
-    singularity:
-        envs['atac_fragment']
-    resources:
-        slurm_partition='quick'
-    script:
-        'scripts/overlapping_peaks.py'
-
-rule gene_peak_linkage:
-    input:
-        pseudobulked_rna = work_dir+'atlas/pseudobulked_rna.h5ad',
-        gene_info = gene_info,
-        gene_tss = gene_tss,
-        atac_files = expand(
-            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_atac.h5ad',
-            condition = [control] + diseases,
-            allow_missing = True
-        ),
-        circe_files = expand(
-            work_dir+'data/celltypes/{celltype}/{celltype}_{condition}_circe_network.csv',
-            condition = [control] + diseases,
-            allow_missing = True
-        ),
-        bed_files = expand(
-            work_dir + '/data/celltypes/{celltype}/{celltype}_{condition}_peaks.bed',
-            condition = [control] + diseases,
-            allow_missing = True
-        )
-    output:
-        gene_peak_linkage = work_dir+'data/celltypes/{celltype}/{celltype}_promoter_coaccessibility.csv'
-    params:
-        conditions = [control] + diseases,
-        celltype = lambda wildcards: wildcards.celltype
-    singularity:
-        envs['multiome']
-    resources:
-        slurm_partition='quick'
-    script:
-        'scripts/gene_peak_linkage.py'
 
 rule barcode_merge:
     input:
