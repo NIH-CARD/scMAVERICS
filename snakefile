@@ -414,7 +414,7 @@ rule merge_multiome_atac:
 
 rule merge_multiome:
     input:
-        merged_atac_anndata = work_dir+'atlas/03_consensus_peak_atac.h5ad',
+        merged_atac_anndata = work_dir+'atlas/04_modeled_anndata_atac.h5ad',
         merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
     output:
         multiome_object = work_dir+'atlas/03_merged_multiome.h5mu'
