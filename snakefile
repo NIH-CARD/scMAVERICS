@@ -482,7 +482,7 @@ rule pychromvar:
     threads:
         16
     resources:
-        runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
+        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
 
