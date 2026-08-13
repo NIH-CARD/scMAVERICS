@@ -28,3 +28,34 @@ min_genes: 250
 min_peaks: 1000
 min_tsse: 2.5
 
+# Cell subtypes
+subtypes:
+    - MG_DAM
+    - L5_IT
+    - Astro_proto
+    - L2-3_IT
+    - Oligo_CSMD1
+    - Oligo_RBFOX1
+    - OPC
+    - VIP
+    - Astro_fibrous_DCLK1
+    - SST
+    - Oligo_OPALIN
+    - L5-6_NP
+    - L5_ET
+    - MG_DIM_PCDH9
+    - Chandelier
+    - LAMP5
+    - L4_IT
+    - MG_CAM
+    - L6_CT
+    - Oligo_CNTN1
+    - L6_IT
+    - PVALB
+    - L6_IT_type_2
+    - fibroblasts
+    - Astro_reactive
+    - MG_homeo
+    - pericytes
+    - endothelial cells
+    - L6b

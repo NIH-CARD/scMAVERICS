@@ -37,7 +37,7 @@ doublet_thresh = config['doublet_thresh'] # Maximum doublet score for a cell, co
 min_genes_per_cell = config['min_genes'] # Minimum number of unique genes in a cell
 min_peak_counts = config['min_peaks'] # Minimum number of fragments per cell
 min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
-subtypes = []
+subtypes = config['subtypes']
 """========================================================================="""
 """                                  Workflow                               """
 """========================================================================="""
@@ -52,7 +52,7 @@ envs = {
 
 rule all:
     input:
-        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        merged_multiome = work_dir+'/atlas/08_multiome.h5mu',
 """celltype_bigwig = expand(
     work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
     cell_type = cell_types
@@ -440,7 +440,7 @@ rule cistopic_call_peaks:
     params:
         out_dir = work_dir + "/data/celltypes/{cell_type}"
     resources:
-        mem_mb=200000, runtime=180, slurm_partition= 'quick'
+        mem_mb=200000, runtime=2880
     singularity:
         envs['multiome']
     shell:
@@ -452,7 +452,7 @@ rule create_bigwig:
         genome_length = genome_length
     output:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-        #celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
+        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
     resources:
         mem_mb=250000, runtime=180,  slurm_partition='quick'
     threads:
@@ -461,6 +461,17 @@ rule create_bigwig:
         envs['multiome']
     script:
         'scripts/atac_bigwig.py'
+
+rule celltype_bed:
+    input:
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
+    singularity:
+        envs['multiome']
+    output:
+        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
 
 rule consensus_peaks:
     input:
@@ -562,7 +573,7 @@ rule transfer_UMAP:
 
 rule pychromvar:
     input:
-        merged_multiome = work_dir + '/atlas/07_annotated_multiome_1.h5mu',
+        merged_multiome = work_dir + '/atlas/07_annotated_multiome.h5mu',
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'/atlas/08_multiome.h5mu'
@@ -571,7 +582,7 @@ rule pychromvar:
     threads:
         16
     resources:
-        runtime=1440, ntasks=16, mem_mb=3000000, slurm_partition='largemem'
+        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
 
@@ -581,7 +592,7 @@ rule rna_pseudobulk:
     output:
         pseudo_rna = work_dir+'/atlas/pseudobulked_rna.h5ad'
     params:
-        sample_key = 'Sample_ID',
+        sample_key = sample_key,
         separating_cluster = 'celltype',
         min_cells = 10
     singularity:
@@ -590,6 +601,74 @@ rule rna_pseudobulk:
         runtime=120, mem_mb=250000, slurm_partition='quick'
     script:
         'scripts/rna_pseudobulk.py'
+
+rule subtype_fragment_pseudobulk:
+    input:
+        merged_rna_anndata = work_dir+'/atlas/07_annotated_subtype_multiome_rna.h5ad',
+        merged_atac_anndata = work_dir + '/atlas/02_filtered_anndata_atac_backup.h5ad',
+        fragment_file=expand(
+            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        pseudo_fragment_files = work_dir + '/data/subtypes/{cell_type}/{cell_type}_fragments.bed'
+    params:
+        pseudobulk_param = 'subtype',
+        samples=samples,
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
+    singularity:
+        envs['multiome']
+    threads:
+        64
+    resources:
+        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/fragment_pseudobulk.py'
+
+rule subtype_cistopic_call_peaks:
+    input:
+        pseudo_fragment_files = work_dir + '/data/subtypes/{cell_type}/{cell_type}_fragments.bed'
+    output: 
+        xls = work_dir + "/data/subtypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "/data/subtypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "/data/subtypes/{cell_type}"
+    resources:
+        mem_mb=200000, runtime=2880
+    singularity:
+        envs['multiome']
+    shell:
+        "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule subtype_create_bigwig:
+    input:
+        pseudo_fragment_file = work_dir + '/data/subtypes/{cell_type}/{cell_type}_fragments.bed',
+        genome_length = genome_length
+    output:
+        celltype_bigwig = work_dir + '/data/subtypes/{cell_type}/{cell_type}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + '/data/subtypes/{cell_type}/{cell_type}_normalized_bigwig.bw'
+    resources:
+        mem_mb=250000, runtime=180,  slurm_partition='quick'
+    threads:
+        16
+    singularity:
+        envs['multiome']
+    script:
+        'scripts/atac_bigwig.py'
+
+rule subtype_celltype_bed:
+    input:
+        xls = work_dir + "/data/subtypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + '/input/hg38-blacklist.bed'
+    singularity:
+        envs['multiome']
+    output:
+        cell_bedfile = work_dir + '/data/subtypes/{cell_type}/{cell_type}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
 
 """rule gene_linear_regression:
     input:
@@ -604,7 +683,7 @@ rule rna_pseudobulk:
         design_factors = design_covariates,
         cell_types = cell_types
     singularity:
-        envs['decoupler']
+        envs['multiome']
     threads:
         64
     resources:
