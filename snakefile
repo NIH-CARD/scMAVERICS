@@ -50,7 +50,8 @@ envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
     'tobias': 'envs/tobias.sif',
     'dreampy': 'envs/dreampy.sif',
-    'multiome': 'envs/multiome.sif'
+    'multiome': 'envs/multiome.sif',
+    'scenic': 'envs/scenicplus.sif'
     }
 
 rule all:
@@ -314,7 +315,7 @@ rule consensus_peaks:
     output:
         consensus_bed = work_dir + '/data/consensus_regions.bed'
     singularity:
-        envs['multiome']
+        envs['scenic']
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
