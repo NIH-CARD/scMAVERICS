@@ -61,7 +61,7 @@ motifs = jdb_obj.fetch_motifs(collection='CORE', species=9606)
 pc.match_motif(mdata['atac'], motifs=motifs)
 
 # Chunk 
-chunk_size = 50000  # Bumped to 50k for speed; adjust based on RAM
+chunk_size = snakemake.params.chunk_size  # Working in chunks of 100000; adjust based on RAM
 total_cells = mdata['atac'].n_obs
 dev_chunks = []
 
