@@ -577,12 +577,14 @@ rule pychromvar:
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'/atlas/08_multiome.h5mu'
+    params:
+        chunk_size = 100000
     singularity:
         envs['multiome']
     threads:
         16
     resources:
-        runtime=1440, mem_mb=2000000, slurm_partition='largemem'
+        runtime=2880, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
 
