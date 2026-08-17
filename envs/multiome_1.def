@@ -1,0 +1,66 @@
+Bootstrap: docker
+From: condaforge/miniforge3
+
+%environment
+    export LC_ALL=en_US.utf-8
+    export LANG=en_US.utf-8
+    export LANGUAGE=en_US.UTF-8
+    # Set BASH_ENV which points to init file loaded during non-interactive shell
+    export BASH_ENV=/opt/etc/bashrc
+    # Force loading of copied bashrc for interactive shell
+    source /opt/etc/bashrc
+%post
+    # Ensure locales packages installed
+    apt-get update && apt-get install -y \
+        build-essential \
+        gcc \
+        g++ \
+        make \
+        cmake \
+        git \
+        wget \
+        ca-certificates
+
+    # Create target dir for non-root-accessible bashrc
+    mkdir -p /opt/etc
+
+    # Define environment name. Doesn't really matter as it's auto-loaded regardless
+    ENVNAME='multiome'
+
+    # Create environment using mamba
+    mamba create -y -n multiome -c conda-forge -c bioconda \
+        python=3.11 \
+        pip setuptools wheel \
+        muon pandas numpy matplotlib seaborn scipy statsmodels bedtools \
+        conda-forge::decoupler-py=2.1.6 macs3 pybedtools biopython polars \
+        anndata=0.12.11 bioconda::pyrle leidenalg igraph scikit-learn \
+        pysam
+        
+    # MOODS requires a special installation
+    conda run -n multiome python -m pip install -v --no-cache-dir moods-python
+
+    # Install the rest of pip-dependent packages
+    conda run -n multiome python -m pip install \
+        snapatac2==2.9 circe-py greatpy moods-python pychromvar \
+        pybigwig pyjaspar pyranges scvi-tools==1.4.2 cellphonedb \
+        upsetplot gseapy adjustText tobias
+    
+    git clone https://github.com/sbwells22/dreampy.git
+    cd dreampy
+    pip install -e .
+    
+    # Minimize size of image
+    conda clean -a -y
+    apt-get clean
+
+    # Finalize bashrc file
+    echo "#! /bin/bash\n\n# script to activate the conda environment" > ~/.bashrc 
+    conda init bash
+    echo "echo \"Activating ${ENVNAME}\"" >>  ~/.bashrc
+    echo "\nconda activate ${ENVNAME}" >> ~/.bashrc
+
+    # Copy bashrc to non-root-accessible location
+    cp ~/.bashrc /opt/etc/bashrc
+
+# %runscript
+    exec /bin/bash "$@"
