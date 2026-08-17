@@ -28,7 +28,7 @@ if snakemake.input.consensus_bed != None:
         )
 
 anndataset = snap.AnnDataSet(
-    adatas=[(str(f.filename).split('/')[-1].split('.h5ad')[0], f) for f in adatas], 
+    adatas=[(str(f.filename).split('/02_')[-1].split('_anndata_filtered_atac.h5ad')[0], f) for f in adatas], 
     filename=work_dir+'/atlas/temp_filtered_anndata_atac.h5ad')
 
 dataset = snap.AnnDataSet(adatas=adatas, filename=snakemake.output.temp_file)
@@ -37,4 +37,4 @@ anndataset.obs['tsse'] = anndataset.adatas.obs['tsse']
 
 adata = anndataset.to_adata()
 # Consolidate and export straight to a single permanent file
-adata.write_h5ad(nakemake.output.merged_atac_anndata, compression = 'gzip')
+adata.write_h5ad(snakemake.output.merged_atac_anndata, compression = 'gzip')
