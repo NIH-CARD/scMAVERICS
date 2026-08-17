@@ -31,10 +31,11 @@ From: condaforge/miniforge3
     mamba create -y -n multiome -c conda-forge -c bioconda \
         python=3.11 \
         pip setuptools wheel \
-        muon pandas numpy matplotlib seaborn scipy statsmodels \
+        muon pandas numpy matplotlib seaborn scipy statsmodels bedtools \
         conda-forge::decoupler-py=2.1.6 macs3 pybedtools biopython polars \
-        anndata=0.12.11 bioconda::pyrle
-
+        anndata=0.12.11 bioconda::pyrle leidenalg igraph scikit-learn \
+        pysam
+        
     # MOODS requires a special installation
     conda run -n multiome python -m pip install -v --no-cache-dir moods-python
 
@@ -42,7 +43,11 @@ From: condaforge/miniforge3
     conda run -n multiome python -m pip install \
         snapatac2==2.9 circe-py greatpy moods-python pychromvar \
         pybigwig pyjaspar pyranges scvi-tools==1.4.2 cellphonedb \
-        upsetplot gseapy adjustText 
+        upsetplot gseapy adjustText tobias
+    
+    git clone https://github.com/sbwells22/dreampy.git
+    cd dreampy
+    pip install -e .
     
     # Minimize size of image
     conda clean -a -y
