@@ -8,12 +8,19 @@ import pandas as pd
 adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
 
 doublet_clusters = []
-for cluster in adata.obs['leiden_2'].drop_duplicates():
+for cluster in adata.obs['leiden'].drop_duplicates():
     #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
-    if adata[adata.obs['leiden_2'] == cluster].obs['doublet_score'].median() > .05:
+    if adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median() > .05:
         doublet_clusters.append(cluster)
 
-adata = adata[~adata.obs['leiden_2'].isin(doublet_clusters)].copy()
+adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
+
+mito_clusters = []
+for cluster in adata.obs['leiden'].drop_duplicates():
+    #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    if adata[adata.obs['leiden'] == cluster].obs['pct_counts_mt'].median() > 2:
+        mito_clusters.append(cluster)
+mito_clusters
 
 # Create the DataFrame of canonical gene markers (This can be expanded)
 marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
