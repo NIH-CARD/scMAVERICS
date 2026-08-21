@@ -240,14 +240,14 @@ rule atac_filter:
 rule atac_merge:
     input:
         fragments=expand(
-            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz', 
+            data_dir+'{sample}/outs/atac_fragments.tsv.gz', 
             zip,
             batch=working_batches,
             sample=working_samples
             )
     output:
         atac_anndata = expand(
-            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad',
+            data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
             zip,
             batch=working_batches,
             sample=working_samples
@@ -437,7 +437,8 @@ rule multiome_feature_selection:
         envs['multiome']
     params:
         hvg = 3000,
-        hvp = 20000
+        hvp = 20000,
+        sample_key = sample_key
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:

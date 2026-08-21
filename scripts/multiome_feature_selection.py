@@ -24,5 +24,5 @@ atac_hvp = mdata["atac"][:, mdata["atac"].var["selected"].values].copy()
 
 # Save the anndata object
 mdata = mu.MuData({"rna": rna_hvg, "atac": atac_hvp})
-
+mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[0]) for x in mdata.obs_names]
 mdata.write(snakemake.output.multiome_object)
