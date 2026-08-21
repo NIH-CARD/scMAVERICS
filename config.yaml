@@ -1,0 +1,36 @@
+# Base directories
+data_dir: '/data/CARD_singlecell/Sidransky_SN_PFC/data/samples/'
+work_dir: '/data/CARD_singlecell/Sidransky_SN_PFC/'
+# Reference files
+reference_genome: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
+genome_length: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
+metadata: 'input/metadata.csv' # relative to work_dir
+gene_list: 'input/first_pass_genes.csv' # relative to work_dir
+cell_cycle_genes: 'input/lab_cell_cycle_genes.txt'
+gene_tss: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed'
+gene_info: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab'
+motif_file: 'input/jaspar_2024_hsapiens.meme'
+# Sample parameters
+sample_key: 'folder_names' 
+disease_param: 'Pathology'
+control_key: 'Control'
+diagnoses:
+    - GD
+    - GD/PD
+covariates:
+    - Age
+    - Sex
+    - PMI
+# QC thresholds
+mito_thresh: 15
+ribo_thresh: 10
+doublet_thresh: 0.15
+min_genes: 250
+min_peaks: 1000
+min_tsse: 2.5
+high_var_gene_num: 2000
+random_number_seed: 0
+num_layers: 2
+num_latent: 30
+max_epoch: 1000
+machine_type: 'gpu'
