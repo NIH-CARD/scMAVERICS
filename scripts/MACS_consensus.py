@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from pycisTopic.iterative_peak_calling import get_consensus_peaks
 from pycisTopic.pseudobulk_peak_calling import peak_calling
-import scanpy as sc
 import pyranges
 import os
 

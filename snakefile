@@ -578,7 +578,7 @@ rule pychromvar:
     output:
         merged_multiome = work_dir+'/atlas/08_multiome.h5mu'
     params:
-        chunk_size = 100000
+        chunk_size = 500000
     singularity:
         envs['multiome']
     threads:
