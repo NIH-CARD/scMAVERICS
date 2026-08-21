@@ -58,11 +58,7 @@ envs = {
 
 rule all:
     input:
-        cell_bedfile = expand(
-            work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed',
-            cell_type = cell_types
-        ),
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
+        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -706,7 +702,7 @@ rule transfer_UMAP:
         multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu',
         hvg_multiome_anndata = work_dir + '/atlas/05_highly_variable_multivi_multiome.h5mu'
     output:
-        multiome_object = work_dir + '/atlas/06_polished_multiome_rna.h5mu'
+        multiome_object = work_dir + '/atlas/06_polished_multiome.h5mu'
     singularity:
         envs['multiome']
     resources:
@@ -716,16 +712,18 @@ rule transfer_UMAP:
 
 rule pychromvar:
     input:
-        merged_multiome = work_dir + '/atlas/multiome_wnn.h5mu',
+        merged_multiome = work_dir + '/atlas/07_annotated_multiome.h5mu',
         reference_genome = reference_genome
     output:
-        merged_multiome = work_dir+'/atlas/multiome_chromvar_atlas.h5mu'
+        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
+    params:
+        chunk_size = 100000
     singularity:
         envs['multiome']
     threads:
         16
     resources:
-        runtime=2880, ntasks=16, mem_mb=1000000, slurm_partition='largemem'
+        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
         'scripts/pychromvar.py'
 
