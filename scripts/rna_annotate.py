@@ -6,8 +6,6 @@ import pandas as pd
 
 # Open the RNA merged and filtered
 adata = sc.read_h5ad(snakemake.input.merged_rna_anndata)
-# Create the DataFrame of canonical gene markers (This can be expanded)
-marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
 
 doublet_clusters = []
 for cluster in adata.obs['leiden'].drop_duplicates():
@@ -16,6 +14,16 @@ for cluster in adata.obs['leiden'].drop_duplicates():
         doublet_clusters.append(cluster)
 
 adata = adata[~adata.obs['leiden'].isin(doublet_clusters)].copy()
+
+mito_clusters = []
+for cluster in adata.obs['leiden'].drop_duplicates():
+    #print(cluster, adata[adata.obs['leiden'] == cluster].obs['doublet_score'].mean(), adata[adata.obs['leiden'] == cluster].obs['doublet_score'].median())
+    if adata[adata.obs['leiden'] == cluster].obs['pct_counts_mt'].median() > 2:
+        mito_clusters.append(cluster)
+mito_clusters
+
+# Create the DataFrame of canonical gene markers (This can be expanded)
+marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
 
 # Run over-represenation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
@@ -40,7 +48,7 @@ max_e = np.nanmax(acts_v[np.isfinite(acts_v)])
 acts.X[~np.isfinite(acts.X)] = max_e
 df = dc.rank_sources_groups(
     acts, 
-    groupby='leiden', 
+    groupby='leiden_2', 
     reference='rest', 
     method='t-test_overestim_var'
     )
@@ -49,11 +57,7 @@ df = dc.rank_sources_groups(
 annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dict()
 
 # Apply the dictionary to the AnnData object
-adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs['leiden']]
-
-# Save the cell barcode, cluster, cell-type, and batch values to a .csv
-adata.obs[['atlas_identifier', 'leiden', 'celltype', snakemake.params.seq_batch_key]].to_csv(snakemake.output.cell_annotate, index=False)
-
+adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs['leiden_2']]
 
 # Save the annotated AnnData object
 adata.write_h5ad(filename=snakemake.output.merged_rna_anndata, compression='gzip')

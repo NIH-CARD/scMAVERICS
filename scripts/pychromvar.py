@@ -37,7 +37,7 @@ def patch_scipy_sparse_sum():
         # Fallback to standard behavior if keepdims isn't True
         return original_sum(self, axis=axis, dtype=dtype, out=out)
 
-    # Bind the safe wrapper back directly into SciPy's source module in RAM
+    # Bind our safe wrapper back directly into SciPy's source module in RAM
     sp._compressed._cs_matrix.sum = custom_sum
 patch_scipy_sparse_sum()
 

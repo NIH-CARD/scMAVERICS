@@ -10,8 +10,6 @@ filtered_adata = sc.read_h5ad(snakemake.input.hvg_rna_anndata)
 # Save the .obsm['X_scvi']
 adata.obsm['X_scvi'] = filtered_adata.obsm['X_scvi']
 
-# Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
-adata.obs['atlas_identifier'] = adata.obs.index.to_list()
 
 # Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
 sc.pp.neighbors(adata, use_rep='X_scvi')
