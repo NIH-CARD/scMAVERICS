@@ -14,6 +14,7 @@ cell_cycle_genes: 'input/lab_cell_cycle_genes.txt'
 gene_tss: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed'
 gene_info: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab'
 motif_file: 'input/jaspar_2024_hsapiens.meme'
+lab_cell_cycle_genes: 'input/lab_cell_cycle_genes'
 
 # Sample parameters
 seq_batch_key: 'batch'

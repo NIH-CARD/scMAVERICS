@@ -5,7 +5,7 @@ import os
 """                                 Parameters                              """
 """========================================================================="""
 
-
+configfile: "config.yaml"
 """File locations"""
 data_dir = config['data_dir'] # Define the data directory, explicitly
 work_dir = config['work_dir'] # Define the working directory, explictly as the directory of this pipeline
@@ -15,6 +15,7 @@ cell_cycle_gene_file = work_dir+config['cell_cycle_genes']
 gene_info = work_dir+config['gene_info']
 gene_tss = work_dir+config['gene_tss']
 motifs = work_dir + config['motif_file']
+cell_cycle_gene_file = work_dir + config['lab_cell_cycle_genes']
 
 """Metadata parameters"""
 seq_batch_key = config['seq_batch_key'] # Key for sequencing batch, used for directory search
@@ -161,9 +162,8 @@ rule rna_model:
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}
-        {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}
-        '
+        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
+
 
 rule rna_latent_transfer:
     input:
