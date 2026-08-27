@@ -58,10 +58,15 @@ envs = {
 
 rule all:
     input:
-        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
+        rna_anndata = expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/cellbender_gex_counts_filtered.h5',
+            zip,
+            batch = batches,
+            sample = samples
+            )
 
 # This needs to be forced to run once
-"""rule cellbender:
+rule cellbender:
     input:
         rna_anndata =data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/'
@@ -70,9 +75,9 @@ rule all:
     params:
         sample='{sample}'
     resources:
-        runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
+        runtime=1440, mem_mb=64000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'"""
+        work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
 rule rna_preprocess:
     input:

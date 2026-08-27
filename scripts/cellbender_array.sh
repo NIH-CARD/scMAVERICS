@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --cpus-per-task 1
-#SBATCH --mem-per-cpu=32G
+#SBATCH --mem-per-cpu=64G
 #SBATCH --time 24:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100x:1
@@ -18,4 +18,4 @@ export TMPDIR=$2
 echo $TMPDIR
 
 # Iterate through the array of sample directories
-cd $TMPDIR; pwd; cellbender remove-background --input $1 --output $3 --checkpoint "$TMPDIR"/ckpt.tar.gz --cuda; cd ..
+cd $TMPDIR; pwd; cellbender remove-background --input $1 --output $3 --checkpoint "$TMPDIR"/ckpt.tar.gz --cuda --posterior-batch-size 64; cd ..
