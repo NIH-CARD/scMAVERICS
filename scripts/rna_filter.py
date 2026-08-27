@@ -10,7 +10,7 @@ adata = sc.read_h5ad(snakemake.input.rna_anndata) # type: ignore
 # Threshold below a given mitochondria percent
 adata = adata[adata.obs['pct_counts_mt'] < snakemake.params.mito_percent_thresh].copy()
 # Threshold above a given genes per cell threshold
-adata = adata[adata.obs['n_genes_by_counts'] > snakemake.params.min_genes_per_cell].copy()
+adata = adata[adata.obs['total_counts'] > snakemake.params.min_genes_per_cell].copy()
 # Threshold below a given ribosome threshold
 adata = adata[adata.obs['pct_counts_rb'] < snakemake.params.ribo_percent_thresh].copy()
 
