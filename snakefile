@@ -6,7 +6,7 @@ import os
 """                                 Parameters                              """
 """========================================================================="""
 
-
+configfile: "config.yaml"
 """File locations"""
 data_dir = '/data/CARD_singlecell/Brain_atlas/PCA_Multiome/' # Define the data directory, explicitly
 work_dir = '/data/CARD_singlecell/PCA_multiome/' # Define the working directory, explictly as the directory of this pipeline
@@ -27,6 +27,7 @@ cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
+cell_cycle_gene_file = work_dir + 'input/lab_cell_cycle_genes.txt'
 
 """Quality control thresholds"""
 mito_percent_thresh = 15 # Maximum percent of genes in a cell that can be mitochondrial
@@ -59,7 +60,7 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_annotated_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -180,16 +181,14 @@ rule rna_model:
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}
-        {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}
-        '
+        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
 
 rule rna_latent_transfer:
     input:
-        merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
-        hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir + 'atlas/02_filtered_anndata_rna.h5ad',
+        hvg_rna_anndata = work_dir + 'atlas/04_modeled_hvg_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir + 'atlas/04_modeled_anndata_rna.h5ad'
     singularity:
         envs['multiome']
     resources:
@@ -217,8 +216,8 @@ rule rna_cluster_based_QC:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
-        course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
-        course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
+        course_celltype = work_dir + 'figures/first_pass_RNA_UMAP_celltype.svg',
+        course_counts = work_dir + 'figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
         envs['multiome']
     resources:
