@@ -1,5 +1,3 @@
-"VERY IMPORTANT THAT YOU CHANGE THESE TO MATCH YOUR DATASET"
-
 # Base directories
 data_dir: #'/data/CARD_singlecell/Brain_atlas/PFC_Multiome/CELLRANGER/'
 work_dir: #'/data/CARD_singlecell/PFC_atlas/'
