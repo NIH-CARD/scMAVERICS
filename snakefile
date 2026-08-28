@@ -452,13 +452,16 @@ rule multivi:
         model_history = work_dir+'data/model_elbo/multiome_model_history.csv'
     params:
         model = work_dir+'data/models/multiome_polish/',
-        sample_key = sample_key
+        sample_key = sample_key,
+        random_number_seed = config['random_number_seed'],
+        max_epoch = config['max_epoch'],
+        machine_type = config['machine_type']
     threads:
         64
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
+        'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model} {params.random_number_seed} {params.max_epoch} {params.machine_type}'
 
 rule transfer_UMAP:
     input:
