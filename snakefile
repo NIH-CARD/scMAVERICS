@@ -377,24 +377,7 @@ rule filter_rna_atac:
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     script:
-        work_dir+'scripts/atac_filter.py'
-
-rule merge_multiome_rna:
-    input:
-        rna_anndata=expand(
-            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad', 
-            sample=samples
-            )
-    output:
-        merged_rna_anndata = work_dir+'atlas/03_filtered_anndata_rna.h5ad'
-    singularity:
-        envs['multiome']
-    params:
-        samples=samples
-    resources:
-        runtime=120, mem_mb=300000, disk_mb=10000#, slurm_partition='largemem' 
-    script:
-        work_dir+'scripts/rna_merge.py'
+        work_dir+'scripts/multiome_filter_rna_atac.py'
 
 rule merge_multiome_atac:
     input:
@@ -411,7 +394,7 @@ rule merge_multiome_atac:
     resources:
         runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'scripts/merge_atac.py'
+        work_dir+'scripts/atac_merge.py'
 
 rule merge_multiome:
     input:
@@ -461,7 +444,11 @@ rule multivi:
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
-        'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model} {params.random_number_seed} {params.max_epoch} {params.machine_type}'
+        'scripts/multiome_model.sh {input.multiome_object} \
+        {params.sample_key} {output.model_history} \
+        {output.multiome_object} {params.model} \
+        {params.random_number_seed} {params.max_epoch} \
+        {params.machine_type}'
 
 rule transfer_UMAP:
     input:

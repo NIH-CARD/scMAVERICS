@@ -3,6 +3,7 @@ import pandas as pd
 import scanpy as sc
 import snapatac2 as snap
 import scipy
+import os
 
 fragment_files = snakemake.input.fragment_file
 output_files = snakemake.output.output_files# Read in fragments
@@ -38,3 +39,5 @@ anndataset.obs['tsse'] = anndataset.adatas.obs['tsse']
 adata = anndataset.to_adata()
 # Consolidate and export straight to a single permanent file
 adata.write_h5ad(snakemake.output.merged_atac_anndata, compression = 'gzip')
+
+os.remove(work_dir+'/atlas/temp_filtered_anndata_atac.h5ad')
