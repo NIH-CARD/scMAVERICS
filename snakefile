@@ -57,7 +57,7 @@ envs = {
 
 rule all:
     input:
-
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
 
 """========================================================================="""
 """                                RNA portion                              """
