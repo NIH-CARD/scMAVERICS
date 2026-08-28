@@ -386,6 +386,13 @@ rule merge_multiome_atac:
             )
     output:
         merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad'
+        atac_anndata = expand(
+            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
+            zip,
+            batch=batches,
+            sample=samples
+            ),
+        temp_file = work_dir+'/atlas/temp_filtered_anndata_atac_1.h5ad',
     singularity:
         envs['multiome']
     params:
@@ -408,7 +415,7 @@ rule merge_multiome:
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/merge_multiome.py'
+        work_dir+'scripts/multiome_merge.py'
         
 rule multiome_feature_selection:
     input:
@@ -460,7 +467,7 @@ rule transfer_UMAP:
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/multivi_to_UMAP.py'
+        work_dir+'/scripts/multiome_latent_transfer.py'
 
 rule pychromvar:
     input:
