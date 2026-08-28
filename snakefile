@@ -319,8 +319,7 @@ rule consensus_peaks:
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
-        'scripts/MACS_consensus.py'
-
+        'scripts/atac_peak_consensus.py'
 
 rule merged_consensus_peak_anndata:
     input:
