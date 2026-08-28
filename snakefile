@@ -242,22 +242,22 @@ rule atac_merge:
         fragments=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz', 
             zip,
-            batch=working_batches,
-            sample=working_samples
+            batch=batches,
+            sample=samples
             )
     output:
         atac_anndata = expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
             zip,
-            batch=working_batches,
-            sample=working_samples
+            batch=batches,
+            sample=samples
             ),
         temp_file = work_dir+'/atlas/temp_filtered_anndata_atac.h5ad',
         merged_atac_anndata = work_dir+'/atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
     params:
-        samples=working_samples
+        samples=samples
     threads:
         64
     resources:
@@ -436,8 +436,8 @@ rule multiome_feature_selection:
     singularity:
         envs['multiome']
     params:
-        hvg = 3000,
-        hvp = 20000,
+        hvg = config['high_var_gene_num'],
+        hvp = config['high_var_peak_num'],
         sample_key = sample_key
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
