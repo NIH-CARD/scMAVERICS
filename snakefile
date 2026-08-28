@@ -484,7 +484,7 @@ rule pychromvar:
     resources:
         runtime=2880, mem_mb=1000000, slurm_partition='largemem'
     script:
-        'scripts/pychromvar.py'
+        'scripts/multiome_pychromvar.py'
 
 """========================================================================="""
 """                            ANALYSIS portion                             """
