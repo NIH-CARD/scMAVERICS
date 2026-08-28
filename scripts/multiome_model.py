@@ -10,12 +10,12 @@ import sys
 
 print(torch.cuda.is_available())
 
-scvi.settings.seed = sys.argv[6]
+scvi.settings.seed = int(sys.argv[6])
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
 mdata = mu.read(sys.argv[1])
-mdata
+
 # Setup SCVI on the data layer
 scvi.model.MULTIVI.setup_mudata(
     mdata,
@@ -34,7 +34,7 @@ mvi_model = scvi.model.MULTIVI(
 
 mvi_model.train(
     accelerator=sys.argv[8],
-    max_epochs=sys.argv[7],
+    max_epochs=int(sys.argv[7]),
     lr=1e-3,
     early_stopping=True,
     batch_size=256
