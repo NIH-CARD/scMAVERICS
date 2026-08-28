@@ -37,6 +37,7 @@ anndataset.obs['n_fragment'] = anndataset.adatas.obs['n_fragment']
 anndataset.obs['tsse'] = anndataset.adatas.obs['tsse']
 
 adata = anndataset.to_adata()
+adata.obs_names = adata.obs_names + '_' + adata.obs['sample']
 # Consolidate and export straight to a single permanent file
 adata.write_h5ad(snakemake.output.merged_atac_anndata, compression = 'gzip')
 
