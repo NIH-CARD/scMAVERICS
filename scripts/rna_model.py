@@ -9,7 +9,7 @@ import sys
 
 print(torch.cuda.is_available())
 
-scvi.settings.seed = sys.argv[6]
+scvi.settings.seed = int(sys.argv[6])
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
@@ -23,14 +23,14 @@ scvi.model.SCVI.setup_anndata(
 model = scvi.model.SCVI(
     adata, 
     dispersion="gene-batch", 
-    n_layers=sys.argv[7], 
-    n_latent=sys.argv[8], 
+    n_layers=int(sys.argv[7]), 
+    n_latent=int(sys.argv[8]), 
     gene_likelihood="nb"
 )
 
 # Train the model
 model.train(
-    max_epochs=sys.argv[9],
+    max_epochs=int(sys.argv[9]),
     accelerator=sys.argv[10],  
     early_stopping=True,
     early_stopping_patience=20
