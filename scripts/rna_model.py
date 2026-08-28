@@ -44,14 +44,6 @@ elbo.to_csv(sys.argv[3], index=False)
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
 adata.obsm['X_scvi'] = model.get_latent_representation()
 
-# Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
-sc.pp.neighbors(adata, use_rep='X_scvi')
-sc.tl.umap(adata, min_dist=0.3)
-# Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
-sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
-
 # Save the anndata object
 adata.write_h5ad(sys.argv[4], compression='gzip')
 
