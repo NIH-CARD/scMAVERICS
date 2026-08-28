@@ -10,8 +10,8 @@ configfile: "config.yaml"
 """File locations"""
 data_dir = '/data/CARD_singlecell/Brain_atlas/PCA_Multiome/' # Define the data directory, explicitly
 work_dir = '/data/CARD_singlecell/PCA_multiome/' # Define the working directory, explictly as the directory of this pipeline
-metadata_table = work_dir+'/input/sequenced_samples.csv' # Define where the metadata data exists for each sample to be processed
-gene_markers_file = work_dir+'/input/first_pass_genes.csv' # Define where celltypes/cell marker gene 
+metadata_table = work_dir+'input/sequenced_samples.csv' # Define where the metadata data exists for each sample to be processed
+gene_markers_file = work_dir+'input/first_pass_genes.csv' # Define where celltypes/cell marker gene 
 
 """Metadata parameters"""
 seq_batch_key = 'batch' # Key for sequencing batch, used for directory search`
@@ -38,8 +38,8 @@ min_peak_counts = 1000 # Minimum number of fragments per cell
 min_tsse = 2.5 # Minimum transcription start site enrichment
 
 """ Samples processed so far, remove once all samples have been sequenced"""
-working_samples = pd.read_csv(work_dir + '/input/sequenced_samples.csv')['CARD_ID'].to_list()
-working_batches = pd.read_csv(work_dir + '/input/sequenced_samples.csv')['batch'].to_list()
+working_samples = pd.read_csv(work_dir + 'input/sequenced_samples.csv')['CARD_ID'].to_list()
+working_batches = pd.read_csv(work_dir + 'input/sequenced_samples.csv')['batch'].to_list()
 
 batches = working_batches # Read in the list of batches and samples
 samples = working_samples
@@ -55,7 +55,8 @@ envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
     'tobias': 'envs/tobias.sif',
     'dreampy': 'envs/dreampy.sif',
-    'multiome': 'envs/multiome.sif'
+    'multiome': 'envs/multiome.sif',
+    'scenicplus': 'envs/scenicplus.sif',
     }
 
 rule all:
@@ -125,7 +126,7 @@ rule rna_filter:
         min_genes_per_cell = min_genes_per_cell,
         ribo_percent_thresh = ribo_percent_thresh
     resources:
-        runtime=120, mem_mb=100000, disk_mb=10000, slurm_partition='quick' 
+        runtime=120, mem_mb=100000, slurm_partition='quick' 
     script: 
         work_dir+'scripts/rna_filter.py'
 
@@ -176,10 +177,8 @@ rule rna_model:
         num_latent = config['num_latent'],
         max_epoch = config['max_epoch'],
         machine_type = config['machine_type']
-    threads:
-        64
     resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=2880, mem_mb=200000, gpu=2, gpu_model="a100"
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
 

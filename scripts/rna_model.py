@@ -9,7 +9,7 @@ import sys
 
 print(torch.cuda.is_available())
 
-scvi.settings.seed = sys.argv[6]
+scvi.settings.seed = int(sys.argv[6])
 torch.set_float32_matmul_precision('high')
 
 # Read in AnnData atlas object
@@ -23,14 +23,14 @@ scvi.model.SCVI.setup_anndata(
 model = scvi.model.SCVI(
     adata, 
     dispersion="gene-batch", 
-    n_layers=sys.argv[7], 
-    n_latent=sys.argv[8], 
+    n_layers=int(sys.argv[7]), 
+    n_latent=int(sys.argv[8]), 
     gene_likelihood="nb"
 )
 
 # Train the model
 model.train(
-    max_epochs=sys.argv[9],
+    max_epochs=int(sys.argv[9]),
     accelerator=sys.argv[10],  
     early_stopping=True,
     early_stopping_patience=20
@@ -43,14 +43,6 @@ elbo.to_csv(sys.argv[3], index=False)
 
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
 adata.obsm['X_scvi'] = model.get_latent_representation()
-
-# Calculate nearest neighbors and the UMAP from the X_scvi observable matrix
-sc.pp.neighbors(adata, use_rep='X_scvi')
-sc.tl.umap(adata, min_dist=0.3)
-# Calculate the leiden distance from the nearest neighbors, use a couple resolutions
-sc.tl.leiden(adata, resolution=2, key_added='leiden_2')
-sc.tl.leiden(adata, key_added='leiden')
-sc.tl.leiden(adata, resolution=.5, key_added='leiden_05')
 
 # Save the anndata object
 adata.write_h5ad(sys.argv[4], compression='gzip')

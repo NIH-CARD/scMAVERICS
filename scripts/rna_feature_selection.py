@@ -12,8 +12,9 @@ adata = ad.read_h5ad(snakemake.input.merged_rna_anndata)
 # Select for the most variable genes
 sc.pp.highly_variable_genes(
     adata, 
-    layer='log-norm',
-    n_top_genes=snakemake.params.num_hvgenes)
+    n_top_genes=snakemake.params.num_hvgenes,
+    subset=False,
+    flavor = 'seurat_v3')
 
 # Double check that no transcripts not found in cells are in the atlas
 sc.pp.filter_genes(adata, min_cells=10)
