@@ -35,8 +35,10 @@ min_tsse: 2.5
 
 # Latent space parameters
 high_var_gene_num: 2000
+high_var_peak_num: 20000
 random_number_seed: 0
 num_layers: 2
 num_latent: 30
 max_epoch: 1000
 machine_type: 'gpu'
+
