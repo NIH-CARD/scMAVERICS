@@ -38,16 +38,8 @@ dc.mt.ulm(
 acts = dc.get_acts(adata, obsm_key='ora_estimate')
 
 # Convert the ORA AnnData object to numpy array to rank
-# which cell type for each leiden cluster
-acts_v = acts.X.ravel()
-max_e = np.nanmax(acts_v[np.isfinite(acts_v)])
-acts.X[~np.isfinite(acts.X)] = max_e
-df = dc.rank_sources_groups(
-    acts, 
-    groupby=snakemake.params.leiden_cluster, 
-    reference='rest', 
-    method='t-test_overestim_var'
-    )
+score = dc.pp.get_obsm(adata, key="score_ulm")
+df = dc.tl.rankby_group(adata=score, groupby=snakemake.params.leiden_cluster, reference="rest", method="t-test_overestim_var")
 
 # Apply the best ranked cell type to a cluster-celltype dictionary
 annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dict()
