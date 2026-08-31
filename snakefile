@@ -213,7 +213,7 @@ rule rna_cluster_based_QC:
 
 rule atac_preprocess:
     input:
-        fragment_file=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
+        fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
         atac_anndata=data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
     singularity:
@@ -238,21 +238,21 @@ rule atac_filter:
 
 rule atac_merge:
     input:
-        fragments=expand(
+        fragment_file=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz', 
             zip,
             batch=batches,
             sample=samples
             )
     output:
-        atac_anndata = expand(
+        output_files = expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
             zip,
             batch=batches,
             sample=samples
             ),
-        temp_file = work_dir+'/atlas/temp_filtered_anndata_atac.h5ad',
-        merged_atac_anndata = work_dir+'/atlas/02_concat_atac.h5ad'
+        temp_file = work_dir+'atlas/temp_filtered_anndata_atac.h5ad',
+        merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
     params:
@@ -262,12 +262,12 @@ rule atac_merge:
     resources:
         runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'/scripts/atac_merge.py'
+        work_dir+'scripts/atac_merge.py'
 
 rule atac_fragment_pseudobulk:
     input:
-        merged_rna_anndata = work_dir+'/atlas/05_QC_filtered_anndata_rna.h5ad',
-        merged_atac_anndata = work_dir + '/atlas/02_filtered_anndata_atac_backup.h5ad',
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir + 'atlas/02_concat_atac.h5ad',
         fragment_file=expand(
             data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
             zip,
@@ -275,7 +275,7 @@ rule atac_fragment_pseudobulk:
             sample=samples
             )
     output:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudo_fragment_files = work_dir + 'data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     params:
         pseudobulk_param = 'celltype',
         samples=samples,
@@ -292,27 +292,27 @@ rule atac_fragment_pseudobulk:
 
 rule atac_celltype_call_peaks:
     input:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+        pseudo_fragment_files = work_dir + 'data/celltypes/{cell_type}/{cell_type}_fragments.bed'
     output: 
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
-        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+        xls = work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/celltypes/{cell_type}"
+        out_dir = work_dir + "data/celltypes/{cell_type}"
     resources:
         mem_mb=200000, runtime=2880
     singularity:
         envs['multiome']
     shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule consensus_peaks:
     input:
         narrow_peaks = expand(
-            work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
             cell_type = cell_types
             )
     output:
-        consensus_bed = work_dir + '/data/consensus_regions.bed'
+        consensus_bed = work_dir + 'data/consensus_regions.bed'
     singularity:
         envs['scenic']
     resources:
@@ -322,13 +322,13 @@ rule consensus_peaks:
 
 rule merged_consensus_peak_anndata:
     input:
-        consensus_bed = work_dir + '/data/consensus_regions.bed',
+        consensus_bed = work_dir + 'data/consensus_regions.bed',
         fragment_file=expand(
             data_dir + '{sample}/outs/atac_fragments.tsv.gz',
             sample=samples
             )
     output:
-        merged_atac_anndata = work_dir + '/atlas/03_consensus_peak_atac.h5ad',
+        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac.h5ad',
         output_files = expand(
             data_dir + '{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
             sample=samples
@@ -344,9 +344,9 @@ rule merged_consensus_peak_anndata:
     
 rule atac_spectral:
     input:
-        merged_atac_anndata = work_dir + '/atlas/03_consensus_peak_atac.h5ad'
+        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac.h5ad'
     output:
-        merged_atac_anndata = work_dir + '/atlas/04_modeled_anndata_atac.h5ad'
+        merged_atac_anndata = work_dir + 'atlas/04_modeled_anndata_atac.h5ad'
     params:
         num_features = 100000,
         sample_param = 'sample_id'
