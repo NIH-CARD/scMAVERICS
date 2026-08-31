@@ -33,10 +33,6 @@ dc.mt.ulm(
     tmin=1,
 )
 
-# Create a mini AnnData object with the over-represenation
-# analysis estimate (p-value of given cell marker)
-acts = dc.get_acts(adata, obsm_key='ora_estimate')
-
 # Convert the ORA AnnData object to numpy array to rank
 score = dc.pp.get_obsm(adata, key="score_ulm")
 df = dc.tl.rankby_group(adata=score, groupby=snakemake.params.leiden_cluster, reference="rest", method="t-test_overestim_var")
