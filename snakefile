@@ -185,7 +185,7 @@ rule rna_annotate:
     output:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad',
     params:
-        seq_batch_key = seq_batch_key
+        leiden_cluster = 'leiden_2'
     singularity:
         envs['multiome']
     resources:
