@@ -669,7 +669,7 @@ rule celltype_overlapping_peaks:
     output:
         celltype_overlapping_celltype_peaks = work_dir+'data/celltypes/{celltype}/{celltype}_overlapping_peaks.csv'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     resources:
         slurm_partition='quick'
     script:
@@ -850,7 +850,7 @@ rule create_bigwig_cell_disease:
     resources:
         mem_mb=1000000, runtime=400, slurm_partition='largemem'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     script:
         'scripts/atac_bigwig.py'
 
