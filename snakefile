@@ -15,7 +15,6 @@ cell_cycle_gene_file = work_dir+config['cell_cycle_genes']
 gene_info = work_dir+config['gene_info']
 gene_tss = work_dir+config['gene_tss']
 motifs = work_dir + config['motif_file']
-cell_cycle_gene_file = work_dir + config['lab_cell_cycle_genes']
 
 """Metadata parameters"""
 seq_batch_key = config['seq_batch_key'] # Key for sequencing batch, used for directory search
@@ -29,7 +28,7 @@ control = config['control_key'] # Define disease states
 diagnoses = config['diagnoses'] # Disease states to compare, keep as list of strings, unnecessary 
 #disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
 
-cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
+cell_types = pd.read_csv(gene_markers_file)['source'] # Define the cell types to look for, from gene marker file
 design_covariates = config['covariates'] # Design factors/covariates for DGEs and DARs
 reference_genome = config['reference_genome']
 genome_length = config['genome_length']
