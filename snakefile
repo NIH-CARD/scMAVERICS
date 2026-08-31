@@ -23,7 +23,7 @@ disease_param = 'Pathology' # Name of the disease parameter
 control = 'control' # Define disease states
 diseases = ['PD', 'DLB'] # Disease states to compare, keep as list of strings, unnecessary 
 disease_comparisons = ['control vs. PD', 'control vs. DLB', 'PD vs. DLB']
-cell_types = pd.read_csv(gene_markers_file)['cell type'] # Define the cell types to look for, from gene marker file
+cell_types = pd.read_csv(gene_markers_file)['source'] # Define the cell types to look for, from gene marker file
 design_covariates = ['Age','Sex'] # Design factors/covariates for DGEs and DARs
 reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 genome_length = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/chrNameLength.txt'
@@ -202,7 +202,8 @@ rule rna_annotate:
     output:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad',
     params:
-        seq_batch_key = seq_batch_key
+        seq_batch_key = seq_batch_key,
+        leiden_cluster = 'leiden_2'
     singularity:
         envs['multiome']
     resources:
