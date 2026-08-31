@@ -31,8 +31,6 @@ dc.mt.ulm(
     adata,
     net = marker_gene_df,
     tmin=1,
-    use_raw = False,
-    layer = 'log-norm'
 )
 
 # Create a mini AnnData object with the over-represenation
@@ -55,7 +53,7 @@ df = dc.rank_sources_groups(
 annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dict()
 
 # Apply the dictionary to the AnnData object
-adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs['leiden_2']]
+adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs[snakemake.params.leiden_cluster]]
 
 # Save the annotated AnnData object
 adata.write_h5ad(filename=snakemake.output.merged_rna_anndata, compression='gzip')
