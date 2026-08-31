@@ -163,7 +163,7 @@ rule rna_feature_selection:
     script:
         work_dir+'scripts/rna_feature_selection.py'
 
-rule rna_model:
+"""rule rna_model:
     input:
         hvg_rna_anndata = work_dir+'atlas/03_hvg_anndata_rna.h5ad'
     output:
@@ -181,7 +181,7 @@ rule rna_model:
         runtime=2880, mem_mb=200000, gpu=2, gpu_model="a100"
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
-
+"""
 rule rna_latent_transfer:
     input:
         merged_rna_anndata = work_dir + 'atlas/02_filtered_anndata_rna.h5ad',

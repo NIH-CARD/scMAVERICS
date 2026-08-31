@@ -27,14 +27,12 @@ marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
 
 # Run over-represenation analysis based on cell markers
 # provided in the marker_gene_df DataFrame.
-dc.run_ora(
-    mat=adata,
-    net=marker_gene_df,
-    source='cell type',
-    target='official gene symbol',
-    min_n=1,
-    verbose=True,
-    use_raw=False
+dc.mt.ulm(
+    adata,
+    net = gene_marker_df,
+    min_n = 1,
+    use_raw = False,
+    layer = 'log-norm'
 )
 
 # Create a mini AnnData object with the over-represenation
