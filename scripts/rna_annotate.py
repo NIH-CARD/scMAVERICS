@@ -38,7 +38,7 @@ score = dc.pp.get_obsm(adata, key="score_ulm")
 df = dc.tl.rankby_group(adata=score, groupby=snakemake.params.leiden_cluster, reference="rest", method="t-test_overestim_var")
 
 # Apply the best ranked cell type to a cluster-celltype dictionary
-annotation_dict = df.groupby('group').head(1).set_index('group')['names'].to_dict()
+annotation_dict = df.groupby('group').head(1).set_index('group')['name'].to_dict()
 
 # Apply the dictionary to the AnnData object
 adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs[snakemake.params.leiden_cluster]]
