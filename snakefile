@@ -215,26 +215,16 @@ rule atac_preprocess:
     input:
         fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
-        atac_anndata=data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
-    script:
-        work_dir+'scripts/atac_preprocess.py'
-
-rule atac_filter:
-    input:
-        atac_anndata = data_dir+'{sample}/outs/01_{sample}_anndata_object_atac.h5ad'
-    output:
-        atac_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad'
+        atac_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad'
     singularity:
         envs['multiome']
     params:
         min_peak_counts = min_peak_counts,
         min_tsse = min_tsse
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
-        work_dir+'scripts/atac_filter.py'
+        work_dir+'scripts/atac_preprocess.py'
 
 rule atac_merge:
     input:
