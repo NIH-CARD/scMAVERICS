@@ -20,7 +20,7 @@ print('Dataset merged')
 # Populate merged object with calculated metadata
 anndataset.obs_names = [
     f"{barcode}_{sample}" 
-    for barcode, sample in zip(merged_dataset.obs_names, merged_dataset.obs[snakemake.params.sample_key])
+    for barcode, sample in zip(anndataset.obs_names, anndataset.obs[snakemake.params.sample_key])
 ]
 anndataset.obs['n_fragment'] = anndataset.adatas.obs['n_fragment']
 anndataset.obs['tsse'] = anndataset.adatas.obs['tsse']
