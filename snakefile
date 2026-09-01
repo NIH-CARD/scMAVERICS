@@ -56,7 +56,16 @@ envs = {
 
 rule all:
     input:
-        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
+        celltype_normalized_bigwig = expand(
+            work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw',
+            cell_type = ['Astro', 'ExN', 'InN', 'MG', 'Oligo', 'OPC', 'VC'],
+            disease = ['Control', 'GD', 'GD+PD']
+        ),
+        cell_bedfile = expand(
+            work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
+            cell_type = ['Astro', 'ExN', 'InN', 'MG', 'Oligo', 'OPC', 'VC'],
+            disease = ['Control', 'GD', 'GD+PD']
+        )
 
 """========================================================================="""
 """                                RNA portion                              """
@@ -733,7 +742,7 @@ rule gene_peak_linkage:
         'scripts/gene_peak_linkage.py'
 
 """========================================================================="""
-"""                            CELLTYPE portion                             """
+"""                     CELLTYPE and REGION portion                         """
 """========================================================================="""
 
 rule annotate_bed:
@@ -790,7 +799,7 @@ rule atac_coaccessibilty:
     script:
         'scripts/circe_by_celltype.py'
 
-rule fragments_pseudobulk_cell_disease:
+"""rule fragments_pseudobulk_cell_disease:
     input:
         merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
         fragment_file=expand(
@@ -813,33 +822,33 @@ rule fragments_pseudobulk_cell_disease:
     resources:
         runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
     script:
-        'scripts/cell_disease_pseudobulk.py'
+        'scripts/cell_disease_pseudobulk.py'"""
 
 rule MACS2_peak_cell_disease:
     input:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
+        pseudo_fragment_files = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
     output: 
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
-        narrow_peak = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.narrowPeak"
+        xls = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        narrow_peak = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/celltypes/{cell_type}",
+        out_dir = work_dir + "/data/PFC_celltypes/{cell_type}",
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease
     resources:
-        mem_mb=200000, runtime=960
+        mem_mb=200000, runtime=180, slurm_partition='quick'
     singularity:
         envs['multiome']
     shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type}_{wildcards.disease} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type}_{wildcards.disease} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule create_bigwig_cell_disease:
     input:
-        pseudo_fragment_file = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
+        pseudo_fragment_file = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
     output:
-        celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
-        celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
+        celltype_bigwig = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
     resources:
-        mem_mb=1000000, runtime=400, slurm_partition='largemem'
+        mem_mb=100000, runtime=180, slurm_partition='quick'
     singularity:
         envs['multiome']
     script:
@@ -847,22 +856,22 @@ rule create_bigwig_cell_disease:
 
 rule celltype_bed_cell_disease:
     input:
-        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
-        blacklist = work_dir + '/input/hg38-blacklist.bed'
+        xls = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        blacklist = work_dir + 'input/hg38-blacklist.bed'
     singularity:
         envs['multiome']
     output:
-        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+        cell_bedfile = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     script:
         'scripts/MACS_to_bed.py'
 
 rule annotate_bed_cell_disease:
     input:
-        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+        cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
+        cell_annotated_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
     resources:
-        runtime=30, mem_mb=50000, 
+        runtime=30, mem_mb=50000, slurm_partition='quick'
     shell:
         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
