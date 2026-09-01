@@ -51,17 +51,15 @@ subtypes = []
 
 # Singularity containers to be downloaded from Quay.io, done in snakemake.sh
 envs = {
-    'snapatac2': 'envs/snapatac2.sif',
     'singlecell': 'envs/single_cell_gpu.sif',
     'tobias': 'envs/tobias.sif',
-    'dreampy': 'envs/dreampy.sif',
     'multiome': 'envs/multiome.sif',
     'scenicplus': 'envs/scenicplus.sif',
     }
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
+        merged_atac_anndata = work_dir + 'atlas/04_modeled_anndata_atac.h5ad'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -215,7 +213,7 @@ rule rna_cluster_based_QC:
     input:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna_1.h5ad',
         course_celltype = work_dir + 'figures/first_pass_RNA_UMAP_celltype.svg',
         course_counts = work_dir + 'figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
@@ -224,3 +222,139 @@ rule rna_cluster_based_QC:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
         work_dir + '/scripts/rna_cluster_based_QC.py'
+
+
+"""========================================================================="""
+"""                               ATAC portion                              """
+"""========================================================================="""
+
+rule atac_preprocess:
+    input:
+        fragment_file=data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz'
+    output:
+        atac_anndata = data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_atac.h5ad'
+    singularity:
+        envs['multiome']
+    params:
+        min_peak_counts = min_peak_counts,
+        min_tsse = min_tsse,
+        consensus_bed = None
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        work_dir+'scripts/atac_preprocess.py'
+
+rule atac_merge:
+    input:
+        adatas=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_atac.h5ad', 
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
+    singularity:
+        envs['multiome']
+    params:
+        samples=samples,
+        sample_key = sample_key
+    threads:
+        32
+    resources:
+        runtime=720, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        work_dir+'/scripts/atac_merge.py'
+
+rule atac_fragment_pseudobulk:
+    input:
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_atac_anndata = work_dir + 'atlas/02_concat_atac.h5ad',
+        fragment_file=expand(
+            data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        pseudo_fragment_files = work_dir + 'data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+    params:
+        pseudobulk_param = 'celltype',
+        samples=samples,
+        sample_param_name = sample_key,
+        cell_type = lambda wildcards, output: output[0].split("/")[-2]
+    singularity:
+        envs['multiome']
+    threads:
+        64
+    resources:
+        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+    script:
+        'scripts/atac_fragment_pseudobulk.py'
+
+rule atac_celltype_call_peaks:
+    input:
+        pseudo_fragment_files = work_dir + 'data/celltypes/{cell_type}/{cell_type}_fragments.bed'
+    output: 
+        xls = work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        narrow_peak = work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak"
+    params:
+        out_dir = work_dir + "data/celltypes/{cell_type}"
+    resources:
+        mem_mb=200000, runtime=2880
+    singularity:
+        envs['multiome']
+    shell:
+        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+
+rule consensus_peaks:
+    input:
+        narrow_peaks = expand(
+            work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
+            cell_type = cell_types
+            )
+    output:
+        consensus_bed = work_dir + 'data/consensus_regions.bed'
+    singularity:
+        envs['scenicplus']
+    resources:
+        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+    script:
+        'scripts/atac_peak_consensus.py'
+
+rule merged_consensus_peak_anndata:
+    input:
+        consensus_bed = work_dir + 'data/consensus_regions.bed',
+        fragment_file=expand(
+            data_dir + 'batch{batch}/cellranger/{sample}-ARC/outs/atac_fragments.tsv.gz',
+            zip,
+            batch=batches,
+            sample=samples
+            )
+    output:
+        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac.h5ad',
+    singularity:
+        envs['multiome']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=3000000, slurm_partition='largemem'
+    script:
+        'scripts/atac_merge.py'
+    
+rule atac_spectral:
+    input:
+        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac.h5ad'
+    output:
+        merged_atac_anndata = work_dir + 'atlas/04_modeled_anndata_atac.h5ad'
+    params:
+        num_features = 100000,
+        sample_param = 'sample_id'
+    singularity:
+        envs['multiome']
+    threads:
+        32
+    resources:
+        runtime=1440, mem_mb=250000
+    script:
+        'scripts/atac_spectral.py'
