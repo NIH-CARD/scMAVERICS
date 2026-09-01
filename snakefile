@@ -220,7 +220,8 @@ rule atac_preprocess:
         envs['multiome']
     params:
         min_peak_counts = min_peak_counts,
-        min_tsse = min_tsse
+        min_tsse = min_tsse,
+        consensus_bed = None
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
