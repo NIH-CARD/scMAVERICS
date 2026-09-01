@@ -3,42 +3,33 @@ import pandas as pd
 import scanpy as sc
 import snapatac2 as snap
 import scipy
-import os
 
-fragment_files = snakemake.input.fragment_file
-output_files = snakemake.output.output_files# Read in fragments
-adatas = snap.pp.import_fragments(
-        fragment_files, 
-        file = output_files,
-        chrom_sizes=snap.genome.hg38.chrom_sizes,
-        sorted_by_barcode=False,
-        min_num_fragments=1000
-        )
+# Read in anndata objects using backed mode
+adatas = [snap.read(f, backed="r") for f in snakemake.input.adatas]
+print('Done reading adatas')
 
-snap.metrics.tsse(adatas, snap.genome.hg38)
+# 
+anndataset = snap.concat(
+    adatas, 
+    keys=snakemake.params.samples, 
+    label=snakemake.params.sample_key,
+    file=snakemake.output.merged_atac_anndata
+)
+print('Dataset merged')
 
-snap.pp.filter_cells(adatas, min_tsse=2.5)
-
-if snakemake.input.consensus_bed != None:
-        snap.pp.make_peak_matrix(
-        adatas,
-        inplace = True,
-        peak_file = snakemake.input.consensus_bed,
-        file = None,
-        summary_type = 'sum'
-        )
-
-anndataset = snap.AnnDataSet(
-    adatas=[(str(f.filename).split('/02_')[-1].split('_anndata_filtered_atac.h5ad')[0], f) for f in adatas], 
-    filename=work_dir+'/atlas/temp_filtered_anndata_atac.h5ad')
-
-dataset = snap.AnnDataSet(adatas=adatas, filename=snakemake.output.temp_file)
+# Populate merged object with calculated metadata
+anndataset.obs_names = [
+    f"{barcode}_{sample}" 
+    for barcode, sample in zip(merged_dataset.obs_names, merged_dataset.obs[snakemake.params.sample_key])
+]
 anndataset.obs['n_fragment'] = anndataset.adatas.obs['n_fragment']
 anndataset.obs['tsse'] = anndataset.adatas.obs['tsse']
 
-adata = anndataset.to_adata()
-adata.obs_names = adata.obs_names + '_' + adata.obs['sample']
-# Consolidate and export straight to a single permanent file
-adata.write_h5ad(snakemake.output.merged_atac_anndata, compression = 'gzip')
+# Close input files
+for adata in adatas:
+    adata.close()
+print('Anndata objects closed')
 
-os.remove(work_dir+'/atlas/temp_filtered_anndata_atac.h5ad')
+# Close merged output file
+anndataset.close()
+print('Merged anndata object closed')

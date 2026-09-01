@@ -228,25 +228,19 @@ rule atac_preprocess:
 
 rule atac_merge:
     input:
-        fragment_file=expand(
-            data_dir+'{sample}/outs/atac_fragments.tsv.gz', 
+        adatas=expand(
+            data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad', 
             zip,
             batch=batches,
             sample=samples
             )
     output:
-        output_files = expand(
-            data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
-            zip,
-            batch=batches,
-            sample=samples
-            ),
-        temp_file = work_dir+'atlas/temp_filtered_anndata_atac.h5ad',
         merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
     params:
-        samples=samples
+        samples=samples,
+        sample_key = sample_key
     threads:
         64
     resources:
