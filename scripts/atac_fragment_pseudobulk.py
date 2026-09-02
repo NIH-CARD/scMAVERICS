@@ -15,6 +15,9 @@ rna = rna[rna.obs_names.intersection(atac.obs_names)]
 # Port cell data from final RNA atlas to cisTopic pseudobulked
 cell_df = rna.obs
 
+if 'cell_barcode' not in cell_df.columns:
+    cell_df['cell_barcode'] = [x.split('-1_')[0] + '-1' for x in cell_df.index]
+
 # Metadata specific column names
 sample_value = snakemake.params.sample_param_name
 
