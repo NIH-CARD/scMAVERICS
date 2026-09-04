@@ -56,33 +56,26 @@ envs = {
 
 rule all:
     input:
-        celltype_normalized_bigwig = expand(
-            work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw',
-            cell_type = ['Astro', 'ExN', 'InN', 'MG', 'Oligo', 'OPC', 'VC'],
-            disease = ['Control', 'GD', 'GD+PD']
-        ),
-        cell_bedfile = expand(
-            work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
-            cell_type = ['Astro', 'ExN', 'InN', 'MG', 'Oligo', 'OPC', 'VC'],
-            disease = ['Control', 'GD', 'GD+PD']
-        )
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
+            
 
 """========================================================================="""
 """                                RNA portion                              """
 """========================================================================="""
 
-rule cellbender:
+
+"""rule cellbender:
     input:
         rna_anndata =data_dir+'{sample}/outs/raw_feature_bc_matrix.h5',
-        cwd = data_dir+'{sample}-ARC/outs/'
+        cwd = data_dir+'{sample}/outs/'
     output:
-        rna_anndata = data_dir+'{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
+        rna_anndata = data_dir+'{sample}/outs/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}'
     resources:
-        runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
+        runtime=600, mem_mb=200000, gpu=1, gpu_model='v100x'
     shell:
-        work_dir+'scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
+        work_dir+'scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'"""
 
 rule rna_preprocess:
     input:
@@ -172,10 +165,10 @@ rule rna_model:
 
 rule rna_latent_transfer:
     input:
-        merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
-        hvg_rna_anndata = work_dir + '/atlas/04_modeled_hvg_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir + 'atlas/02_filtered_anndata_rna.h5ad',
+        hvg_rna_anndata = work_dir + 'atlas/04_modeled_hvg_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir + 'atlas/04_modeled_anndata_rna.h5ad'
     singularity:
         envs['multiome']
     resources:
@@ -201,14 +194,14 @@ rule rna_cluster_based_QC:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad'
     output:
         merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
-        course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
-        course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
+        course_celltype = work_dir + 'figures/first_pass_RNA_UMAP_celltype.svg',
+        course_counts = work_dir + 'figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
         envs['multiome']
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir + '/scripts/rna_cluster_based_QC.py'
+        work_dir + 'scripts/rna_cluster_based_QC.py'
 
 
 """========================================================================="""
@@ -807,7 +800,7 @@ rule atac_coaccessibilty:
             sample=samples,
             )
     output:
-        pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
+        pseudo_fragment_files = work_dir + '/data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
     params:
         pseudobulk_param = 'cell_type',
         samples=samples,
@@ -826,12 +819,12 @@ rule atac_coaccessibilty:
 
 rule MACS2_peak_cell_disease:
     input:
-        pseudo_fragment_files = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
+        pseudo_fragment_files = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
     output: 
-        xls = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
-        narrow_peak = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.narrowPeak"
+        xls = work_dir + "data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        narrow_peak = work_dir + "data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.narrowPeak"
     params:
-        out_dir = work_dir + "/data/PFC_celltypes/{cell_type}",
+        out_dir = work_dir + "/data/{region}_celltypes/{cell_type}",
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease
     resources:
@@ -843,12 +836,12 @@ rule MACS2_peak_cell_disease:
 
 rule create_bigwig_cell_disease:
     input:
-        pseudo_fragment_file = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
+        pseudo_fragment_file = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_fragment.bed'
     output:
-        celltype_bigwig = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
-        celltype_normalized_bigwig = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
+        celltype_bigwig = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
+        celltype_normalized_bigwig = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
     resources:
-        mem_mb=100000, runtime=180, slurm_partition='quick'
+        mem_mb=200000, runtime=180, slurm_partition='quick'
     singularity:
         envs['multiome']
     script:
@@ -856,20 +849,20 @@ rule create_bigwig_cell_disease:
 
 rule celltype_bed_cell_disease:
     input:
-        xls = work_dir + "data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
+        xls = work_dir + "data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.xls",
         blacklist = work_dir + 'input/hg38-blacklist.bed'
     singularity:
         envs['multiome']
     output:
-        cell_bedfile = work_dir + 'data/PFC_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+        cell_bedfile = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     script:
         'scripts/MACS_to_bed.py'
 
 rule annotate_bed_cell_disease:
     input:
-        cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+        cell_bedfile = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
     output:
-        cell_annotated_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
+        cell_annotated_bedfile = work_dir + 'data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     shell:
@@ -878,8 +871,8 @@ rule annotate_bed_cell_disease:
 rule export_atac_cell_disease:
     input:
         merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
-        cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
+        cell_bedfile = work_dir + '/data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed',
+        cell_annotated_bedfile = work_dir + '/data/{region}_celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed',
         fragment_files=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             sample=samples,

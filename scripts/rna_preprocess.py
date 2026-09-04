@@ -38,9 +38,6 @@ sc.pp.calculate_qc_metrics(adata, qc_vars=['rb', 'mt'], percent_top=None, log1p=
 for key in metadata.to_dict():
     adata.obs[key] = metadata[key]
 
-# Normalize data
-sc.pp.normalize_total(adata)
-
 # Calculate cell cycle()
 cell_cycle_genes = [x.strip() for x in open('input/lab_cell_cycle_genes.txt')]
 s_genes = cell_cycle_genes[:43]
