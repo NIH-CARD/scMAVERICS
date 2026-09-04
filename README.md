@@ -7,6 +7,8 @@ Disclaimer: This pipeline is built to run with large (>100 sample) datasets on t
 
 This work is now published in *Cell Reports* (https://doi.org/10.1016/j.celrep.2026.117110)! Please use this publication for citation.
 
+Tutorial on how to use this pipeline at https://scmaverics.readthedocs.io/en/latest/
+
 > **🚧 Main branch is currently being upgraded to incorporate methods tested out in SN, PFC_PSP, and PCA branches. Please use version 1.0.0 that is found in our *Cell Reports* paper until version 1.2 goes live.**
 
 Focus on the analysis, not the processing.
