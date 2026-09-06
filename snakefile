@@ -229,13 +229,15 @@ rule atac_preprocess:
 
 rule atac_merge:
     input:
+        fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
+    output:
         adatas=expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad', 
             zip,
             batch=batches,
             sample=samples
-            )
-    output:
+            ),
+        temp_merged_anndate = work_dir+'atlas/temp_atac_delete_later.h5ad',
         merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
