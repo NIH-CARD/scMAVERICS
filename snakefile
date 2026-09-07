@@ -211,24 +211,9 @@ rule rna_cluster_based_QC:
 """                               ATAC portion                              """
 """========================================================================="""
 
-rule atac_preprocess:
-    input:
-        fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
-    output:
-        atac_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad'
-    singularity:
-        envs['multiome']
-    params:
-        min_peak_counts = min_peak_counts,
-        min_tsse = min_tsse,
-        consensus_bed = None
-    resources:
-        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
-    script:
-        work_dir+'scripts/atac_preprocess.py'
-
 rule atac_merge:
     input:
+        consensus_bed=None,
         fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
     output:
         adatas=expand(
@@ -237,7 +222,7 @@ rule atac_merge:
             batch=batches,
             sample=samples
             ),
-        temp_merged_anndate = work_dir+'atlas/temp_atac_delete_later.h5ad',
+        temp_merged_anndate = temp(work_dir+'atlas/temp_atac_delete_later.h5ad'),
         merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
