@@ -49,6 +49,6 @@ elbo.to_csv(sys.argv[3], index=False)
 mdata.obsm['X_multivi'] = mvi_model.get_latent_representation()
 
 # Save the anndata object
-mdata.write_h5ad(sys.argv[4], compression='gzip')
+mdata.write_h5mu(sys.argv[4], compression='gzip')
 
 mvi_model.save(sys.argv[5], overwrite=True)

@@ -357,7 +357,7 @@ rule merge_multiome_atac:
             sample=samples
             )
     output:
-        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad'
+        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad',
         atac_anndata = expand(
             data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
             zip,
