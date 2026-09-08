@@ -31,7 +31,7 @@ model = scvi.model.SCVI(
 # Train the model
 model.train(
     max_epochs=int(sys.argv[9]),
-    accelerator=sys.argv[10],  
+    accelerator='gpu',  
     early_stopping=True,
     early_stopping_patience=20
 )
