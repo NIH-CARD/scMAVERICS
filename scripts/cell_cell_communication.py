@@ -20,5 +20,11 @@ li.mt.cellphonedb(
     n_jobs=snakemake.threads
     )
 
-cellphone_df = pd.read_csv(snakemake.output.cell_cell_communication_data, index = False)
-cellphone_df
+li.mt.rank_aggregate(control_adata, 
+                     groupby='celltype',
+                     resource_name='consensus',
+                     expr_prop=0.1,
+                     verbose=True)
+
+cellphone_df = control_adata.uns['li_res'].copy()
+cellphone_df.to_csv(snakemake.output.cell_cell_communication_data, index=None)

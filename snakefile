@@ -51,7 +51,8 @@ envs = {
     'tobias': 'envs/tobias.sif',
     'dreampy': 'envs/dreampy.sif',
     'multiome': 'envs/multiome.sif',
-    'scenic': 'envs/scenicplus.sif'
+    'scenic': 'envs/scenicplus.sif',
+    'liana': 'envs/liana_sc.sif'
     }
 
 rule all:
@@ -534,6 +535,8 @@ rule cell_cell_communication:
     params:
         control = control,
         disease_param = disease_param
+    singularity:
+        envs['liana']
     threads:
         64
     resources:
