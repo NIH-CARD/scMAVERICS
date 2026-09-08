@@ -719,6 +719,17 @@ rule gene_peak_linkage:
 """                            CELLTYPE portion                             """
 """========================================================================="""
 
+rule celltype_bed:
+    input:
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + 'input/hg38-blacklist.bed'
+    singularity:
+        envs['atac_fragment']
+    output:
+        cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
+
 rule annotate_bed:
     input:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_peaks.bed'
