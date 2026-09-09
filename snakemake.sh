@@ -16,6 +16,7 @@ apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatch
 apptainer pull --disable-cache envs/multiome.sif oras://quay.io/adamcatchingdti/multiome.sif:1.2
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 apptainer pull --disable-cache envs/tobias.sif docker://naotokubota/tobias:0.13.3
+apptainer pull --disable-cache envs/liana_sc.sif oras://quay.io/ambertrujillo/liana_sc:1.0
 
 # Load singularity
 module load singularity

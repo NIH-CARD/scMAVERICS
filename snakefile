@@ -51,7 +51,8 @@ envs = {
     'tobias': 'envs/tobias.sif',
     'dreampy': 'envs/dreampy.sif',
     'multiome': 'envs/multiome.sif',
-    'scenic': 'envs/scenicplus.sif'
+    'scenic': 'envs/scenicplus.sif',
+    'liana': 'envs/liana_sc.sif'
     }
 
 rule all:
@@ -356,7 +357,7 @@ rule merge_multiome_atac:
             sample=samples
             )
     output:
-        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad'
+        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad',
         atac_anndata = expand(
             data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
             zip,
@@ -534,6 +535,8 @@ rule cell_cell_communication:
     params:
         control = control,
         disease_param = disease_param
+    singularity:
+        envs['liana']
     threads:
         64
     resources:
@@ -715,6 +718,17 @@ rule gene_peak_linkage:
 """========================================================================="""
 """                            CELLTYPE portion                             """
 """========================================================================="""
+
+rule celltype_bed:
+    input:
+        xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
+        blacklist = work_dir + 'input/hg38-blacklist.bed'
+    singularity:
+        envs['atac_fragment']
+    output:
+        cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+    script:
+        'scripts/MACS_to_bed.py'
 
 rule annotate_bed:
     input:
