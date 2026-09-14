@@ -1,0 +1,9 @@
+site_name: scMAVERICS
+site_author: Adam Catching
+
+theme:
+  name: readthedocs 
+  features:
+    - navigation.indexes
+nav:
+  - 0. Introduction: index.md

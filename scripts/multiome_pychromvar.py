@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import gc
 import scanpy as sc
-import pychromvar as pc
+import scripts.multiome_pychromvar as pc
 import muon as mu
 from pyjaspar import jaspardb
 import scipy.sparse as sp

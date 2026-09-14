@@ -1,5 +1,3 @@
-"VERY IMPORTANT THAT YOU CHANGE THESE TO MATCH YOUR DATASET"
-
 # Base directories
 data_dir: #'/data/CARD_singlecell/Brain_atlas/PFC_Multiome/CELLRANGER/'
 work_dir: #'/data/CARD_singlecell/PFC_atlas/'
@@ -14,6 +12,7 @@ cell_cycle_genes: 'input/lab_cell_cycle_genes.txt'
 gene_tss: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/regions/tss.bed'
 gene_info: '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/star/geneInfo.tab'
 motif_file: 'input/jaspar_2024_hsapiens.meme'
+lab_cell_cycle_genes: 'input/lab_cell_cycle_genes'
 
 # Sample parameters
 seq_batch_key: 'batch'
@@ -37,8 +36,10 @@ min_tsse: 2.5
 
 # Latent space parameters
 high_var_gene_num: 2000
+high_var_peak_num: 20000
 random_number_seed: 0
 num_layers: 2
 num_latent: 30
 max_epoch: 1000
 machine_type: 'gpu'
+

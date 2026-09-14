@@ -2,6 +2,9 @@
 #############################
 notebook
 
+# Ignore data
+data
+
 # Data that should not leave the cluster
 data/*.csv
 data/*.gtf

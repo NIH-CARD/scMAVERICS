@@ -18,4 +18,4 @@ export TMPDIR=$2
 echo $TMPDIR
 
 # Iterate through the array of sample directories
-cd $TMPDIR; pwd; cellbender remove-background --input $1 --output $3 --checkpoint "$TMPDIR"/ckpt.tar.gz --cuda; cd ..
+cd $TMPDIR; pwd; cellbender remove-background --input $1 --output $3 --checkpoint "$TMPDIR"/ckpt.tar.gz --cuda --posterior-batch-size 64; cd ..
