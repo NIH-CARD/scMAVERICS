@@ -18,6 +18,7 @@ motif_file: 'input/jaspar_2024_hsapiens.meme'
 # Sample parameters
 seq_batch_key: 'batch'
 sample_key: 'folder_name' 
+sex_key: 'Sex' # Column in metadata that contains
 disease_param: 'Neurological_dx'
 control_key: 'control'
 diagnoses:
