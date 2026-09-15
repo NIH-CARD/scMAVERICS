@@ -13,7 +13,9 @@ atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
 rna = rna[rna.obs_names.intersection(atac.obs_names)]
 
 # Port cell data from final RNA atlas to cisTopic pseudobulked
-cell_df = rna.obs
+cell_df = pd.DataFrame(rna.obs)
+
+cell_df['cell_barcode'] = [x.split('-1_')[0] + '-1' for x in cell_df.index]
 
 # Metadata specific column names
 sample_value = snakemake.params.sample_param_name
@@ -27,7 +29,7 @@ for i, sample in enumerate(samples):
     bed_location = snakemake.input.fragment_file[i]
     # Load fragment with polars
     print(f'Loading sample {sample} fragments')
-    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=8)
+    pl_fragment = pl.read_csv(bed_location, separator='\t', comment_prefix='#', n_threads=snakemake.threads)
 
     # To make sure the same columns are being read in
     num_blank = len(pl_fragment.columns) - 5

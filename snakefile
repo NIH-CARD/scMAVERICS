@@ -59,7 +59,7 @@ envs = {
 
 rule all:
     input:
-        merged_atac_anndata = work_dir + 'atlas/04_modeled_anndata_atac.h5ad'
+        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
 
 # This needs to be forced to run once
 """rule cellbender:
@@ -244,7 +244,7 @@ rule atac_preprocess:
     script:
         work_dir+'scripts/atac_preprocess.py'
 
-rule atac_merge:
+"""rule atac_merge:
     input:
         adatas=expand(
             data_dir+'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_atac.h5ad', 
@@ -264,7 +264,7 @@ rule atac_merge:
     resources:
         runtime=720, mem_mb=1000000, slurm_partition='largemem' 
     script:
-        work_dir+'/scripts/atac_merge.py'
+        work_dir+'/scripts/atac_merge.py'"""
 
 rule atac_fragment_pseudobulk:
     input:
@@ -286,9 +286,9 @@ rule atac_fragment_pseudobulk:
     singularity:
         envs['multiome']
     threads:
-        64
+        32
     resources:
-        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
     script:
         'scripts/atac_fragment_pseudobulk.py'
 
@@ -305,7 +305,7 @@ rule atac_celltype_call_peaks:
     singularity:
         envs['multiome']
     shell:
-        "macs2 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
+        "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
 rule consensus_peaks:
     input:
@@ -332,7 +332,17 @@ rule merged_consensus_peak_anndata:
             sample=samples
             )
     output:
-        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac.h5ad',
+        merged_atac_anndata = work_dir + 'atlas/03_consensus_peak_atac_1.h5ad',
+        temp_merged_anndata = temp(work_dir+'atlas/temp_atac_delete_later.h5ad'),
+        output_files = expand(
+            data_dir + 'batch{batch}/cellranger/{sample}-ARC/outs/02_{sample}_anndata_filtered_atac.h5ad',
+            zip,
+            batch=batches,
+            sample=samples
+            ),
+    params:
+        samples=samples,
+        sample_key = sample_key
     singularity:
         envs['multiome']
     threads:
@@ -358,3 +368,91 @@ rule atac_spectral:
         runtime=1440, mem_mb=250000
     script:
         'scripts/atac_spectral.py'
+
+"""========================================================================="""
+"""                               MULTI portion                             """
+"""========================================================================="""
+
+"""rule merge_multiome:
+    input:
+        merged_atac_anndata = work_dir+'atlas/03_consensus_peak_atac.h5ad',
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
+    output:
+        multiome_object = work_dir+'atlas/03_merged_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        sample_key=sample_key
+    resources:
+        runtime=1440, mem_mb=3000000, slurm_partition='largemem'
+    script:
+        work_dir+'scripts/multiome_merge.py'"""
+        
+"""rule multiome_feature_selection:
+    input:
+        multiome_object = work_dir+'atlas/03_merged_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'atlas/04_highly_variable_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    params:
+        hvg = config['high_var_gene_num'],
+        hvp = config['high_var_peak_num'],
+        sample_key = sample_key
+    resources:
+        runtime=480, mem_mb=1500000, slurm_partition='largemem'
+    script:
+        work_dir+'scripts/multiome_feature_selection.py'"""
+
+rule multivi:
+    input:
+        multiome_object = work_dir+'atlas/04_highly_variable_multiome.h5mu'
+    output:
+        multiome_object = work_dir+'atlas/05_highly_variable_multivi_multiome_1.h5mu',
+        model_history = work_dir+'data/model_elbo/multiome_model_history.csv'
+    params:
+        model = work_dir+'data/models/multiome_polish/',
+        sample_key = sample_key,
+        random_number_seed = config['random_number_seed'],
+        max_epoch = config['max_epoch'],
+        machine_type = config['machine_type']
+    threads:
+        64
+    resources:
+        runtime=2880, mem_mb=120000, gpu=1, gpu_model='a100'
+    shell:
+        'scripts/multiome_model.sh {input.multiome_object} \
+        {params.sample_key} {output.model_history} \
+        {output.multiome_object} {params.model} \
+        {params.random_number_seed} {params.max_epoch} \
+        {params.machine_type}'
+
+rule transfer_UMAP:
+    input:
+        multiome_object = work_dir+'atlas/03_merged_multiome.h5mu',
+        hvg_multiome_anndata = work_dir + 'atlas/05_highly_variable_multivi_multiome_1.h5mu'
+    output:
+        multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        work_dir+'scripts/multiome_latent_transfer.py'
+
+rule pychromvar:
+    input:
+        merged_multiome = work_dir + 'atlas/06_polished_multiome.h5mu',
+        reference_genome = reference_genome
+    output:
+        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
+    params:
+        chunk_size = 100000
+    singularity:
+        envs['multiome']
+    threads:
+        16
+    resources:
+        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
+    script:
+        'scripts/multiome_pychromvar.py'
