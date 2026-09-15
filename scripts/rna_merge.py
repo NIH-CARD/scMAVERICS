@@ -30,7 +30,8 @@ pdata = dc.pp.pseudobulk(
     mode='sum'
 )
 
-# Dropping unreliable pseudobulk samples
+dc.pp.filter_samples(pdata, min_cells=snakemake.params.min_cells)
+
 pdata.layers["counts"] = pdata.X.copy()
 sc.pp.normalize_total(pdata, target_sum=1e4)
 sc.pp.log1p(pdata)
@@ -47,15 +48,18 @@ def gap_threshold(expr):
     sorted_vals = np.sort(expr)
     gaps = np.diff(sorted_vals)
     max_gap_idx = np.argmax(gaps)
-    return (sorted_vals[max_gap_idx] + sorted_vals[max_gap_idx + 1]) / 2
+    low_cluster = sorted_vals[:max_gap_idx + 1]
+    high_cluster = sorted_vals[max_gap_idx + 1:]
+    thresh = (low_cluster[-1] + high_cluster[0]) / 2
+    return thresh, low_cluster.max(), high_cluster.min()
 
-xist_thresh = gap_threshold(xist_expr)
-rps4y1_thresh = gap_threshold(rps4y1_expr)
+xist_thresh, xist_low_max, xist_high_min = gap_threshold(xist_expr)
+rps4y1_thresh, rps4y1_low_max, rps4y1_high_min = gap_threshold(rps4y1_expr)
 
-xist_high = xist_expr > xist_thresh
-xist_low = ~xist_high
-rps4y1_high = rps4y1_expr > rps4y1_thresh
-rps4y1_low = ~rps4y1_high
+xist_high = xist_expr >= xist_high_min
+xist_low = xist_expr <= xist_low_max
+rps4y1_high = rps4y1_expr >= rps4y1_high_min
+rps4y1_low = rps4y1_expr <= rps4y1_low_max
 
 sex_pred = np.array(['Unknown'] * pdata.n_obs, dtype=object)
 sex_pred[xist_high & rps4y1_low] = 'Female'
@@ -65,7 +69,7 @@ pdata.obs['predicted_sex'] = pd.Categorical(sex_pred, categories=['Female', 'Mal
 pdata.obs['XIST_expr'] = xist_expr
 pdata.obs['RPS4Y1_expr'] = rps4y1_expr
 
-sex_map = pdata.obs.set_index(snakemake.params.samples)['predicted_sex']
+sex_map = pdata.obs.set_index("SampleID")['predicted_sex']
 adata.obs['predicted_sex'] = adata.obs[snakemake.params.samples].map(sex_map)
 
 # Make a plot
