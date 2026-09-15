@@ -56,7 +56,7 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
+        merged_multiome = work_dir+'atlas/08_multiome.h5mu'
             
 
 """========================================================================="""
@@ -449,7 +449,7 @@ rule multivi:
     shell:
         'scripts/multiome_model.sh {input.multiome_object} {params.sample_key} {output.model_history} {output.multiome_object} {params.model}'
 
-rule transfer_UMAP:
+"""rule transfer_UMAP:
     input:
         multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu',
         hvg_multiome_anndata = work_dir + '/atlas/05_highly_variable_multivi_multiome.h5mu'
@@ -460,11 +460,11 @@ rule transfer_UMAP:
     resources:
         runtime=1440, mem_mb=1000000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/multivi_to_UMAP.py'
+        work_dir+'/scripts/multivi_to_UMAP.py'"""
 
 rule pychromvar:
     input:
-        merged_multiome = work_dir + '/atlas/03_merged_multiome.h5mu',
+        merged_multiome = work_dir + '/atlas/06_polished_multiome.h5mu',
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'atlas/08_multiome.h5mu'
