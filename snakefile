@@ -52,11 +52,7 @@ envs = {
 
 rule all:
     input:
-        merged_multiome = work_dir+'/atlas/08_multiome.h5mu',
-"""celltype_bigwig = expand(
-    work_dir + '/data/celltypes/{cell_type}/{cell_type}_bigwig.bw',
-    cell_type = cell_types
-)"""
+        merged_rna_anndata = work_dir + '/atlas/04_modeled_anndata_rna.h5ad'
 # This needs to be forced to run once
 """rule cellbender:
     input:
@@ -86,48 +82,6 @@ rule rna_preprocess:
         runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
     script:
         work_dir+'/scripts/rna_preprocess.py'
-
-rule merge_unfiltered:
-    input:
-        rna_anndata=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs/01_{sample}_anndata_object_rna.h5ad', 
-            zip,
-            batch=batches,
-            sample=samples
-            )
-    output:
-        merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
-    singularity:
-        envs['multiome']
-    params:
-        samples=samples
-    resources:
-        runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
-    script:
-        work_dir+'/scripts/merge_anndata.py'
-
-rule plot_qc_rna:
-    input:
-        merged_rna_anndata = work_dir+'/atlas/01_merged_anndata_rna.h5ad'
-    output:
-        mito_figure = work_dir+'/figures/QC_mito_pct.png',
-        ribo_figure = work_dir+'/figures/QC_ribo_pct.png',
-        gene_counts_figure = work_dir+'/figures/QC_gene_counts.png',
-        doublet_figure = work_dir+'/figures/QC_doublet.png',
-        genes_by_counts = work_dir+'/figures/QC_genes_by_counts.png'
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=960, mem_mb=500000, disk_mb=10000, slurm_partition='largemem' 
-    params:
-        mito_percent_thresh = mito_percent_thresh,
-        doublet_thresh = doublet_thresh,
-        min_genes_per_cell = min_genes_per_cell,
-        ribo_percent_thresh = ribo_percent_thresh,
-        sample_key=sample_key,
-        
-    script:
-        work_dir+'/scripts/plot_qc_metrics.py'
 
 rule filter_rna:
     input:        
@@ -277,34 +231,36 @@ rule merge_multiome_atac:
     script:
         work_dir+'/scripts/merge_atac.py'
 
-rule feature_selection:
+rule rna_feature_selection:
     input:
         merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad'
     output:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     singularity:
         envs['multiome']
+    params:
+        num_hvgenes = 3000
     resources:
         runtime=360, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/feature_selection.py'
+        work_dir+'/scripts/rna_feature_selection.py'
 
-"""rule rna_model:
+rule rna_model:
     input:
         hvg_rna_anndata = work_dir+'/atlas/03_hvg_anndata_rna.h5ad'
     output:
         hvg_rna_anndata = work_dir+'/atlas/04_modeled_hvg_anndata_rna.h5ad',
-        model_history = work_dir+'/data/model_elbo/rna_model_history.csv'
+        model_history = work_dir+'/data/rna_model_history.csv'
     params:
-        model = work_dir+'/data/models/rna_v2/',
+        model = work_dir+'/data/models/rna/',
         sample_key = sample_key
     threads:
         64
     resources:
-        runtime=2880, mem_mb=300000, gpu=4, gpu_model='v100x'
+        runtime=2880, mem_mb=60000, gpu=2, gpu_model='a100'
     shell:
-        'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
-"""
+        work_dir+'/scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model}'
+
 rule UMAP:
     input:
         merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',

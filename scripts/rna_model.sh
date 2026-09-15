@@ -7,6 +7,8 @@ model_history=$3
 merged_rna_anndata=$4
 model=$5
 
+mkdir -p $model
+
 # Load module
 module load singularity
 # Run 
