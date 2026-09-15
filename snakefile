@@ -68,7 +68,7 @@ envs = {
     }
 rule all:
     input:
-        merged_rna_anndata = work_dir+'/atlas/02_filtered_anndata_rna.h5ad',
+        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
 
 # This needs to be forced to run once
 rule cellbender:
@@ -219,7 +219,7 @@ rule plot_qc_atac:
     script:
         work_dir+'/scripts/atac_plot_qc.py'
 
-rule filter_atac:
+"""rule filter_atac:
     input:
         atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     output:
@@ -228,11 +228,11 @@ rule filter_atac:
         envs['snapatac2']
     params:
         min_peak_counts = min_peak_counts,
-        min_tsse = min_tsse
+        min_tsse = 2.5
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
-        work_dir+'/scripts/atac_filter.py'
+        work_dir+'/scripts/atac_filter.py'"""
 
 rule merge_filtered_atac:
     input:
