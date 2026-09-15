@@ -21,4 +21,3 @@ singularity run --nv --bind "$PWD" envs/single_cell_gpu.sif python scripts/multi
 "${model}" \
 "${seed}" \
 "${max_epoch}" \
-"${machine_type}"

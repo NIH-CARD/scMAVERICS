@@ -19,6 +19,7 @@ mdata = mu.read(sys.argv[1])
 # Setup SCVI on the data layer
 scvi.model.MULTIVI.setup_mudata(
     mdata,
+    batch_key=sys.argv[2],
     modalities={
         "rna_layer": "rna",
         "atac_layer": "atac"
@@ -33,7 +34,7 @@ mvi_model = scvi.model.MULTIVI(
 )
 
 mvi_model.train(
-    accelerator=sys.argv[8],
+    accelerator='gpu',
     max_epochs=int(sys.argv[7]),
     lr=1e-3,
     early_stopping=True,
