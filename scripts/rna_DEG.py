@@ -21,13 +21,6 @@ pb.obs['assays'] = pb.obs[celltype_param]
 # Preprocessing
 pb = dp.filter_samples(pb, min_cells=10, min_samples=3)
 pb = dp.compute_tmm_factors(pb, assay_col=celltype_param)
-assays = dp.filter_by_expr(pb, assay_col=celltype_param)
-
-# These variables are needed in the Dreampy analysis
-nf = pb.obs["norm_factors"].values
-geo_mean = np.exp(np.mean(np.log(nf)))
-
-# Assign the split cell types to each 
 assays_dict = dp.filter_by_expr(pb, assay_col=celltype_param)
 
 # Create a list of all possible comparisons
