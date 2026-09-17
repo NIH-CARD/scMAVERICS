@@ -405,7 +405,7 @@ rule multiome_feature_selection:
     script:
         work_dir+'scripts/multiome_feature_selection.py'
 
-rule multivi:
+rule multiome_model:
     input:
         multiome_object = work_dir+'atlas/04_highly_variable_multiome.h5mu'
     output:
@@ -428,7 +428,7 @@ rule multivi:
         {params.random_number_seed} {params.max_epoch} \
         {params.machine_type}'
 
-rule transfer_UMAP:
+rule multiome_transfer_UMAP:
     input:
         multiome_object = work_dir+'/atlas/03_merged_multiome.h5mu',
         hvg_multiome_anndata = work_dir + '/atlas/05_highly_variable_multivi_multiome.h5mu'
@@ -441,7 +441,7 @@ rule transfer_UMAP:
     script:
         work_dir+'/scripts/multiome_latent_transfer.py'
 
-rule pychromvar:
+rule multiome_pychromvar:
     input:
         merged_multiome = work_dir + '/atlas/07_annotated_multiome.h5mu',
         reference_genome = reference_genome

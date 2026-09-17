@@ -13,34 +13,6 @@ mdata = mu.read(snakemake.input.merged_multiome)
 # CRITICAL: Keep memory light using float32 instead of float64
 mdata['atac'].X = mdata['atac'].X.astype(np.float32)
 
-# Really annoying script for running scipy version 1.17.1 with PyPi version of pychromVAR
-def patch_scipy_sparse_sum():
-    # Target both CSR and CSC legacy matrix base sum classes
-    original_sum = sp._compressed._cs_matrix.sum
-
-    def custom_sum(self, axis=None, dtype=None, out=None, keepdims=False):
-        # If keepdims is invoked, convert to numpy/array to compute safely
-        if keepdims:
-            # Re-route the math using a modern numpy or array approach
-            res = original_sum(self, axis=axis, dtype=dtype, out=out)
-            # Reconstruct the expected 'keepdims' dimension shape
-            if axis is not None:
-                # Cast result safely to numpy, adjust shape, and return
-                res_np = np.array(res)
-                shape = list(self.shape)
-                if isinstance(axis, int):
-                    shape[axis] = 1
-                else:
-                    for ax in axis:
-                        shape[ax] = 1
-                return res_np.reshape(shape)
-        # Fallback to standard behavior if keepdims isn't True
-        return original_sum(self, axis=axis, dtype=dtype, out=out)
-
-    # Bind our safe wrapper back directly into SciPy's source module in RAM
-    sp._compressed._cs_matrix.sum = custom_sum
-patch_scipy_sparse_sum()
-
 # Get reference genome
 pc.add_peak_seq(
     mdata['atac'], 
