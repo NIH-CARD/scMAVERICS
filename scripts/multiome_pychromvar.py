@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import gc
 import scanpy as sc
-import scripts.multiome_pychromvar as pc
 import muon as mu
+import pychromvar as pc
 from pyjaspar import jaspardb
 import scipy.sparse as sp
 
