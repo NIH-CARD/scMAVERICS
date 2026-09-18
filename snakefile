@@ -214,23 +214,24 @@ rule rna_cluster_based_QC:
 
 rule atac_merge:
     input:
-        consensus_bed='None',
+        consensus_bed = work_dir + 'snakefile', # Issue if there isn't a consensus file, this is a dummy file
         fragment_files=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             sample=samples
             )
     output:
-        adatas=expand(
+        adatas=temp(expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad', 
             sample=samples
-            ),
+            )),
         temp_merged_anndate = temp(work_dir+'atlas/temp_atac_delete_later.h5ad'),
         merged_atac_anndata = work_dir+'atlas/02_concat_atac.h5ad'
     singularity:
         envs['multiome']
     params:
         samples=samples,
-        sample_key = sample_key
+        sample_key = sample_key,
+        consensus_bed=None
     threads:
         64
     resources:
@@ -307,6 +308,11 @@ rule merged_consensus_peak_anndata:
             data_dir + '{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad',
             sample=samples
             ),
+    params:
+        samples=samples,
+        sample_key = sample_key,
+        consensus_bed=True
+    singularity:
     singularity:
         envs['multiome']
     threads:
