@@ -34,7 +34,7 @@ adataset.obs['n_fragment'] = adataset.adatas.obs['n_fragment']
 adataset.obs['tsse'] = adataset.adatas.obs['tsse']
 
 # Populate merged object with calculated metadata
-if consensus_bed != None:
+if consensus_bed != 'None':
     atac = snap.pp.make_peak_matrix(
         adataset,
         peak_file = consensus_bed

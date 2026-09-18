@@ -214,13 +214,14 @@ rule rna_cluster_based_QC:
 
 rule atac_merge:
     input:
-        consensus_bed=None,
-        fragment_files=data_dir+'{sample}/outs/atac_fragments.tsv.gz'
+        consensus_bed='None',
+        fragment_files=expand(
+            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
+            sample=samples
+            )
     output:
         adatas=expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_atac.h5ad', 
-            zip,
-            batch=batches,
             sample=samples
             ),
         temp_merged_anndate = temp(work_dir+'atlas/temp_atac_delete_later.h5ad'),
