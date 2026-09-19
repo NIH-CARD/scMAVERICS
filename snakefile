@@ -448,6 +448,21 @@ rule multiome_transfer_UMAP:
     script:
         work_dir+'/scripts/multiome_latent_transfer.py'
 
+rule multiome_cell_type_annotation:
+    input:
+        multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu',
+        gene_markers = work_dir+'input/first_pass_genes.csv'
+    output:
+        multiome_object = work_dir + 'atlas/07_annotated_multiome.h5mu'
+    params:
+        leiden_cluster = 'leiden'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=1440, mem_mb = 1000000, slurm_partition='largemem'
+    script:
+        work_dir+'scripts/multome_cell_type_annotation.py'
+
 rule multiome_pychromvar:
     input:
         merged_multiome = work_dir + '/atlas/07_annotated_multiome.h5mu',
