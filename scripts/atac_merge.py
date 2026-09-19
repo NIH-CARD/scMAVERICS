@@ -39,6 +39,8 @@ if consensus_bed != 'None':
         adataset,
         peak_file = consensus_bed
         )
+else:
+    atac = adataset.to_adata()
 
 # Close merged output file
 atac.write_h5ad(snakemake.output.merged_atac_anndata, compression = 'gzip')
