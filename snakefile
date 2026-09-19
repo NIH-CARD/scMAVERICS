@@ -19,9 +19,11 @@ motifs = work_dir + config['motif_file']
 """Metadata parameters"""
 seq_batch_key = config['seq_batch_key'] # Key for sequencing batch, used for directory search
 sample_key = config['sample_key'] # Key for samples, required in aggregating while preserving sample info
+sex_key = config['sex_key'] # Key for sex, required in Sex estimation
 
 batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
+sex = pd.read_csv(metadata_table)[sex_key].tolist()
 
 disease_param = config['disease_param'] # Name of the disease parameter
 control = config['control_key'] # Define disease states
@@ -119,11 +121,14 @@ rule rna_merge:
             sample=samples
             )
     output:
-        merged_rna_anndata = work_dir+'atlas/02_filtered_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'atlas/02_filtered_anndata_rna.h5ad',
+        sex_prediction_plot = work_dir+'figures/sex_estimation_plot.svg'
     singularity:
         envs['multiome']
     params:
-        samples=samples
+        samples=samples,
+        sex=sex,
+        min_cells = 10
     resources:
         runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
     script:
