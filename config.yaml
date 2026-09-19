@@ -17,6 +17,7 @@ lab_cell_cycle_genes: 'input/lab_cell_cycle_genes'
 # Sample parameters
 seq_batch_key: 'batch'
 sample_key: 'folder_name' 
+sex_key: 'Sex' # Column in metadata that contains
 disease_param: 'Neurological_dx'
 control_key: 'control'
 diagnoses:
