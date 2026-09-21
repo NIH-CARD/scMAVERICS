@@ -62,6 +62,11 @@ final_chromvar_adata = sc.concat(dev_chunks, axis=0)
 del dev_chunks
 gc.collect()
 
-# Update MuData object and save
+# Add chromVAR matrix to mudata
 mdata.mod['chromvar'] = final_chromvar_adata
+# Add parameters
+for parameter in [snakemake.params.sample_key, 'celltype']:
+    barcode2param = mdata.obs[parameter].to_dict()
+    mdata.mod['chromvar'].obs[parameter] = [barcode2param[x] for x in mdata.mod['chromvar'].obs_names]
+
 mdata.write(snakemake.output.merged_multiome, compression='gzip')

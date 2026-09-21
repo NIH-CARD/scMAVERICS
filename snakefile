@@ -475,7 +475,8 @@ rule multiome_pychromvar:
     output:
         merged_multiome = work_dir+'atlas/08_multiome.h5mu'
     params:
-        chunk_size = 100000
+        chunk_size = 100000,
+        sample_key = sample_key,
     singularity:
         envs['multiome']
     threads:
