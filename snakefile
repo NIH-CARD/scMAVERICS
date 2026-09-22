@@ -572,6 +572,28 @@ rule cell_cell_communication:
     script:
         'scripts/cell_cell_communication.py'
 
+rule differntially_enriched_motifs:
+    input:
+        pseudobulked_chromvar = work_dir+'/atlas/pseudobulked_chromvar.h5mu',
+         = metadata_table
+    output:
+        diff_enrich_motif = work_dir + '/data/DEM_results.csv'
+    params:
+        sample_key = sample_key,
+        separating_cluster = 'celltype',
+        diagnoses = [control] + diseases,
+        diagnosis_param = disease_param,
+        control = control,
+        random_cov_var = ['Brain_bank', 'Use_batch'],
+        fixed_cont_var = ['Age', 'PMI'],
+        fixed_cate_var = ['Sex'],
+    singularity:
+        envs['multiome']
+    resources:
+        runtime = 180, mem_mb=200000, slurm_partition='quick'
+    script:
+        'scripts/differential_motif_enrichemnt.py'
+
 rule DEG:
     input:
         pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
