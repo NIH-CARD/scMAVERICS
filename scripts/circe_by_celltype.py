@@ -4,6 +4,8 @@ import scanpy as sc
 import scipy as sp
 
 adata = sc.read_h5ad(snakemake.input.celltype_atac)
+
+ci.add_region_infos(adata, sep=(':', '-'))
 adata.var['start'] = adata.var['start'].astype(int)
 adata.var['end'] = adata.var['end'].astype(int)
 adata.var['chr'] = adata.var['chromosome']
@@ -28,7 +30,6 @@ final_score = ci.sliding_graphical_lasso(
 adata.varp['atac_network'] = final_score
 
 # Compute the co-accessibility network
-ci.add_region_infos(adata, sep=(':', '-'))
 ci.compute_atac_network(adata, njobs=snakemake.threads)
 
 adata.write_h5ad(snakemake.output.celltype_atac, compression='gzip')
