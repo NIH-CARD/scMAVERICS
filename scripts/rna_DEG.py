@@ -12,6 +12,7 @@ celltype_param = snakemake.params.celltype_params
 cell_grouping = snakemake.params.celltypes
 diagnosis_param = snakemake.params.diagnosis_param
 diagnosis_control = snakemake.params.diagnosis_control
+celltype = snakemake.params.celltype
 
 # Change parameter names from the Decoupler hard-coded values to
 # Dreampy hard-coded values
@@ -31,47 +32,46 @@ for i, condition_1 in enumerate(diagnosis_control):
             comparison_combinations.append([condition_1, condition_2])
 
 all_results = pd.DataFrame()
-for celltype in assays_dict.keys():
-    print(f'\n-- {celltype} --')
-    assay_pb = assays_dict[celltype]
-    for comparison in comparison_combinations:
-        
-        if snakemake.params.control in comparison:
-            disease_name = comparison[0]
-        else:
-            disease_name = f'{comparison[0]} vs. {comparison[1]}'
-        print(f'\n-- {disease_name} --')
-        comparison_assay_pb = assay_pb[assay_pb.obs[diagnosis_param].isin(comparison)]
+print(f'\n-- {celltype} --')
+assay_pb = assays_dict[celltype]
+for comparison in comparison_combinations:
+    
+    if snakemake.params.control in comparison:
+        disease_name = comparison[0]
+    else:
+        disease_name = f'{comparison[0]} vs. {comparison[1]}'
+    print(f'\n-- {disease_name} --')
+    comparison_assay_pb = assay_pb[assay_pb.obs[diagnosis_param].isin(comparison)]
 
-        # log2CPM
-        comparison_assay_pb = dp.log2cpm(comparison_assay_pb)
+    # log2CPM
+    comparison_assay_pb = dp.log2cpm(comparison_assay_pb)
 
-        if comparison_assay_pb.shape[0] != 0:
+    if comparison_assay_pb.shape[0] != 0:
 
-            # Voom weights
-            comparison_assay_pb = dp.estimate_weights(
-                comparison_assay_pb, formula=snakemake.params.formula, n_jobs=-1,
-            )
+        # Voom weights
+        comparison_assay_pb = dp.estimate_weights(
+            comparison_assay_pb, formula=snakemake.params.formula, n_jobs=-1,
+        )
 
-            # Mixed-model fitting
-            fit = dp.fit_models(
-                comparison_assay_pb,
-                formula=snakemake.params.formula,
-                reml=True,
-                n_jobs=snakemake.threads,
-                assay_name=celltype,
-            )
-            print(f"  fit: {fit}")
+        # Mixed-model fitting
+        fit = dp.fit_models(
+            comparison_assay_pb,
+            formula=snakemake.params.formula,
+            reml=True,
+            n_jobs=snakemake.threads,
+            assay_name=celltype,
+        )
+        print(f"  fit: {fit}")
 
-            # eBayes
-            fit_eb = dp.ebayes(fit)
-            print(f"  eBayes: s2_prior={fit_eb.s2_prior:.4f}, "
-                f"df_prior={fit_eb.df_prior:.1f}")
+        # eBayes
+        fit_eb = dp.ebayes(fit)
+        print(f"  eBayes: s2_prior={fit_eb.s2_prior:.4f}, "
+            f"df_prior={fit_eb.df_prior:.1f}")
 
-            # Results table
-            results = dp.get_results(fit_eb, assay_name=celltype)
-            results[celltype_param] = celltype
-            results[diagnosis_param] = disease_name
+        # Results table
+        results = dp.get_results(fit_eb, assay_name=celltype)
+        results[celltype_param] = celltype
+        results[diagnosis_param] = disease_name
 
-            all_results = pd.concat([all_results, results])
+        all_results = pd.concat([all_results, results])
 all_results.to_csv(snakemake.output.output_DGE_data, compression='gzip')
