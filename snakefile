@@ -12,8 +12,8 @@ work_dir = config['work_dir'] # Define the working directory, explictly as the d
 metadata_table = work_dir+config['metadata'] # Define where the metadata data exists for each sample to be processed
 gene_markers_file = work_dir+config['gene_list'] # Define where celltypes/cell marker gene 
 cell_cycle_gene_file = work_dir+config['cell_cycle_genes']
-gene_info = work_dir+config['gene_info']
-gene_tss = work_dir+config['gene_tss']
+gene_info = config['gene_info']
+gene_tss = config['gene_tss']
 motifs = work_dir + config['motif_file']
 
 """Metadata parameters"""
@@ -885,6 +885,8 @@ rule create_bigwig_cell_disease:
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
     resources:
         mem_mb=1000000, runtime=400, slurm_partition='largemem'
+    params:
+        genome_length = genome_length
     singularity:
         envs['multiome']
     script:
