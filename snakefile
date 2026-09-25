@@ -598,7 +598,7 @@ rule DEG:
     input:
         pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/DGE_Dreampy_results.csv'
+        output_DGE_data = work_dir + '/data/DGE/DGE_Dreampy_results_{celltype}.csv'
     params:
         celltype_params = 'celltype',
         celltypes = cell_types,
@@ -606,6 +606,7 @@ rule DEG:
         control = control,
         diagnosis_control = [control] + diseases,
         sample_key=sample_key,
+        celltype = lambda wildcards: wildcards.celltype,
         formula = "~ Primary Diagnosis + Age + Sex + (1|Use_batch) + (1|Brain_bank)"
     singularity:
         envs['multiome']
