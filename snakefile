@@ -318,7 +318,6 @@ rule merged_consensus_peak_anndata:
         sample_key = sample_key,
         consensus_bed=True
     singularity:
-    singularity:
         envs['multiome']
     threads:
         32
