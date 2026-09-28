@@ -7,10 +7,10 @@ model_history=$3
 merged_rna_anndata=$4
 model=$5
 seed=$6
-num_layers = $7
-num_latent = $8
-max_epoch = $9
-machine_type = $10
+num_layers=$7
+num_latent=$8
+max_epoch=$9
+machine_type=$10
 
 # Load module
 module load singularity
