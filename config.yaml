@@ -1,6 +1,6 @@
 # Base directories
 data_dir: '/data/CARD_singlecell/Brain_atlas/PSP_cortex/'
-work_dir: '/data/CARD_singlecell/PSP_multiome'
+work_dir: '/data/CARD_singlecell/PSP_multiome/'
 
 
 # Reference files
