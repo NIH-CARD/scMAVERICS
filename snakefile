@@ -44,7 +44,7 @@ min_genes_per_cell = 250
 # Define ATAC thresholds
 min_peak_counts = 250
 min_num_cell_by_counts = 10
-
+reference_genome = '/fdb/cellranger-arc/refdata-cellranger-arc-GRCh38-2024-A/fasta/genome.fa' 
 
 """========================================================================="""
 """                                  Workflow                               """
@@ -54,7 +54,7 @@ min_num_cell_by_counts = 10
 envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
     'scenicplus': 'envs/scenicplus.sif',
-    'snapatac': 'envs/snapATAC2.sif',
+    'snapatac2': 'envs/snapATAC2.sif',
     'decoupler': 'envs/decoupler.sif',
     'circe': 'envs/circe.sif',
     'atac_fragment': 'envs/atac_fragment.sif'
@@ -62,7 +62,11 @@ envs = {
 
 rule all:
     input:
-        merged_atac_anndata = work_dir+'/atlas/04_modeled_cistopic_atac.h5ad'
+        cell_gene_regression = work_dir+'/data/gene_sex_regression.csv',
+        cell_specific_regression = expand(
+            work_dir+'/data/celltypes/{cell_type}/peak_sex_regression.csv',
+            cell_type = cell_types
+        )
 """celltype_atac = expand(
     work_dir+'/hmmr_test/celltypes/{cell_type}/atac_circe.h5ad',
     cell_type = cell_types
@@ -212,7 +216,7 @@ rule atac_preprocess:
     output:
         atac_anndata = data_dir+'{sample}/01_{sample}_anndata_object_atac.h5ad'
     singularity:
-        envs['snapatac']
+        envs['snapatac2']
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
@@ -229,7 +233,7 @@ rule merge_unfiltered_atac:
     output:
         merged_atac_anndata = work_dir+'/atlas/01_merged_anndata_atac.h5ad'
     singularity:
-        envs['snapatac']
+        envs['snapatac2']
     resources:
         runtime=480, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem' 
     script:
@@ -239,7 +243,7 @@ rule plot_qc_atac:
     input:
         atac_anndata=data_dir+'{sample}/01_{sample}_anndata_object_rna.h5ad'
     singularity:
-        envs['snapatac']
+        envs['snapatac2']
     resources:
         runtime=240, mem_mb=1500000, disk_mb=10000, slurm_partition='largemem'
     script:
@@ -253,7 +257,7 @@ rule filter_atac:
         atac_anndata = data_dir+'{sample}/03_{sample}_anndata_object_atac.h5ad',
         rna_anndata = data_dir+'{sample}/03_{sample}_anndata_filtered_rna.h5ad'
     singularity:
-        envs['snapatac']
+        envs['snapatac2']
     resources:
         runtime=30, mem_mb=50000, slurm_partition='quick'
     script:
@@ -388,7 +392,7 @@ rule filtered_UMAP:
     script:
         work_dir+'/scripts/scVI_to_UMAP.py'
 
-rule second_pass_annotate:
+"""rule second_pass_annotate:
     input:
         merged_rna_anndata = work_dir+'/atlas/06_modeled_anndata_rna.h5ad',
         gene_markers = gene_markers_file
@@ -400,21 +404,21 @@ rule second_pass_annotate:
     resources:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
-        work_dir+'/scripts/annotate.py'
+        work_dir+'/scripts/annotate.py'"""
 
 rule gene_linear_regression:
     input:
-        merged_rna_anndata = work_dir+'/atlas/07_annotated_anndata_rna.h5ad',
+        merged_rna_anndata = '/data/CARD_singlecell/PFC_atlas/atlas/07_polished_anndata_rna.h5ad',
         covariates = work_dir+'/data/covariates.csv'
     output:
         rna_pseudobulk = work_dir+'/data/pseudobulked_rna.csv',
-        cell_gene_regression = work_dir+'/data/gene_age_regression.csv'
+        cell_gene_regression = work_dir+'/data/gene_sex_regression.csv'
     singularity:
         envs['decoupler']
     threads:
         64
     resources:
-        runtime=1440, disk_mb=200000, mem_mb=200000
+        runtime=1440, disk_mb=200000, mem_mb=400000, slurm_partition = 'largemem'
     script:
         'scripts/linear_regression_genes.py'
 
@@ -608,9 +612,10 @@ rule peak_linear_regression:
         covariates = '/data/CARD_singlecell/PFC_atlas/data/covariates.csv'
     output:
         cell_specific_pseudo = work_dir+'/data/celltypes/{cell_type}/pseudobulk_atac.csv',
-        cell_specific_regression = work_dir+'/data/celltypes/{cell_type}/peak_age_regression.csv'
+        cell_specific_regression = work_dir+'/data/celltypes/{cell_type}/peak_sex_regression.csv'
     params:
         cell_type = lambda wildcards, output: output[0].split("_")[-2],
+        sample_key = sample_key
     singularity:
         envs['decoupler']
     threads:
@@ -627,7 +632,7 @@ rule wnn:
     output:
         merged_multiome = work_dir+'/atlas/multiome_atlas.h5mu'
     singularity:
-        envs['snapatac']
+        envs['snapatac2']
     resources:
         runtime=960, mem_mb=1500000, slurm_partition='largemem' 
     script:

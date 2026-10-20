@@ -31,10 +31,8 @@ pdata.layers['pcounts'] = pdata.X
 sc.pp.normalize_total(pdata, target_sum=1e6, max_fraction = 0.000001, key_added='cpm', layer='pcounts', copy=False)
 
 # 
-covariate_df = pd.read_csv(snakemake.input.covariates)
-covariate_df = covariate_df.T
-covariate_df['SampleID'] = covariate_df.index
-covariates = ' + '.join(covariate_df.columns.to_list()[:-1])
+covariate_df = pd.read_csv(snakemake.input.covariates, index_col = 0)
+covariates = ' + '.join(covariate_df.columns.to_list())
 
 # CSV pseudobulk for linear regression (includes covariates)
 adata_df = pd.DataFrame(pdata.X)
@@ -44,7 +42,7 @@ adata_df.index = sample_cell.index
 adata_df = pd.merge(left=sample_cell, right=adata_df, left_index=True, right_index=True)
 #
 adata_df.to_csv(snakemake.output.cell_specific_pseudo, index=False)
-adata_df = pd.merge(left=covariate_df, right=adata_df, left_on='SampleID', right_on='sample_id')
+adata_df = pd.merge(left=covariate_df, right=adata_df, left_index = True, right_on='sample_id')
 
 
 
@@ -54,7 +52,7 @@ peak_data = []
 for peak in pdata.var_names.to_list():
     #print(gene)
     # Create independent variable Series object, save as X
-    _, X = dmatrices(f'Age ~ '+covariates, data=adata_df, return_type='dataframe')
+    _, X = dmatrices(f'fsex ~ '+covariates, data=adata_df, return_type='dataframe')
     # Create dependent variable Series object, save as y
     y = adata_df[peak].values
     # Fit the model
@@ -62,9 +60,9 @@ for peak in pdata.var_names.to_list():
     # Add values to the dataframe
     peak_results = {
         'peak': peak,
-        'slope': model.params['Age'],
-        'p_value': model.pvalues['Age'],
-        'standard_error': model.bse['Age'],
+        'slope': model.params['fsex'],
+        'p_value': model.pvalues['fsex'],
+        'standard_error': model.bse['fsex'],
         'r_squared': model.rsquared,
         'adjusted_r_squared': model.rsquared_adj
     }

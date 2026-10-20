@@ -59,7 +59,7 @@ bbank2num = dict(zip(adata_df['Brain_bank'].drop_duplicates().to_list(), range(l
 adata_df['Brain_bank_numeric'] = [bbank2num[x] for x in adata_df['Brain_bank']]
 
 gene_data = []
-for cell_type in adata_df['cell_type'].drop_duplicates():
+"""for cell_type in adata_df['cell_type'].drop_duplicates():
     cohort_df = adata_df[(adata_df['cell_type'] == cell_type)]
     for gene in pdata.var_names.to_list():
         #print(gene)
@@ -86,4 +86,35 @@ regression_df = pd.DataFrame(gene_data)
 for cell_type in adata_df['cell_type'].drop_duplicates():
     regression_df.loc[regression_df['cell_type'] == cell_type, 'p_value_bh'] = scipy.stats.false_discovery_control(regression_df.loc[regression_df['cell_type'] == cell_type, 'p_value'].fillna(1))
 regression_df['-log10(p-vlue_bh)'] = -np.log10(regression_df['p_value_bh'])
-regression_df.to_csv(snakemake.output.cell_specific_regression)
+regression_df.to_csv(snakemake.output.cell_specific_regression)"""
+
+## Special re-run for CENU
+
+for cell_type in adata_df['cell_type'].drop_duplicates():
+    cohort_df = adata_df[(adata_df['cell_type'] == cell_type)]
+    for gene in pdata.var_names.to_list():
+        #print(gene)
+        # Create independent variable Series object, save as X
+        _, X = dmatrices(f'Sex_numeric ~ Age + Sex_numeric + PMI + Brain_bank_numeric', data=cohort_df, return_type='dataframe')
+        # Create dependent variable Series object, save as y
+        y = cohort_df[gene].values
+        # Fit the model
+        model = sm.OLS(y, X).fit(disp=0)
+        # Add values to the dataframe
+        gene_results = {
+            'cell_type': cell_type,
+            'gene': gene,
+            'slope': model.params['Sex_numeric'],
+            'p_value': model.pvalues['Sex_numeric'],
+            'standard_error': model.bse['Sex_numeric'],
+            'r_squared': model.rsquared,
+            'adjusted_r_squared': model.rsquared_adj
+        }
+        gene_data.append(gene_results)
+
+regression_df = pd.DataFrame(gene_data)
+# Adjust p-value
+for cell_type in adata_df['cell_type'].drop_duplicates():
+    regression_df.loc[regression_df['cell_type'] == cell_type, 'p_value_bh'] = scipy.stats.false_discovery_control(regression_df.loc[regression_df['cell_type'] == cell_type, 'p_value'].fillna(1))
+regression_df['-log10(p-vlue_bh)'] = -np.log10(regression_df['p_value_bh'])
+regression_df.to_csv(snakemake.output.cell_gene_regression)
