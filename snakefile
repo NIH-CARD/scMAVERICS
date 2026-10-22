@@ -415,7 +415,7 @@ rule merged_consensus_peak_anndata:
         runtime=1440, mem_mb=3000000, slurm_partition='largemem'
     script:
         'scripts/atac_merge.py'
-
+"""
 rule merge_multiome:
     input:
         merged_atac_anndata = work_dir+'atlas/03_consensus_peak_atac.h5ad',
@@ -429,11 +429,12 @@ rule merge_multiome:
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/merge_multiome.py'"""
+        work_dir+'scripts/merge_multiome.py'
 
 rule multiome_feature_selection:
     input:
-        multiome_object = work_dir+'atlas/03_merged_multiome.h5mu'
+        merged_atac_anndata = work_dir+'atlas/03_consensus_peak_atac.h5ad',
+        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
     output:
         hvg_multiome_anndata = work_dir+'atlas/04_highly_variable_multiome.h5mu'
     singularity:
