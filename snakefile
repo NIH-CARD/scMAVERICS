@@ -51,10 +51,10 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
-"""
+        multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu'
+
 # This needs to be forced to run once
-rule cellbender:
+"""rule cellbender:
     input:
         rna_anndata =data_dir+'{batch}/Multiome/{sample}/outs/raw_feature_bc_matrix.h5',
         cwd = data_dir+'{batch}/Multiome/{sample}/outs/'
@@ -67,7 +67,7 @@ rule cellbender:
     shell:
         work_dir+'/scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 """
-
+"""
 rule rna_preprocess:
     input:
         metadata_table=metadata_table,
@@ -271,7 +271,7 @@ rule cluster_based_QC:
         runtime=240, mem_mb=1500000, slurm_partition='largemem'
     script:
         work_dir + 'scripts/cluster_based_QC.py'
-"""
+
 rule atac_merge:
     input:
         consensus_bed = work_dir + 'snakefile', # Issue if there isn't a consensus file, this is a dummy file
@@ -301,7 +301,7 @@ rule atac_merge:
     resources:
         runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
     script:
-        work_dir+'scripts/atac_merge.py'"""
+        work_dir+'scripts/atac_merge.py'
 
 rule atac_fragment_pseudobulk:
     input:
@@ -429,7 +429,7 @@ rule merge_multiome:
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
-        work_dir+'scripts/merge_multiome.py'
+        work_dir+'scripts/merge_multiome.py'"""
 
 rule multiome_feature_selection:
     input:
@@ -467,7 +467,7 @@ rule transfer_UMAP:
         multiome_object = work_dir+'atlas/03_merged_multiome.h5mu',
         hvg_multiome_anndata = work_dir + 'atlas/05_highly_variable_multivi_multiome.h5mu'
     output:
-        multiome_object = work_dir + 'atlas/06_polished_multiome_rna.h5mu'
+        multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu'
     singularity:
         envs['multiome']
     resources:

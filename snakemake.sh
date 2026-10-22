@@ -16,9 +16,6 @@ apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatch
 apptainer pull --disable-cache envs/multiome.sif oras://quay.io/adamcatchingdti/multiome.sif:1.2
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 
-# Load singularity
-module load singularity
-
 # Bind external directories on Biowulf
 . /usr/local/current/singularity/app_conf/sing_binds
 
