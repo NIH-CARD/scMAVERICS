@@ -404,14 +404,14 @@ rule atac_spectral:
     script:
         work_dir+'scripts/multiome_feature_selection.py'"""
 
-rule multivi:
+"""rule multivi:
     input:
         multiome_object = work_dir+'atlas/04_highly_variable_multiome.h5mu'
     output:
         multiome_object = work_dir+'atlas/05_highly_variable_multivi_multiome_1.h5mu',
         model_history = work_dir+'data/model_elbo/multiome_model_history.csv'
     params:
-        model = work_dir+'data/models/multiome_polish/',
+        model = work_dir+'data/models/multiome_polaish/',
         sample_key = sample_key,
         random_number_seed = config['random_number_seed'],
         max_epoch = config['max_epoch'],
@@ -430,7 +430,7 @@ rule multivi:
 rule transfer_UMAP:
     input:
         multiome_object = work_dir+'atlas/03_merged_multiome.h5mu',
-        hvg_multiome_anndata = work_dir + 'atlas/05_highly_variable_multivi_multiome_1.h5mu'
+        hvg_multiome_anndata = work_dir + 'atlas/07_highly_variable_multiome_updated.h5mu'
     output:
         multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu'
     singularity:
@@ -440,19 +440,35 @@ rule transfer_UMAP:
     script:
         work_dir+'scripts/multiome_latent_transfer.py'
 
+rule multiome_cell_type_annotation:
+    input:
+        multiome_object = work_dir + 'atlas/06_polished_multiome.h5mu',
+        gene_markers = work_dir+'input/first_pass_genes.csv'
+    output:
+        multiome_object = work_dir + 'atlas/07_annotated_multiome.h5mu'
+    params:
+        leiden_cluster = 'leiden_2'
+    container:
+        envs['multiome']
+    resources:
+        runtime=1440, mem_mb = 1000000, slurm_partition='largemem'
+    script:
+        work_dir+'scripts/multome_cell_type_annotation.py'
+
+"""
 rule pychromvar:
     input:
-        merged_multiome = work_dir + 'atlas/06_polished_multiome.h5mu',
+        merged_multiome = work_dir + 'atlas/07_annotated_multiome.h5mu',
         reference_genome = reference_genome
     output:
         merged_multiome = work_dir+'atlas/08_multiome.h5mu'
     params:
-        chunk_size = 100000
+        chunk_size = 200000
     singularity:
         envs['multiome']
     threads:
         16
     resources:
-        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
+        runtime=5760, mem_mb=2000000, slurm_partition='largemem'
     script:
         'scripts/multiome_pychromvar.py'

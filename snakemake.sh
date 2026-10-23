@@ -6,19 +6,16 @@
 
 module purge
 module load apptainer
-module load snakemake
+module load snakemake/8
 
 # Pull profile, this will only run once, and is required for running on Biowulf
-git clone https://github.com/NIH-HPC/snakemake_profile.git
+git clone https://github.com/NIH-HPC/snakemake_profile.git slurm_profile
 
 # Pull the containers
 apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu.sif:1.0
 apptainer pull --disable-cache envs/multiome.sif oras://quay.io/adamcatchingdti/multiome.sif:1.2
 apptainer pull --disable-cache envs/tobias.sif docker://naotokubota/tobias:0.13.3
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
-
-# Load singularity
-module load singularity
 
 # Bind external directories on Biowulf
 . /usr/local/current/singularity/app_conf/sing_binds
@@ -31,4 +28,4 @@ chmod 777 scripts/multiome_model.sh
 chmod 777 envs/*.sif
 
 # RUN SCRIPT
-snakemake --cores all --profile snakemake_profile --use-singularity
+snakemake --profile slurm_profile --software-deployment-method apptainer
