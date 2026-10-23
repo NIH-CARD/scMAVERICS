@@ -6,6 +6,7 @@ import scipy
 import numpy as np
 import muon as mu
 import snapatac2 as snap
+import scipy.sparse as sp
 
 # Read in RNA dataset
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
@@ -22,8 +23,8 @@ rna_hvg = rna[:, rna.var['highly_variable']].copy()
 # Read in ATAC dataset
 atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
 
-snap.pp.select_features(mdata["atac"], n_features=snakemake.params.hvp, inplace=True)
-atac_hvp = mdata["atac"][:, mdata["atac"].var["selected"].values].copy()
+snap.pp.select_features(atac, n_features=snakemake.params.hvp, inplace=True)
+atac_hvp = atac[:, atac.var["selected"].values].copy()
 
 # Use raw RNA counts
 if "counts" in rna.layers:

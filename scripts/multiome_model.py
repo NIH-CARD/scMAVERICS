@@ -37,8 +37,7 @@ mvi_model.train(
     max_epochs=1000,
     lr=1e-3,
     early_stopping=True,
-    batch_size=256,
-    early_stopping_patience=20
+    batch_size=256
 )
 
 # Extract the elbo plot of the model and save the values
