@@ -26,7 +26,8 @@ conda activate multiome
 pip install -r requirements.txt
 ```
 
-This environment is used in the example notebook pages.
+This environment is used in example analysis in Jupyter notebooks, beginning with [snRNAseq analysis](https://scmaverics.readthedocs.io/en/latest/snRNAseq/). 
+
 
 ## Importing data
 
@@ -52,11 +53,14 @@ cellranger_arc_outputs
 │       └── atac_fragments.tsv.gz.tbi
 ...
 ```
+
 ### Metadata and reference files
 
 
 
 ## Config file setup
+
+Config files ensure consitency and reproducibility. In this case, 
 
 ## snRNAseq steps
 

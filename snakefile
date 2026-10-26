@@ -17,11 +17,9 @@ gene_tss = config['gene_tss']
 motifs = work_dir + config['motif_file']
 
 """Metadata parameters"""
-seq_batch_key = config['seq_batch_key'] # Key for sequencing batch, used for directory search
 sample_key = config['sample_key'] # Key for samples, required in aggregating while preserving sample info
 sex_key = config['sex_key'] # Key for sex, required in Sex estimation
 
-batches = pd.read_csv(metadata_table)[seq_batch_key].tolist() # Read in the list of batches and samples
 samples = pd.read_csv(metadata_table)[sample_key].tolist()
 sex = pd.read_csv(metadata_table)[sex_key].tolist()
 
@@ -114,8 +112,6 @@ rule rna_merge:
     input:
         rna_anndata=expand(
             data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad', 
-            zip,
-            batch=batches,
             sample=samples
             )
     output:
@@ -249,9 +245,7 @@ rule atac_fragment_pseudobulk:
         merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
         merged_atac_anndata = work_dir + 'atlas/02_concat_atac.h5ad',
         fragment_file=expand(
-            data_dir+'{batch}/Multiome/{sample}/outs/atac_fragments.tsv.gz',
-            zip,
-            batch=batches,
+            data_dir+'{sample}/outs/atac_fragments.tsv.gz',
             sample=samples
             )
     output:
@@ -371,8 +365,6 @@ rule merge_multiome_atac:
         merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad',
         atac_anndata = expand(
             data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
-            zip,
-            batch=batches,
             sample=samples
             ),
         temp_file = work_dir+'/atlas/temp_filtered_anndata_atac_1.h5ad',
