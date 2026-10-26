@@ -8,16 +8,18 @@ build:
   tools:
     python: "3.11"
 
+# Tell Read the Docs that this is an MkDocs site
 mkdocs:
   configuration: mkdocs.yml
 
+# Instruct the build container to read your exact list of plugins/themes
 python:
   install:
-    - method: pip
-      path: .                        
-      extra_requirements:
-        - mkdocs-material
+    - requirements: setup.txt
 
+theme:
+  name: material
+  favicon: img/favicon.ico
 
 # Optionally, but recommended,
 # declare the Python requirements required to build your documentation
