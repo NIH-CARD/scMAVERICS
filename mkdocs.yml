@@ -6,6 +6,7 @@ site_favicon: img/favicon.ico
 theme:
   name: material
   favicon: img/favicon.ico
+  logo: img/the_maveric.png
   features:
     - navigation.indexes
 nav:
