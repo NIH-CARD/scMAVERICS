@@ -12,5 +12,5 @@ nav:
   - 3. snATACseq steps: snATACseq.md
   - 4. Peak calling: peaks.md
   - 5. Multiome object creation: multiome.md
-  - 6. ATAC fragment analysis: fragment.md
-  - 7. Differential analysis: differential.md
+  - 6. Differential analysis: differential.md
+  - 7. ATAC fragment analysis: fragment.md

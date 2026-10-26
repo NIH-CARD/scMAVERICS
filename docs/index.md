@@ -18,10 +18,10 @@ The modules of Scanpy (https://github.com/scverse/scanpy), SCVI (https://github.
 ## Sections
 
 0. [Introduction](index.md)
-1. [Using pipeline](pipeline.md)
+1. [Using the pipeline](pipeline.md)
 2. [snRNAseq steps](snRNAseq.md)
 3. [snATACseq steps](snATACseq.md)
 4. [Peak calling](peaks.md)
 5. [Multiome object creation](multiome.md)
-6. [ATAC fragment analysis](fragment.md)
-7. [Differential analysis](differential.md)
+6. [Differential analysis](differential.md)
+7. [ATAC fragment analysis](fragment.md)
