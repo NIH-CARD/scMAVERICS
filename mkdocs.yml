@@ -1,9 +1,7 @@
 site_name: scMAVERICS
 site_author: Adam Catching
 
-theme:
-  name: material
-  favicon: img/favicon.ico
+site_favicon: img/favicon.ico
 
 theme:
   name: readthedocs 
