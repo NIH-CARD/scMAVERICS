@@ -50,11 +50,7 @@ min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
 # Singularity containers to be downloaded from Quay.io, done in snakemake.sh
 envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
-    'tobias': 'envs/tobias.sif',
-    'dreampy': 'envs/dreampy.sif',
     'multiome': 'envs/multiome.sif',
-    'scenic': 'envs/scenicplus.sif',
-    'liana': 'envs/liana_sc.sif'
     }
 
 rule all:
@@ -73,6 +69,8 @@ rule cellbender:
         rna_anndata = data_dir+'{sample}-ARC/outs/cellbender_gex_counts_filtered.h5'
     params:
         sample='{sample}'
+    singularity:
+        envs['multiome']
     resources:
         runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
     shell:
@@ -164,6 +162,8 @@ rule rna_model:
         machine_type = config['machine_type']
     threads:
         64
+    singularity:
+        envs['multiome']
     resources:
         runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
     shell:
@@ -294,7 +294,7 @@ rule consensus_peaks:
     output:
         consensus_bed = work_dir + 'data/consensus_regions.bed'
     singularity:
-        envs['scenic']
+        envs['multiome']
     resources:
         runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
     script:
@@ -563,7 +563,7 @@ rule cell_cell_communication:
         control = control,
         disease_param = disease_param
     singularity:
-        envs['liana']
+        envs['multiome']
     threads:
         64
     resources:
@@ -626,6 +626,8 @@ rule differential_cell_cell_communication:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         disease_param = disease_param,
         sep_param = lambda wildcards, output: output[0].split("_")[-3],
+    singularity:
+        envs['multiome']
     script:
         'scripts/rna_differential_cell_cell_communication.py'
 
@@ -774,7 +776,7 @@ rule celltype_bed:
         xls = work_dir + "/data/celltypes/{cell_type}/{cell_type}_peaks.xls",
         blacklist = work_dir + 'input/hg38-blacklist.bed'
     singularity:
-        envs['atac_fragment']
+        envs['multiome']
     output:
         cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_peaks.bed'
     script:
@@ -1103,7 +1105,7 @@ rule celltype_disease_ATACorrect:
         ATACorrect_outdir = work_dir+'data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect',
         prefix = '{cell_type}_{disease}'
     singularity:
-        envs['tobias']
+        envs['multiome']
     threads:
         16
     resources:
@@ -1118,7 +1120,7 @@ rule celltype_disease_score_bigwig:
     output:
         footprinted_bigwig = work_dir+'data/celltypes/{cell_type}/{cell_type}_{disease}_ATACorrect/{cell_type}_{disease}_footprints.bw'
     singularity:
-        envs['tobias']
+        envs['multiome']
     threads:
         64
     resources:
@@ -1133,7 +1135,7 @@ rule control_comparison_score_bigwig:
     output:
         control_footprint_bigwig = work_dir+'data/celltypes/{cell_type}/{cell_type}_control_ATACorrect/{cell_type}_control_comparison_footprints.bw'
     singularity:
-        envs['tobias']
+        envs['multiome']
     threads:
         64
     resources:
@@ -1153,7 +1155,7 @@ rule disease_footprinting:
     params:
         outdir=work_dir+'data/celltypes/{cell_type}/{cell_type}_{disease}_{control}_BINDetect'
     singularity:
-        envs['tobias']
+        envs['multiome']
     threads:
         16
     resources:
@@ -1172,7 +1174,7 @@ rule control_footprinting:
     params:
         outdir=work_dir+'data/celltypes/{cell_type}/{cell_type}_control_BINDetect'
     singularity:
-        envs['tobias']
+        envs['multiome']
     threads:
         16
     resources:

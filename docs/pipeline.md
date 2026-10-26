@@ -1,6 +1,5 @@
 # scMAVERICS
 
-
 **Using the snakemake pipeline**
 
 ## Installation
@@ -30,6 +29,32 @@ pip install -r requirements.txt
 This environment is used in the example notebook pages.
 
 ## Importing data
+
+### Starting data
+
+Sample data should be stored in separate folders corresponding to sample. This analysis assumes multiome runs of [10X-based single-nuclei multiome sequencing](https://www.10xgenomics.com/support/epi-multiome) has been performed. Subsequently, data processing should be done before running this pipeline, ideally with [CellRanger-ARC](https://www.10xgenomics.com/support/software/cell-ranger-arc/latest). 
+
+Additionally, it is assumed that the output folders of CellRanger-ARC correspond to a `sample_key` column in the metadata, and the folders contain:
+
+```
+cellranger_arc_outputs
+├── Sample_1
+│   └──outs
+│       ├── raw_feature_bc_matrix.h5
+│       ├── atac_possorted_bam.bam
+│       ├── atac_fragments.tsv.gz
+│       └── atac_fragments.tsv.gz.tbi
+├── Sample_2
+│   └──outs
+│       ├── raw_feature_bc_matrix.h5
+│       ├── atac_possorted_bam.bam
+│       ├── atac_fragments.tsv.gz
+│       └── atac_fragments.tsv.gz.tbi
+...
+```
+### Metadata and reference files
+
+
 
 ## Config file setup
 
