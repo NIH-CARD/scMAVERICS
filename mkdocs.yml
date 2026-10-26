@@ -9,15 +9,15 @@ theme:
   logo: img/the_maveric.png
   features:
     - navigation.indexestheme:
-palette:
-  - scheme: default
-    toggle:
-      icon: material/toggle-switch-off-outline
-      name: Switch to dark mode
-  - scheme: slate
-    toggle:
-      icon: material/toggle-switch
-      name: Switch to light mode
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
 nav:
   - 0. Introduction: index.md
   - 1. Entire Snakemake pipeline: pipeline.md
