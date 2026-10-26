@@ -2,7 +2,9 @@
 
 **Using the snakemake pipeline**
 
-## Installation
+# Installation and setup
+
+## Downloading the pipeline
 
 ### Snakemake pipeline
 Begin by cloning the scMAVERICS repo with
@@ -11,7 +13,7 @@ git clone https://github.com/NIH-CARD/scMAVERICS.git
 cd scMAVERICS
 ```
 
-There is no need to worry about python environments. All scripts in the Snakemake-enabled pipeline use singularity (apptainer) and snakemake, with singularity images (`.sif` files) being pulled from Quay.io. Each step of the analysis assumes this is being run on a Slurm-enabled HPC, where GPUs and large-memory nodes are available. 
+There is no need to worry about python environments. All scripts in the Snakemake-enabled pipeline use singularity ([apptainer](https://apptainer.org/documentation/)) and [snakemake](https://snakemake.readthedocs.io/en/v8.0.0/), with singularity images (`.sif` files) being pulled from [Quay.io](https://quay.io/). Each step of the analysis assumes this is being run on a Slurm-enabled HPC, where GPUs and large-memory nodes are available. 
 
 Large memory nodes are required for handling large (>50) sample multiome datasets and GPUs are required for running samples in a timely manner. 
 
@@ -62,7 +64,7 @@ cellranger_arc_outputs
 
 Config files ensure consitency and reproducibility. In this case, 
 
-## snRNAseq steps
+# snRNAseq steps
 
 ### Cellbender
 
@@ -70,7 +72,7 @@ Config files ensure consitency and reproducibility. In this case,
 
 ### scVI and cell type annotation
 
-## snATACseq steps
+# snATACseq steps
 
 ### Preprocessing and integration
 
@@ -82,7 +84,7 @@ Config files ensure consitency and reproducibility. In this case,
 
 ### TF motif inference with pyChromvar
 
-## Differential analysis
+# Differential analysis
 
 ### Cell-cell communication
 
@@ -98,7 +100,7 @@ Config files ensure consitency and reproducibility. In this case,
 
 ### Gene-motif/peak linkage
 
-## ATAC fragment analysis
+# ATAC fragment analysis
 
 ### Cell type and diagnosis peaks/bigwigs
 

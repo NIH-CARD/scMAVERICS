@@ -7,7 +7,7 @@ theme:
     - navigation.indexes
 nav:
   - 0. Introduction: index.md
-  - 1. Using pipeline: pipeline.md
+  - 1. Entire Snakemake pipeline: pipeline.md
   - 2. snRNAseq steps: snRNAseq.md
   - 3. snATACseq steps: snATACseq.md
   - 4. Peak calling: peaks.md
