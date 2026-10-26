@@ -10,6 +10,7 @@ theme:
   features:
     - navigation.indexestheme:
   palette:
+    - primary: blue grey
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
