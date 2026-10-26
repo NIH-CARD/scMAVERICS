@@ -4,6 +4,10 @@
 # Required
 version: 2
 
+theme:
+  name: material
+  favicon: img/favicon.ico
+
 # Set the OS, Python version, and other tools you might need
 build:
   os: ubuntu-24.04
