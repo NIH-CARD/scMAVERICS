@@ -1,17 +1,16 @@
 # scMAVERICS
 
 
-## single-cell Multiome Analysis using Variational-inference and Enhancer-driven Regulatory-networks to Inform Cell-atlas Structure
+**single-cell Multiome Analysis using Variational-inference and Enhancer-driven Regulatory-networks to Inform Cell-atlas Structure**
 
 Disclaimer: This pipeline is built to run with large (>100 sample) datasets on the Slurm HPC at the NIH (Biowulf).
 
-This work is now published in [*Cell Reports*](https://doi.org/10.1016/j.celrep.2026.117110)! Please use this publication for citation.
-
-➡️ Tutorial on how to use this pipeline at https://scmaverics.readthedocs.io/en/latest/
-
 > **🚧 Main branch is currently being upgraded to incorporate methods tested out in SN, PFC_PSP, and PCA branches. Please use version 1.0.0 that is found in our *Cell Reports* paper until version 1.2 goes live.**
 
-Focus on the analysis, not the processing.
+This work is now published in [*Cell Reports*](https://doi.org/10.1016/j.celrep.2026.117110)! Please use this publication for citation.
+>Catching A, Weller C, Hu F ...  
+**Single-nucleus multiome analysis in the human prefrontal cortex identifies gene expression and cis-regulatory elements associated with aging**  
+Cell Reports, 2026; 45; [10.1016/j.celrep.2026.117110](10.1016/j.celrep.2026.117110 )
 
 ## Pipeline
 
