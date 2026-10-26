@@ -4,19 +4,24 @@
 # Required
 version: 2
 
-theme:
-  name: material
-  favicon: img/favicon.ico
+
 
 # Set the OS, Python version, and other tools you might need
 build:
   os: ubuntu-24.04
   tools:
-    python: "3.13"
+    python: "3.13"python:
+python:
+  install:
+    - pip: mkdocs-material
 
 # Build documentation with Mkdocs
 mkdocs:
    configuration: mkdocs.yml
+
+theme:
+  name: material
+  favicon: img/favicon.ico
 
 # Optionally, but recommended,
 # declare the Python requirements required to build your documentation
