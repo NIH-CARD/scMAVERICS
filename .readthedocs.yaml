@@ -13,8 +13,10 @@ mkdocs:
 
 python:
   install:
-    - pip: mkdocs-material
-
+    - method: pip
+      path: .                        
+      extra_requirements:
+        - docs
 theme:
   name: material
   favicon: img/favicon.ico
