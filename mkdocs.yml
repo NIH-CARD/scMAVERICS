@@ -2,6 +2,10 @@ site_name: scMAVERICS
 site_author: Adam Catching
 
 theme:
+  name: material
+  favicon: assets/the_maveric.png
+
+theme:
   name: readthedocs 
   features:
     - navigation.indexes
