@@ -4,7 +4,8 @@ site_author: Adam Catching
 site_favicon: img/favicon.ico
 
 theme:
-  name: readthedocs 
+  name: material
+  favicon: img/favicon.ico
   features:
     - navigation.indexes
 nav:
