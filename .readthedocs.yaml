@@ -19,7 +19,7 @@ python:
         - mkdocs-material
 
 theme:
-  name: material
+  name: mkdocs
   favicon: img/favicon.ico
 
 # Optionally, but recommended,
