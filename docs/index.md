@@ -1,7 +1,7 @@
 # scMAVERICS
 
 
-## single-cell Multiome Analysis using Variational-inference and Enhancer-driven Regulatory-networks to Inform Cell-atlas Structure
+**single-cell Multiome Analysis using Variational-inference and Enhancer-driven Regulatory-networks to Inform Cell-atlas Structure**
 
 Disclaimer: This pipeline is built to run with large (>100 sample) datasets on the Slurm HPC at the NIH (Biowulf).
 
@@ -18,3 +18,10 @@ The modules of Scanpy (https://github.com/scverse/scanpy), SCVI (https://github.
 ## Sections
 
 0. [Introduction](index.md)
+1. [Using pipeline](pipeline.md)
+2. [snRNAseq steps](snRNAseq.md)
+3. [snATACseq steps](snATACseq.md)
+4. [Peak calling](peaks.md)
+5. [Multiome object creation](multiome.md)
+6. [ATAC fragment analysis](fragment.md)
+7. [Differential analysis](differential.md)
