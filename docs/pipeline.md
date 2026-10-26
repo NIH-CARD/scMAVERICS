@@ -1,6 +1,8 @@
 # scMAVERICS
 
-**Using the snakemake pipeline**
+TL;DR 
+
+Clone the repo, add metadata, update config.yaml, select the step you want completed, run `bash snakemake.sh`.
 
 # Installation and setup
 
@@ -58,11 +60,34 @@ cellranger_arc_outputs
 
 ### Metadata and reference files
 
+Snakemake doesn't know where your data lives! Preprocessing and aggregating individual samples is handled via generated paths, dependent on a *metadata* file provided by the user.
 
+**🚨 CRITICAL 🚨**
 
+No metadata is provided, it is critical the user provides appropriate metadata as a file `metadata.csv` in the `input` folder. Any metadata entered in file will be added to the final object, but the bare minimum there should be columns of `Sample_ID`, `diagnosis`, and `sex`.  These parameters will be used in downstream analysis.
+
+```
+file: input/metadata.csv ⬇
+
+| Sample_ID   | diagnosis   | sex            | add. metadata
+|-------------|-------------|----------------|-----
+| Sample_1    | Control     | male           | ...
+| Sample_2    | AD          | female         | ...
+```
 ## Config file setup
 
-Config files ensure consitency and reproducibility. In this case, 
+Config files ensure consitency and reproducibility. In this case, the config file is what truly differentiates one analysis from another. This includes:
+```
+- Data and working directories
+- Reference files (e.g. reference genomes)
+- Parameters of the dataset
+- QC values
+- System parameters
+```
+
+**🚨 CRITICAL 🚨**
+
+The config file is unique to the input dataset. Only the scientists working with the data know which reference file was for Cellranger, or what QC thresholds make sense for the data. Sometimes parameters need to be changed post-hoc, in which case it is import that this file is version controlled somewhere, either by a fork from the original repo or a backup copy.
 
 # snRNAseq steps
 

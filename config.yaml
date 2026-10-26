@@ -11,7 +11,7 @@ gene_list: #'input/first_pass_genes.csv' # relative to work_dir
 cell_cycle_genes: #'input/lab_cell_cycle_genes.txt'
 gene_tss: #'/path/to/cellranger-arc/regions/tss.bed'
 gene_info: #'/path/to/cellranger-arc/star/geneInfo.tab'
-motif_file: #'input/jaspar_2024_hsapiens.meme'
+motif_file: #'input/jaspar_2026_hsapiens.meme'
 lab_cell_cycle_genes: #'input/lab_cell_cycle_genes'
 
 # Sample parameters

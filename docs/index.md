@@ -10,7 +10,7 @@ Disclaimer: This pipeline is built to run with large (>100 sample) datasets on t
 This work is now published in [*Cell Reports*](https://doi.org/10.1016/j.celrep.2026.117110)! Please use this publication for citation.
 >Catching A, Weller C, Hu F ...  
 **Single-nucleus multiome analysis in the human prefrontal cortex identifies gene expression and cis-regulatory elements associated with aging**  
-Cell Reports, 2026; 45; [10.1016/j.celrep.2026.117110](10.1016/j.celrep.2026.117110 )
+Cell Reports, 2026; 45; [doi.org/10.1016/j.celrep.2026.117110](https://doi.org/10.1016/j.celrep.2026.117110)
 
 ### Focus on the analysis, not the processing.
 

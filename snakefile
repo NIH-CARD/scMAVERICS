@@ -956,24 +956,6 @@ rule atac_coaccessibilty_cell_disease:
 """                              MOTIF portion                              """
 """========================================================================="""
 
-rule motif_enrichment:
-    input:
-        atac_anndata = work_dir+'atlas/04_modeled_anndata_atac.h5ad',
-        ref_genome = reference_genome,
-        TF_motifs = motifs
-    output:
-        motif_enrichment = work_dir+'data/motif_enrichment.csv'
-    params:
-        control = control,
-        cell_type = 'celltype',
-        disease_param = disease_param
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=240, disk_mb=300000, mem_mb=200000
-    script:
-        'scripts/atac_motif_enrichment.py'
-
 rule differential_motif_enrichment:
     input:
         output_DAR_data = work_dir+'data/DARs/{separating_cluster}/DAR_{separating_cluster}_{cell_type}_{control}_{disease}_DAR.csv',
