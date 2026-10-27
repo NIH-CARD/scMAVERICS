@@ -79,54 +79,33 @@ file: input/metadata.csv ⬇
 Config files ensure consitency and reproducibility. In this case, the config file is what truly differentiates one analysis from another. This includes:
 ```
 - Data and working directories
+- Desired output files
+- System parameters
 - Reference files (e.g. reference genomes)
 - Parameters of the dataset
 - QC values
-- System parameters
 ```
 
 **🚨 CRITICAL 🚨**
 
 The config file is unique to the input dataset. Only the scientists working with the data know which reference file was for Cellranger, or what QC thresholds make sense for the data. Sometimes parameters need to be changed post-hoc, in which case it is import that this file is version controlled somewhere, either by a fork from the original repo or a backup copy.
 
-# snRNAseq steps
+### Data and working directories
+Both `data_dir` and `work_dir` need to be updated to reflect where the outputs of CellRanger-ARC are stored (`data_dir`) and where what is the location of this pipeline (`work_dir`).
 
-### Cellbender
+### Output files
+Snakemake works by defined the desired output file and determining what rules need to be executed in order to yield the file. From that, the file specified in `final_output` simplifies determining what to call for the output. A list of possible outputs is outlined above `final_output`. It is possible enter the final object `'atlas/08_multiome.h5mu'`, but it is recommended that each step be run sequentially, in order to inspect the intermediary datasets.
 
-### Preprocessing and integration
+### System parameters
+It is assumed that this pipeline is being run on a HPC cluster powered by Slurm, but the limits of individual partitions vary. Specify the parameters of the user's node options here, between `short_gpu`, `multi_gpu`, `quick`, `long`, `large_1`, and `large_2`.
 
-### scVI and cell type annotation
+### Reference files
+It is assumed that when CellRanger-ARC was run, there were reference files used to map reads. `reference_genome`, `genome_length`, `gene_tss`, and `gene_info` should already be downloaded from running CellRanger-ARC, simply specify their paths here.
 
-# snATACseq steps
+Additionally, other input files are required. `metadata`, as mentioned above, is critical for running this pipeline. Additionally, `gene_list` is required for annotating cell types and `motif_file` is required for TFBS activity inference (download in .meme format from [here](https://jaspar.elixir.no/)).
 
-### Preprocessing and integration
+### Sample parameters
+The parameters `sample_key`, `sex_key`, and `disease_param` should be specified as columns within the metadata file. Additionally, `control` should be the name of the reference sample state and `diagnoses` should be a list of altered sample states. `covariates` should include the fixed parameters that co-vary between donor states.
 
-### Cell type and consensus peaks
-
-## Multiome object creation
-
-### Merging modalities and MultiVI
-
-### TF motif inference with pyChromvar
-
-# Differential analysis
-
-### Cell-cell communication
-
-### Differentially expressed genes
-
-### Differentially enriched motifs
-
-### Differential cell-cell communication
-
-### Gene/peak-set enrichment
-
-### Peak co-accessibility
-
-### Gene-motif/peak linkage
-
-# ATAC fragment analysis
-
-### Cell type and diagnosis peaks/bigwigs
-
-### Cell type and diagnosis peak co-accessibility
+### QC thresholds
+Values here should be determined dataset-to-dataset, with suggested values provided. 

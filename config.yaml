@@ -13,14 +13,14 @@ work_dir: #'/path/to/your/working/directory/'
 ## 'atlas/03_consensus_peak_atac.h5ad'
 ## 'atlas/04_modeled_anndata_atac.h5ad'
 ## 'atlas/03_merged_multiome.h5mu'
-## '/atlas/06_polished_multiome.h5mu'
+## 'atlas/06_polished_multiome.h5mu'
 ## 'atlas/07_annotated_multiome.h5mu'
 ## 'atlas/08_multiome.h5mu'
 
 # Differential analysis
 ## 'data/CCC/combined/CCC_celltype_results.csv'
 ## 'data/DGE/DGE_Dreampy_results_{celltype}.csv'
-## '/data/DEM_results.csv'
+## 'data/DEM_results.csv'
 ## 'data/circe_network.csv'
 
 final_output: 'atlas/02_filtered_anndata_rna.h5ad'
@@ -65,7 +65,6 @@ motif_file: #'input/jaspar_2026_hsapiens.meme'
 lab_cell_cycle_genes: #'input/lab_cell_cycle_genes'
 
 # Sample parameters
-seq_batch_key: #'batch'
 sample_key: #'folder_name' 
 sex_key: #'Sex' # Column in metadata that contains
 disease_param: #'Neurological_dx'
