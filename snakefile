@@ -70,7 +70,7 @@ rule cellbender:
     singularity:
         envs['multiome']
     resources:
-        runtime=1440, mem_mb=200000, gpu=1, gpu_model='v100x'
+        runtime=config['short_gpu_time'], mem_mb=config['short_gpu_mem'], gpu=config['short_gpu_num'], gpu_model=config['short_gpu_model']
     shell:
         work_dir+'scripts/cellbender_array.sh {input.rna_anndata} {input.cwd} {output.rna_anndata}'
 
@@ -84,7 +84,7 @@ rule rna_preprocess:
         envs['multiome']
     params:
         sample='{sample}',
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         cell_cycle_gene_file = cell_cycle_gene_file
     resources:
         runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
@@ -150,7 +150,7 @@ rule rna_model:
         model_history = work_dir+'data/model_elbo/rna_model_history.csv'
     params:
         model = work_dir+'data/models/rna/',
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         random_number_seed = config['random_number_seed'],
         num_layers = config['num_layers'],
         num_latent = config['num_latent'],
@@ -161,7 +161,7 @@ rule rna_model:
     singularity:
         envs['multiome']
     resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=config['multi_gpu_time'], mem_mb=config['multi_gpu_mem'], gpu=config['multi_gpu_num'], gpu_model=config['multi_gpu_model']
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
 
@@ -231,7 +231,7 @@ rule atac_merge:
         envs['multiome']
     params:
         samples=samples,
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         consensus_bed=None
     threads:
         64
@@ -253,7 +253,7 @@ rule atac_fragment_pseudobulk:
     params:
         pseudobulk_param = 'celltype',
         samples=samples,
-        sample_param_name = sample_key,
+        sample_param_name = config['sample_key'],
         cell_type = lambda wildcards, output: output[0].split("/")[-2]
     singularity:
         envs['multiome']
@@ -309,7 +309,7 @@ rule merged_consensus_peak_anndata:
             ),
     params:
         samples=samples,
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         consensus_bed=True
     singularity:
         envs['multiome']
@@ -386,7 +386,7 @@ rule merge_multiome:
     singularity:
         envs['multiome']
     params:
-        sample_key=sample_key
+        sample_key=config['sample_key']
     resources:
         runtime=240, mem_mb=500000, slurm_partition='largemem'
     script:
@@ -402,7 +402,7 @@ rule multiome_feature_selection:
     params:
         hvg = config['high_var_gene_num'],
         hvp = config['high_var_peak_num'],
-        sample_key = sample_key
+        sample_key = config['sample_key']
     resources:
         runtime=480, mem_mb=1500000, slurm_partition='largemem'
     script:
@@ -416,14 +416,12 @@ rule multiome_model:
         model_history = work_dir+'data/model_elbo/multiome_model_history.csv'
     params:
         model = work_dir+'data/models/multiome_polish/',
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         random_number_seed = config['random_number_seed'],
         max_epoch = config['max_epoch'],
         machine_type = config['machine_type']
-    threads:
-        64
     resources:
-        runtime=2880, mem_mb=300000, gpu=2, gpu_model='v100x'
+        runtime=config['multi_gpu_time'], mem_mb=config['multi_gpu_mem'], gpu=config['multi_gpu_num'], gpu_model=config['multi_gpu_model']
     shell:
         'scripts/multiome_model.sh {input.multiome_object} \
         {params.sample_key} {output.model_history} \
@@ -467,7 +465,7 @@ rule multiome_pychromvar:
         merged_multiome = work_dir+'atlas/08_multiome.h5mu'
     params:
         chunk_size = 100000,
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
     singularity:
         envs['multiome']
     threads:
@@ -487,7 +485,7 @@ rule rna_pseudobulk:
     output:
         pseudo_rna = work_dir+'atlas/pseudobulked_rna.h5ad'
     params:
-        sample_key = 'Sample_ID',
+        sample_key = config['sample_key'],
         separating_cluster = 'celltype',
         min_cells = 10
     singularity:
@@ -503,7 +501,7 @@ rule atac_pseudobulk:
     output:
         pseudo_atac = work_dir+'atlas/pseudobulked_atac.h5ad'
     params:
-        sample_key = 'sample_id',
+        sample_key = config['sample_key'],
         separating_cluster = 'celltype',
         min_cells = 10
     singularity:
@@ -519,7 +517,7 @@ rule chromvar_pseudobulk:
     output:
         pseudobulk_chromvar = work_dir+'atlas/pseudobulked_chromvar.h5ad'
     params:
-        sample_key = 'SampleID',
+        sample_key = config['sample_key'],
         separating_cluster = 'celltype'
     singularity:
         envs['multiome']
@@ -535,7 +533,7 @@ rule cell_fraction_plot_and_test:
         fraction_boxplot = work_dir+'figures/cell_count_by_disease_and_celltype_boxplot.svg',
         corrected_ztest_results = work_dir+'data/celltype_fraction_ztest_results.csv'
     params:
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         disease_param = disease_param,
         separating_cluster = 'celltype',
         control = 'control',
@@ -570,7 +568,7 @@ rule differntially_enriched_motifs:
     output:
         diff_enrich_motif = work_dir + '/data/DEM_results.csv'
     params:
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         separating_cluster = 'celltype',
         diagnoses = [control] + diseases,
         diagnosis_param = disease_param,
@@ -596,7 +594,7 @@ rule DEG:
         diagnosis_param = disease_param,
         control = control,
         diagnosis_control = [control] + diseases,
-        sample_key=sample_key,
+        sample_key=config['sample_key'],
         celltype = lambda wildcards: wildcards.celltype,
         formula = "~ Primary Diagnosis + Age + Sex + (1|Use_batch) + (1|Brain_bank)"
     singularity:
@@ -799,7 +797,7 @@ rule export_atac_cell:
         envs['multiome']
     params:
         pseudobulk_param = 'celltype',
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
         covariates = design_covariates,
@@ -839,9 +837,9 @@ rule fragments_pseudobulk_cell_disease:
     output:
         pseudo_fragment_files = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_fragments.bed'
     params:
-        pseudobulk_param = 'cell_type',
+        pseudobulk_param = 'celltype',
         samples=samples,
-        sample_param_name = sample_key,
+        sample_param_name = config['sample_key'],
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease,
         disease_param = disease_param
@@ -921,7 +919,7 @@ rule export_atac_cell_disease:
     singularity:
         envs['multiome']
     params:
-        sample_key = sample_key,
+        sample_key = config['sample_key'],
         seq_batch_key = seq_batch_key,
         disease_param = disease_param,
         covariates = design_covariates,
@@ -986,7 +984,7 @@ rule barcode_merge:
         annotate_metadata_table = work_dir+'data/barcode_cell_annotation.csv'
     params:
         disease_param = disease_param,
-        sample_key = sample_key
+        sample_key = config['sample_key']
     resources:
         slurm_partition='quick' 
     run:
