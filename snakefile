@@ -273,7 +273,7 @@ rule atac_celltype_call_peaks:
     params:
         out_dir = work_dir + "data/celltypes/{cell_type}"
     resources:
-        mem_mb=200000, runtime=2880
+        mem_mb=config['long_mem'], runtime=config['long_time']
     singularity:
         envs['multiome']
     shell:
@@ -333,7 +333,7 @@ rule atac_spectral:
     threads:
         32
     resources:
-        runtime=1440, mem_mb=250000
+         mem_mb=config['long_mem'], runtime=config['long_time']
     script:
         'scripts/atac_spectral.py'
 
@@ -507,7 +507,7 @@ rule atac_pseudobulk:
     singularity:
         envs['multiome']
     resources:
-        runtime=120, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/atac_pseudobulk.py'
 
@@ -541,6 +541,8 @@ rule cell_fraction_plot_and_test:
         separating_value_dict = dict(zip(['control', 'PD', 'LBD'], ['#7f7f7f', '#5ab4e5', '#d36027']))
     singularity:
         envs['multiome']
+    resources:
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         work_dir + '/scripts/cell_fraction_test_plot.py'
 
@@ -654,7 +656,7 @@ rule disease_great:
     singularity:
         envs['multiome']
     resources:
-        runtime=2880
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/atac_GREAT.py'
 
@@ -672,7 +674,7 @@ rule celltype_great:
     singularity:
         envs['multiome']
     resources:
-        runtime=2880
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/atac_celltype_GREAT.py'
 
@@ -769,6 +771,8 @@ rule celltype_bed:
         envs['multiome']
     output:
         cell_bedfile = work_dir + 'data/celltypes/{cell_type}/{cell_type}_peaks.bed'
+    resources:
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/MACS_to_bed.py'
 
@@ -778,7 +782,7 @@ rule annotate_bed:
     output:
         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_annotated_peaks.bed'
     resources:
-        runtime=30, mem_mb=50000, 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
@@ -863,7 +867,7 @@ rule MACS2_peak_cell_disease:
         cell_type = lambda wildcards: wildcards.cell_type,
         disease = lambda wildcards: wildcards.disease
     resources:
-        mem_mb=200000, runtime=960
+        runtime=config['long_time'], mem_mb=config['long_mem']
     singularity:
         envs['multiome']
     shell:
@@ -892,6 +896,8 @@ rule celltype_bed_cell_disease:
         envs['multiome']
     output:
         cell_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_peaks.bed'
+    resources:
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/MACS_to_bed.py'
 
@@ -901,7 +907,7 @@ rule annotate_bed_cell_disease:
     output:
         cell_annotated_bedfile = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_annotated_peaks.bed'
     resources:
-        runtime=30, mem_mb=50000, 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         'module load homer;annotatePeaks.pl {input.cell_bedfile} hg38 > {output.cell_annotated_bedfile}'
 
@@ -972,7 +978,7 @@ rule differential_motif_enrichment:
     singularity:
         envs['multiome']
     resources:
-        runtime=240, disk_mb=300000, mem_mb=200000
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/differential_motif_enrichment.py'
 
@@ -1004,6 +1010,8 @@ rule filter_celltype_condition_samples:
         batch_sample_celltype_disease_df = work_dir+'data/batch_sample_celltype_disease.csv'
     params:
         seq_batch_key = seq_batch_key
+    resources:
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     run:
         import pandas as pd
         annotate_metadata_table = pd.read_csv(input.annotate_metadata_table)
@@ -1060,7 +1068,7 @@ rule pseudobulk_bams:
     threads:
         16
     resources:
-        runtime=960, mem_mb=300000
+        runtime=config['long_time'], disk_mb=config['long_mem']
     shell:
         "samtools cat {input.sample_filter_bam} -o {output.presorted_pseudobulk_bam} \n"
         "samtools sort {output.presorted_pseudobulk_bam} -@ 16 -o {output.sorted_pseudobulk_bam}"
@@ -1081,7 +1089,7 @@ rule celltype_disease_ATACorrect:
     threads:
         16
     resources:
-        runtime=960, mem_mb=300000
+        runtime=config['long_time'], mem_mb=config['long_mem']
     shell:
         'TOBIAS ATACorrect --bam {input.sorted_pseudobulk_bam} --genome {input.ref_genome} --blacklist {input.blacklist} --peaks {input.cell_type_peaks} --outdir {params.ATACorrect_outdir} --prefix {params.prefix} --cores {threads}'
 
@@ -1096,7 +1104,7 @@ rule celltype_disease_score_bigwig:
     threads:
         64
     resources:
-        runtime=960, mem_mb=300000
+        runtime=config['long_time'], mem_mb=config['long_mem']
     shell:
         'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.footprinted_bigwig} --cores {threads}'
 
@@ -1111,7 +1119,7 @@ rule control_comparison_score_bigwig:
     threads:
         64
     resources:
-        runtime=960, mem_mb=300000
+        runtime=config['long_time'], mem_mb=config['long_mem']
     shell:
         'TOBIAS FootprintScores --signal {input.corrected_bigwig} --regions {input.regions} --output {output.control_footprint_bigwig} --cores {threads}'
 

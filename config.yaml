@@ -13,11 +13,14 @@ multi_gpu_mem: 30000
 multi_gpu_model: 'v100x'
 multi_gpu_time: 2880
 multi_gpu_num: 2
-## Quick node node
+## Quick node
 quick_time: 180
 quick_disk_mem: 200000
 quick_mem: 250000
 quick_partition: 'quick' 
+## Long time node mem_mb=config['long_mem'], runtime=config['long_time']
+long_time: 5760
+long_mem: 200000
 ## Large memory node 1
 large_1_time: 1440
 large_1_mem: 1000000
