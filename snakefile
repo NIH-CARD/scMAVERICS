@@ -53,7 +53,7 @@ envs = {
 
 rule all:
     input:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+config['final_output'],
 
 """========================================================================="""
 """                                RNA portion                              """
@@ -165,7 +165,6 @@ rule rna_model:
     shell:
         'scripts/rna_model.sh {input.hvg_rna_anndata} {params.sample_key} {output.model_history} {output.hvg_rna_anndata} {params.model} {params.random_number_seed} {params.num_layers} {params.num_latent} {params.max_epoch} {params.machine_type}'
 
-
 rule rna_latent_transfer:
     input:
         merged_rna_anndata = work_dir + '/atlas/02_filtered_anndata_rna.h5ad',
@@ -198,7 +197,7 @@ rule rna_cluster_based_QC:
     input:
         merged_rna_anndata = work_dir+'atlas/05_annotated_anndata_rna.h5ad'
     output:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'atlas/06_QC_filtered_anndata_rna.h5ad',
         course_celltype = work_dir + '/figures/first_pass_RNA_UMAP_celltype.svg',
         course_counts = work_dir + '/figures/first_pass_RNA_num_genes_celltype.svg'
     singularity:
@@ -242,7 +241,7 @@ rule atac_merge:
 
 rule atac_fragment_pseudobulk:
     input:
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad',
+        merged_rna_anndata = work_dir+'atlas/06_QC_filtered_anndata_rna.h5ad',
         merged_atac_anndata = work_dir + 'atlas/02_concat_atac.h5ad',
         fragment_file=expand(
             data_dir+'{sample}/outs/atac_fragments.tsv.gz',
@@ -341,46 +340,10 @@ rule atac_spectral:
 """                               MULTI portion                             """
 """========================================================================="""
 
-rule filter_rna_atac:
-    input:
-        rna_anndata =data_dir+'{sample}/outs/02_{sample}_anndata_filtered_rna.h5ad',
-        atac_anndata = data_dir+'{sample}/outs/02_{sample}_anndata_filtered_atac.h5ad'
-    output:
-        atac_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
-        rna_anndata = data_dir+'{sample}/outs/03_{sample}_anndata_filtered_rna.h5ad'
-    singularity:
-        envs['multiome']
-    resources:
-        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
-    script:
-        work_dir+'scripts/multiome_filter_rna_atac.py'
-
-rule merge_multiome_atac:
-    input:
-        atac_anndata=expand(
-            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad', 
-            sample=samples
-            )
-    output:
-        merged_atac_anndata = work_dir+'atlas/03_filtered_anndata_atac.h5ad',
-        atac_anndata = expand(
-            data_dir+'{sample}/outs/03_{sample}_anndata_filtered_atac.h5ad',
-            sample=samples
-            ),
-        temp_file = work_dir+'/atlas/temp_filtered_anndata_atac_1.h5ad',
-    singularity:
-        envs['multiome']
-    params:
-        samples=samples
-    resources:
-        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
-    script:
-        work_dir+'scripts/atac_merge.py'
-
 rule merge_multiome:
     input:
         merged_atac_anndata = work_dir+'atlas/04_modeled_anndata_atac.h5ad',
-        merged_rna_anndata = work_dir+'atlas/05_QC_filtered_anndata_rna.h5ad'
+        merged_rna_anndata = work_dir+'atlas/06_QC_filtered_anndata_rna.h5ad'
     output:
         multiome_object = work_dir+'atlas/03_merged_multiome.h5mu'
     singularity:
@@ -565,10 +528,10 @@ rule cell_cell_communication:
 
 rule differntially_enriched_motifs:
     input:
-        pseudobulked_chromvar = work_dir+'/atlas/pseudobulked_chromvar.h5mu',
+        pseudobulked_chromvar = work_dir+'atlas/pseudobulked_chromvar.h5mu',
          = metadata_table
     output:
-        diff_enrich_motif = work_dir + '/data/DEM_results.csv'
+        diff_enrich_motif = work_dir + 'data/DEM_results.csv'
     params:
         sample_key = config['sample_key'],
         separating_cluster = 'celltype',
@@ -587,9 +550,9 @@ rule differntially_enriched_motifs:
 
 rule DEG:
     input:
-        pseudo_rna = work_dir + '/atlas/pseudobulked_rna.h5ad'
+        pseudo_rna = work_dir + 'atlas/pseudobulked_rna.h5ad'
     output:
-        output_DGE_data = work_dir + '/data/DGE/DGE_Dreampy_results_{celltype}.csv'
+        output_DGE_data = work_dir + 'data/DGE/DGE_Dreampy_results_{celltype}.csv'
     params:
         celltype_params = 'celltype',
         celltypes = cell_types,
@@ -611,9 +574,9 @@ rule DEG:
 rule differential_cell_cell_communication:
     input:
         merged_rna_anndata = work_dir+'atlas/07_polished_anndata_rna.h5ad',
-        merged_DGE_data = work_dir + '/data/significant_genes/rna_unfiltered_gene_hits.csv'
+        merged_DGE_data = work_dir + 'data/significant_genes/rna_unfiltered_gene_hits.csv'
     output:
-        differential_cell_cell_communication_data = work_dir + '/data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
+        differential_cell_cell_communication_data = work_dir + 'data/CCC/differential_CCC_by_{sep_param}_{disease}_pairs.csv'
     params:
         disease = lambda wildcards, output: output[0].split("_")[-2],
         disease_param = disease_param,
@@ -696,7 +659,7 @@ rule celltype_overlapping_peaks:
 
 rule atac_merged_coaccessibilty:
     input:
-        celltype_atac = work_dir + '/atlas/multiome_wnn.h5mu'
+        celltype_atac = work_dir + '/atlas/08_multiome.h5mu'
     output:
         celltype_atac = work_dir + '/atlas/04_coaccessible_anndata_atac.h5ad',
         circe_network = work_dir+'data/circe_network.csv'

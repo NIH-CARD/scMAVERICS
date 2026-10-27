@@ -2,6 +2,29 @@
 data_dir: #'/path/to/your/multiome/data/'
 work_dir: #'/path/to/your/working/directory/'
 
+# Desired file output
+
+# Multiome objects
+## 'atlas/02_filtered_anndata_rna.h5ad'
+## 'atlas/04_modeled_hvg_anndata_rna.h5ad', for scVI modeled snRNAseq object#
+## 'atlas/05_annotated_anndata_rna.h5ad'
+## 'atlas/06_QC_filtered_anndata_rna.h5ad'
+## 'data/consensus_regions.bed'
+## 'atlas/03_consensus_peak_atac.h5ad'
+## 'atlas/04_modeled_anndata_atac.h5ad'
+## 'atlas/03_merged_multiome.h5mu'
+## '/atlas/06_polished_multiome.h5mu'
+## 'atlas/07_annotated_multiome.h5mu'
+## 'atlas/08_multiome.h5mu'
+
+# Differential analysis
+## 'data/CCC/combined/CCC_celltype_results.csv'
+## 'data/DGE/DGE_Dreampy_results_{celltype}.csv'
+## '/data/DEM_results.csv'
+## 'data/circe_network.csv'
+
+final_output: 'atlas/02_filtered_anndata_rna.h5ad'
+
 # Slurm partition values, change as needed
 ## Short GPU node
 short_gpu_mem: 200000
