@@ -18,6 +18,14 @@ quick_time: 180
 quick_disk_mem: 200000
 quick_mem: 250000
 quick_partition: 'quick' 
+## Large memory node 1
+large_1_time: 1440
+large_1_mem: 1000000
+large_1_partition: 'largemem'
+## Large memory node 2
+large_2_time: 2880
+large_2_mem: 3000000
+large_2_partition: 'largemem'
 
 # Reference files
 reference_genome: #'/path/to/cellranger-arc/fasta/genome.fa' 

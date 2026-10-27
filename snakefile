@@ -124,7 +124,7 @@ rule rna_merge:
         sex=sex,
         min_cells = 10
     resources:
-        runtime=120, mem_mb=1000000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/rna_merge.py'
 
@@ -138,7 +138,7 @@ rule rna_feature_selection:
     params:
         num_hvgenes = config['high_var_gene_num']
     resources:
-        runtime=360, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/rna_feature_selection.py'
 
@@ -175,7 +175,7 @@ rule rna_latent_transfer:
     singularity:
         envs['multiome']
     resources:
-        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/rna_latent_transfer.py'
 
@@ -190,7 +190,7 @@ rule rna_annotate:
     singularity:
         envs['multiome']
     resources:
-        runtime=480, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/rna_annotate.py'
 
@@ -204,7 +204,7 @@ rule rna_cluster_based_QC:
     singularity:
         envs['multiome']
     resources:
-        runtime=240, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir + '/scripts/rna_cluster_based_QC.py'
 
@@ -236,7 +236,7 @@ rule atac_merge:
     threads:
         64
     resources:
-        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         work_dir+'scripts/atac_merge.py'
 
@@ -260,7 +260,7 @@ rule atac_fragment_pseudobulk:
     threads:
         64
     resources:
-        runtime=240, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         'scripts/atac_fragment_pseudobulk.py'
 
@@ -316,7 +316,7 @@ rule merged_consensus_peak_anndata:
     threads:
         32
     resources:
-        runtime=1440, mem_mb=3000000, slurm_partition='largemem'
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         'scripts/atac_merge.py'
     
@@ -373,7 +373,7 @@ rule merge_multiome_atac:
     params:
         samples=samples
     resources:
-        runtime=720, mem_mb=3000000, disk_mb=10000, slurm_partition='largemem' 
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         work_dir+'scripts/atac_merge.py'
 
@@ -388,7 +388,7 @@ rule merge_multiome:
     params:
         sample_key=config['sample_key']
     resources:
-        runtime=240, mem_mb=500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/multiome_merge.py'
         
@@ -404,7 +404,7 @@ rule multiome_feature_selection:
         hvp = config['high_var_peak_num'],
         sample_key = config['sample_key']
     resources:
-        runtime=480, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/multiome_feature_selection.py'
 
@@ -438,7 +438,7 @@ rule multiome_transfer_UMAP:
     singularity:
         envs['multiome']
     resources:
-        runtime=1440, mem_mb=1000000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'/scripts/multiome_latent_transfer.py'
 
@@ -453,7 +453,7 @@ rule multiome_cell_type_annotation:
     singularity:
         envs['multiome']
     resources:
-        runtime=1440, mem_mb = 1000000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         work_dir+'scripts/multome_cell_type_annotation.py'
 
@@ -471,7 +471,7 @@ rule multiome_pychromvar:
     threads:
         16
     resources:
-        runtime=2880, mem_mb=1000000, slurm_partition='largemem'
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         'scripts/multiome_pychromvar.py'
 
@@ -638,7 +638,7 @@ rule disease_gsea:
     threads:
         64
     resources:
-        runtime=960, mem_mb=1000000, slurm_partition='largemem' 
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/rna_GSEA.py'
 
@@ -703,7 +703,7 @@ rule atac_merged_coaccessibilty:
     threads:
         16
     resources:
-        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/circe_by_celltype.py'
 
@@ -806,7 +806,7 @@ rule export_atac_cell:
     threads:
         8
     resources:
-        runtime=2880, mem_mb=400000, slurm_partition='largemem'
+        rruntime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/atac_by_celltype.py'
 
@@ -823,7 +823,7 @@ rule atac_coaccessibilty:
     threads:
         16
     resources:
-        runtime=1440, mem_mb=1500000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/circe_by_celltype.py'
 
@@ -848,7 +848,7 @@ rule fragments_pseudobulk_cell_disease:
     threads:
         64
     resources:
-        runtime=960, mem_mb=3000000, disk_mb=500000, slurm_partition='largemem'
+        runtime=config['large_2_time'], mem_mb=config['large_2_mem'], slurm_partition=config['large_2_partition']
     script:
         'scripts/cell_disease_pseudobulk.py'
 
@@ -876,7 +876,7 @@ rule create_bigwig_cell_disease:
         celltype_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_bigwig.bw',
         celltype_normalized_bigwig = work_dir + '/data/celltypes/{cell_type}/{cell_type}_{disease}_normalized_bigwig.bw'
     resources:
-        mem_mb=1000000, runtime=400, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     params:
         genome_length = genome_length
     singularity:
@@ -929,7 +929,7 @@ rule export_atac_cell_disease:
     threads:
         8
     resources:
-        runtime=1440, mem_mb=400000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/atac_by_celltype.py'
 
@@ -946,7 +946,7 @@ rule atac_coaccessibilty_cell_disease:
     threads:
         8
     resources:
-        runtime=600, mem_mb=400000, slurm_partition='largemem'
+        runtime=config['large_1_time'], mem_mb=config['large_1_mem'], slurm_partition=config['large_1_partition']
     script:
         'scripts/circe_by_celltype.py'
 
