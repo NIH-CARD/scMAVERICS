@@ -87,7 +87,7 @@ rule rna_preprocess:
         sample_key = config['sample_key'],
         cell_cycle_gene_file = cell_cycle_gene_file
     resources:
-        runtime=120, mem_mb=64000, disk_mb=10000, slurm_partition='quick' 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         work_dir+'scripts/rna_preprocess.py'
 
@@ -104,7 +104,7 @@ rule rna_filter:
         min_genes_per_cell = min_genes_per_cell,
         ribo_percent_thresh = ribo_percent_thresh
     resources:
-        runtime=120, mem_mb=100000, disk_mb=10000, slurm_partition='quick' 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script: 
         work_dir+'scripts/rna_filter.py'
 
@@ -290,7 +290,7 @@ rule consensus_peaks:
     singularity:
         envs['multiome']
     resources:
-        runtime=120, mem_mb=50000, disk_mb=10000, slurm_partition='quick' 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/atac_peak_consensus.py'
 
@@ -351,7 +351,7 @@ rule filter_rna_atac:
     singularity:
         envs['multiome']
     resources:
-        runtime=30, mem_mb=50000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         work_dir+'scripts/multiome_filter_rna_atac.py'
 
@@ -491,7 +491,7 @@ rule rna_pseudobulk:
     singularity:
         envs['multiome']
     resources:
-        runtime=120, mem_mb=250000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/rna_pseudobulk.py'
 
@@ -522,7 +522,7 @@ rule chromvar_pseudobulk:
     singularity:
         envs['multiome']
     resources:
-        runtime=120, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/chromvar_pseudobulk.py'
 
@@ -557,7 +557,7 @@ rule cell_cell_communication:
     threads:
         64
     resources:
-        disk_mb=200000, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/cell_cell_communication.py'
 
@@ -579,7 +579,7 @@ rule differntially_enriched_motifs:
     singularity:
         envs['multiome']
     resources:
-        runtime = 180, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/differential_motif_enrichemnt.py'
 
@@ -602,7 +602,7 @@ rule DEG:
     threads:
         64
     resources:
-        runtime=180, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/rna_DEG.py'
 
@@ -688,7 +688,7 @@ rule celltype_overlapping_peaks:
     singularity:
         envs['multiome']
     resources:
-        slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/overlapping_peaks.py'
 
@@ -721,7 +721,7 @@ rule gene_motif_linkage:
     singularity:
         envs['multiome']
     resources:
-        runtime=180, mem_mb = 50000, slurm_partition = 'quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/gene_motif_linkage.py'
 
@@ -753,7 +753,7 @@ rule gene_peak_linkage:
     singularity:
         envs['multiome']
     resources:
-        slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
         'scripts/gene_peak_linkage.py'
 
@@ -986,7 +986,7 @@ rule barcode_merge:
         disease_param = disease_param,
         sample_key = config['sample_key']
     resources:
-        slurm_partition='quick' 
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     run:
         import pandas as pd
         metadata_df = pd.read_csv(input.metadata_table)
@@ -1017,7 +1017,7 @@ rule barcode_filter:
     output:
         cell_disease_barcodes = temp(work_dir+'data/celltypes/{cell_type}/batch{batch}_{sample}_{cell_type}_{disease}_barcodes.txt')
     resources:
-        slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         "python scripts/filter_barcode.py {input.annotate_metadata_table} {wildcards.cell_type} {wildcards.sample} {output.cell_disease_barcodes}"
 
@@ -1040,7 +1040,7 @@ rule celltype_sample_filter_bam:
     threads:
         16
     resources:
-        slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         "samtools view -H {input.input_bam} -@ 16 > {output.output_header} \n"
         "samtools view {input.input_bam} -@ 16 | LC_ALL=C grep -F -f {input.cell_disease_barcodes} > {output.output_body} \n"
@@ -1131,7 +1131,7 @@ rule disease_footprinting:
     threads:
         16
     resources:
-        runtime=180, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw} {input.disease_bw} --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'
 
@@ -1150,6 +1150,6 @@ rule control_footprinting:
     threads:
         16
     resources:
-        runtime=180, mem_mb=200000, slurm_partition='quick'
+        runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     shell:
         'TOBIAS BINDetect --motifs {input.motifs} --signals {input.control_bw}  --genome {input.genome} --peaks {input.peaks}  --outdir {params.outdir} --cores {threads}'

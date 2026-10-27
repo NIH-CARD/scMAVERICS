@@ -2,6 +2,22 @@
 data_dir: #'/path/to/your/multiome/data/'
 work_dir: #'/path/to/your/working/directory/'
 
+# Slurm partition values, change as needed
+## Short GPU node
+short_gpu_mem: 200000
+short_gpu_model: 'v100x'
+short_gpu_time: 1440
+short_gpu_num: 1
+## Multi GPU node
+multi_gpu_mem: 30000
+multi_gpu_model: 'v100x'
+multi_gpu_time: 2880
+multi_gpu_num: 2
+## Quick node node
+quick_time: 180
+quick_disk_mem: 200000
+quick_mem: 250000
+quick_partition: 'quick' 
 
 # Reference files
 reference_genome: #'/path/to/cellranger-arc/fasta/genome.fa' 
