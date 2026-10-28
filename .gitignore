@@ -74,4 +74,4 @@ figures
 scripts/pygenometracks
 scripts/legacy
 scripts/footprinting
-notebook
+doc_notebooks/snRNAseq_files
