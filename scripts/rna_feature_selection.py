@@ -1,10 +1,6 @@
 import anndata as ad
 import scanpy as sc
-import torch
 import pandas as pd
-import scipy
-import numpy as np
-import sys
 
 # Read in AnnData atlas object
 adata = ad.read_h5ad(snakemake.input.merged_rna_anndata)
