@@ -11,19 +11,25 @@ This section borrows heavily from the [scanpy](https://scanpy.scverse.org/en/1.1
 
 
 ```python
+# Import standard python packages
+import numpy as np
 import pandas as pd
+
+# Plotting packages
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Specialized single cell packages
 import scanpy as sc
 import decoupler as dc
 import scvi
-import matplotlib.pyplot as plt
-import seaborn as sns
 ```
 
 ### Define working and data directories
 
 
 ```python
-data_dir = '/data/CARD_singlecell/Brain_atlas/SN_multiome/'
+data_dir = '/data/CARD_singlecell/Brain_atlas/SN_Multiome/'
 work_dir = '/data/CARD_singlecell/SN_atlas/' 
 ```
 
@@ -125,6 +131,9 @@ batch_key = 'Use_batch'
 # Define list of samples
 samples = metadata_df[sample_key]
 batches = metadata_df[batch_key]
+
+# Cell cycle file
+cell_cycle_gene_file = work_dir + 'input/lab_cell_cycle_genes.txt'
 ```
 
 # Sample preprocessing
@@ -159,7 +168,170 @@ step_2_adatas = {}
 
 
 ```python
+# Iterate over the samples
+for i, sample in enumerate(samples):
 
+    print(f'Working through sample {sample}')
+
+    # Load the Cellbender file
+    adata = sc.read_10x_h5(step_1_files[i])
+    # Ensure unique variable names (MUST BE DONE FIRST!)
+    adata.var_names_make_unique()
+
+    print(' -> Sample loaded')
+
+    # Make a raw counts layer
+    adata.layers['counts'] = adata.X.copy()
+    adata.raw = adata
+
+    # Add mitochondrial and ribosomal markers
+    adata.var['mt'] = adata.var_names.str.startswith('MT-')
+    adata.var['rb'] = adata.var_names.str.startswith(('RPL', 'RPS'))
+
+    # Calculate QC metrics
+    sc.pp.calculate_qc_metrics(adata, qc_vars=['rb', 'mt'], percent_top=None, log1p=False, inplace=True)
+
+    print(' -> QC calculated')
+
+    # Add metadata to the AnnData object directly from the metadata dataframe
+    for key in metadata_df.to_dict():
+        adata.obs[key] = metadata_df[key]
+
+    # Calculate cell cycle
+    cell_cycle_genes = [x.strip() for x in open(cell_cycle_gene_file)]
+    s_genes = cell_cycle_genes[:42]
+    g2m_genes = cell_cycle_genes[42:]
+    try:
+        sc.tl.score_genes_cell_cycle(adata, s_genes=s_genes, g2m_genes=g2m_genes)
+    except:
+        print("can't map genes")
+
+    print(' -> Adding AnnData object to file')
+    step_2_adatas[sample] = adata
+```
+
+    Working through sample 6178
+
+
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+
+
+     -> Sample loaded
+     -> QC calculated
+     -> Adding AnnData object to file
+    Working through sample 3284
+
+
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+
+
+     -> Sample loaded
+     -> QC calculated
+     -> Adding AnnData object to file
+    Working through sample 6384
+
+
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+
+
+     -> Sample loaded
+     -> QC calculated
+     -> Adding AnnData object to file
+    Working through sample 5638
+
+
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/anndata/_core/anndata.py:1884: UserWarning: Variable names are not unique. To make them unique, call `.var_names_make_unique`.
+      utils.warn_names_duplicates("var")
+
+
+     -> Sample loaded
+     -> QC calculated
+     -> Adding AnnData object to file
+
+
+#### Inspect data
+
+
+```python
+step_2_adatas
+```
+
+
+
+
+    {6178: AnnData object with n_obs × n_vars = 11824 × 36601
+         obs: 'n_genes_by_counts', 'total_counts', 'total_counts_rb', 'pct_counts_rb', 'total_counts_mt', 'pct_counts_mt', 'Sample_ID', 'Use_batch', 'Age', 'PMI', 'Sex', 'Brain_bank', 'Primary Diagnosis', 'S_score', 'G2M_score', 'phase'
+         var: 'gene_ids', 'feature_types', 'genome', 'mt', 'rb', 'n_cells_by_counts', 'mean_counts', 'pct_dropout_by_counts', 'total_counts'
+         layers: 'counts',
+     3284: AnnData object with n_obs × n_vars = 11044 × 36601
+         obs: 'n_genes_by_counts', 'total_counts', 'total_counts_rb', 'pct_counts_rb', 'total_counts_mt', 'pct_counts_mt', 'Sample_ID', 'Use_batch', 'Age', 'PMI', 'Sex', 'Brain_bank', 'Primary Diagnosis', 'S_score', 'G2M_score', 'phase'
+         var: 'gene_ids', 'feature_types', 'genome', 'mt', 'rb', 'n_cells_by_counts', 'mean_counts', 'pct_dropout_by_counts', 'total_counts'
+         layers: 'counts',
+     6384: AnnData object with n_obs × n_vars = 9181 × 36601
+         obs: 'n_genes_by_counts', 'total_counts', 'total_counts_rb', 'pct_counts_rb', 'total_counts_mt', 'pct_counts_mt', 'Sample_ID', 'Use_batch', 'Age', 'PMI', 'Sex', 'Brain_bank', 'Primary Diagnosis', 'S_score', 'G2M_score', 'phase'
+         var: 'gene_ids', 'feature_types', 'genome', 'mt', 'rb', 'n_cells_by_counts', 'mean_counts', 'pct_dropout_by_counts', 'total_counts'
+         layers: 'counts',
+     5638: AnnData object with n_obs × n_vars = 8036 × 36601
+         obs: 'n_genes_by_counts', 'total_counts', 'total_counts_rb', 'pct_counts_rb', 'total_counts_mt', 'pct_counts_mt', 'Sample_ID', 'Use_batch', 'Age', 'PMI', 'Sex', 'Brain_bank', 'Primary Diagnosis', 'S_score', 'G2M_score', 'phase'
+         var: 'gene_ids', 'feature_types', 'genome', 'mt', 'rb', 'n_cells_by_counts', 'mean_counts', 'pct_dropout_by_counts', 'total_counts'
+         layers: 'counts'}
+
+
+
+#### Look at QC values for one sample
+
+
+```python
+# Number of UMIs (total_counts) and genes detected (n_genes_by_counts)
+fig, ax = plt.subplots(1, figsize=(6, 4))
+ax.plot([250, 250], [0, 14000], '--k')
+sc.pl.scatter(
+    step_2_adatas[6178], 
+    "total_counts", 
+    "n_genes_by_counts", 
+    color="pct_counts_mt", 
+    ax = ax)
+```
+
+
+    
+![png](snRNAseq_files/snRNAseq_22_0.png)
+    
+
+
+
+```python
+# Zoom in
+fig, ax = plt.subplots(1, figsize=(6, 4))
+ax.plot([250, 250], [0, 14000], '--k')
+ax.set_xlim(0, 1000)
+ax.set_ylim(0, 1000)
+sc.pl.scatter(step_2_adatas[6178], "total_counts", "n_genes_by_counts", color="pct_counts_mt", ax = ax)
+
+```
+
+
+    
+![png](snRNAseq_files/snRNAseq_23_0.png)
+    
+
+
+
+```python
+# Plot as histograms
+
+fig, ax = plt.subplots()
 ```
 
 ### rna_filter
@@ -179,6 +351,8 @@ step_2_adatas = {}
 ```python
 
 ```
+
+## Modeling
 
 ### rna_feature_selection
 

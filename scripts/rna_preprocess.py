@@ -38,18 +38,6 @@ sc.pp.calculate_qc_metrics(adata, qc_vars=['rb', 'mt'], percent_top=None, log1p=
 for key in metadata.to_dict():
     adata.obs[key] = metadata[key]
 
-# Normalize data
-sc.pp.normalize_total(adata)
-
-# Save the CPM data
-adata.layers['cpm']=adata.X.copy() 
-
-# Logarithmize the data
-sc.pp.log1p(adata)
-
-# Save the normalized-log data
-adata.layers['log-norm']=adata.X.copy() 
-
 # Calculate cell cycle()
 cell_cycle_genes = [x.strip() for x in open(snakemake.params.cell_cycle_gene_file)]
 s_genes = cell_cycle_genes[:43]
