@@ -599,23 +599,7 @@ filtered_adata
 
 If you have more than just a few samples, this step will take a really long time. Large sample projects should use the Snakemake pipeline, but for a few samples this should complete on a moderate desktop in a few minutes.
 
-First set up the parameters of the 
-
-
-```python
-filtered_adata
-```
-
-
-
-
-    AnnData object with n_obs × n_vars = 25260 × 1987
-        obs: 'n_genes_by_counts', 'total_counts', 'total_counts_rb', 'pct_counts_rb', 'total_counts_mt', 'pct_counts_mt', 'Sample_ID', 'Use_batch', 'Age', 'PMI', 'Sex', 'Brain_bank', 'Primary Diagnosis', 'S_score', 'G2M_score', 'phase', 'doublet_score', 'predicted_doublet'
-        var: 'gene_ids', 'mt', 'rb', 'highly_variable', 'highly_variable_rank', 'means', 'variances', 'variances_norm'
-        uns: 'hvg'
-        layers: 'counts', 'cpm', 'log-norm'
-
-
+First set up the parameters of the model.
 
 
 ```python
@@ -637,6 +621,8 @@ model = scvi.model.SCVI(
     gene_likelihood="nb"
 )
 ```
+
+Running the model takes a while, even for a small number of samples.
 
 
 ```python
@@ -662,6 +648,8 @@ model.train(
     Training:   0%|          | 0/1000 [00:00<?, ?it/s]
 
 
+Port the scVI latent space to the observable matrix `X_scvi`. This will be used to estimate nearest neighbors.
+
 
 ```python
 # Convert the cell barcode to the observable matrix X_scvi which neighbors and UMAP can be calculated from
@@ -670,7 +658,7 @@ adata.obsm['X_scvi'] = filtered_adata.get_latent_representation()
 
 ### rna_latent_transfer
 
-Using the latent space from scVI in place of the standard PCA input, 
+Using the latent space from scVI in place of the standard PCA input, but the scVI latent space should provide a more useful starting point for determining the UMAP and leiden clustering.
 
 
 ```python
@@ -685,6 +673,8 @@ sc.tl.umap(adata, min_dist=0.3)
 sc.tl.leiden(adata, key_added='leiden', flavor="igraph")
 ```
 
+Plot the UMAP, with leiden clusters.
+
 
 ```python
 sc.pl.umap(
@@ -697,19 +687,163 @@ sc.pl.umap(
 
 ### rna_annotate
 
+There are many ways to annotate your data. We prefer using known marker gene-based over-representation analysis, powered through [decoupler](https://decoupler.scverse.org/en/latest/notebooks/scell/rna_sc.html).
 
+This does rely on anticipating the cell types in the dataset. This method allows for playing with sets of marker genes, adding and removing sets for cell types whose abundance is not anticipated.
+
+First load in a marker gene file with the anticipated cell types in the `source` column and respective marker genes in the `target` column.
 
 
 ```python
 # Create the DataFrame of canonical gene markers (This can be expanded)
-marker_gene_df = pd.read_csv(snakemake.input.gene_markers)
+marker_gene_df = pd.read_csv(work_dir + 'input/first_pass_genes.csv')
+marker_gene_df
+```
+
+
+```python
+# Run over-represenation analysis based on cell markers
+# provided in the marker_gene_df DataFrame.
+dc.mt.ulm(
+    adata,
+    net = marker_gene_df,
+    tmin=1,
+)
+```
+
+The object `score` contains the per-nuclei scores for all the cell types tested. We take the highest ranking cell type per cluster, as gene expression in single nuclei data can be noisy.
+
+
+```python
+# Convert the ORA AnnData object to numpy array to rank
+score = dc.pp.get_obsm(adata, key="score_ulm")
+df = dc.tl.rankby_group(adata=score, groupby='leiden', reference="rest", method="t-test_overestim_var")
+```
+
+
+```python
+sc.pl.umap(
+    score, 
+    color=["DaN", "MG", "TC"], 
+    cmap="Reds", 
+    frameon = False,
+    ncols = 3)
+```
+
+From this dataframe the top scoring cell type per leiden cluster can be used to map cell type annotation onto the AnnData object.
+
+
+```python
+# Apply the best ranked cell type to a cluster-celltype dictionary
+annotation_dict = df.groupby('group').head(1).set_index('group')['name'].to_dict()
+
+# Apply the dictionary to the AnnData object
+adata.obs['celltype'] = [annotation_dict[clust] for clust in adata.obs['leiden']]
+```
+
+Now visualize the annotated UMAP and gene marker expression by cell type.
+
+
+```python
+# Plot the distribution of cell types
+sc.pl.umap(
+    adata,
+    color = ['celltype', 'leiden'],
+    legend_loc = 'on data',
+    frameon = False
+)
+```
+
+
+```python
+sc.dotplot(
+    adata,
+    marker_gene_df['target'],
+    use_raw = False,
+    layer = 'log-norm',
+)
 ```
 
 ### rna_cluster_based_QC
 
-
+Finally, some nuclei may pass QC thresholds that are agnostic of cell type. The major one we examine is the minimum number of genes threshold, which vary between cell types. To better understand cell type dependent threshold, we fit a Gaussian kernel density estimate to the number of genes per nuclei, for each cell type.
 
 
 ```python
-
+# Plot and save the DataFrame to
+sns.displot(
+    adata.obs, 
+    x="n_genes_by_counts",
+    row="celltype",
+    binwidth=10, 
+    hue='celltype',
+    height=.75, 
+    aspect=4,
+    kde=True,
+    facet_kws=dict(sharey=False)).set(title='')
+plt.xlim(0, 10000)
 ```
+
+From the inferred thresholds, the nuclei with low gene expression are removed.
+
+
+```python
+cell_type_min = {}
+for cell_type in adata.obs['celltype'].drop_duplicates():
+    print(f'Working on cell type {cell_type}')
+
+    cell_counts = adata[adata.obs['celltype'] == cell_type].obs['n_genes_by_counts']
+    # Return minimum values
+    kde = scipy.stats.gaussian_kde(cell_counts)
+    x_range = np.linspace(min(cell_counts), max(cell_counts), 1000)
+    y_range = kde(x_range)
+
+    # Find and assign the minimum values of the distribution
+    min_index = scipy.signal.argrelextrema(y_range, np.less)
+    minimum_x, minimum_y = x_range[min_index],  y_range[min_index]
+
+    # Find and assign the maximum values of the distribution
+    max_index = scipy.signal.argrelextrema(y_range, np.greater)
+    maximum_x, maximum_y = x_range[max_index],  y_range[max_index]
+
+    # Assign value if the local minimum meets a given threshold]
+    thresh_min_x = minimum_x[minimum_x < 2000]
+    # Only assign a value if there are values
+    if thresh_min_x.shape[0] != 0:
+        cell_type_min[cell_type] = thresh_min_x[0]
+    else:
+        cell_type_min[cell_type] = 0
+
+bad_cells = sum([(adata.obs['celltype'] == x) & (adata.obs['n_genes_by_counts'] < cell_type_min[x]) for x in cell_type_min.keys()])
+bad_bools = [True if x > 0 else False for x in bad_cells]
+```
+
+Remove these nuclei with low gene expression, respective to their cell type.
+
+
+```python
+adata.obs['bad_cells'] = bad_bools
+adata = adata[~adata.obs['bad_cells']].copy()
+del adata.obs['bad_cells']
+```
+
+Revisualize the UMAP
+
+
+```python
+sc.pl.umap(
+    adata,
+    color = 'celltype',
+    legend_loc = 'on data',
+    frameon = False
+)
+```
+
+
+```python
+adata.write_h5ad(work_dir + '/atlas/06_QC_filtered_anndata_rna.h5ad', compression = 'gzip')
+```
+
+From this final merged, modeled, annotated, and QC-corrected AnnData object, analysis can begin if you don't have another modality, or continue on to [snATACseq steps](snATACseq.md), where a similar chromatin-accessibility AnnData object will be created. As cell type specific peaks are required to determine CellxPeak matrix, snRNAseq steps are required to be run first before snATACseq steps.
+
+
