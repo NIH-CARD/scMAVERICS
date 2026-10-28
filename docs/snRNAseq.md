@@ -59,94 +59,54 @@ metadata_df
     <tr style="text-align: right;">
       <th></th>
       <th>Sample_ID</th>
-      <th>Homogenizing_batch</th>
-      <th>Library_batch</th>
-      <th>Sequencing_batch</th>
-      <th>Repeated</th>
       <th>Use_batch</th>
       <th>Age</th>
       <th>PMI</th>
-      <th>Ethnicity</th>
-      <th>Race</th>
-      <th>Brain_bank</th>
       <th>Sex</th>
+      <th>Brain_bank</th>
       <th>Primary Diagnosis</th>
-      <th>Request_routing</th>
-      <th>Braak stage</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
       <td>6178</td>
-      <td>7</td>
-      <td>7</td>
-      <td>1</td>
-      <td>1</td>
       <td>6</td>
       <td>68</td>
       <td>22.5</td>
-      <td>NaN</td>
-      <td>European</td>
-      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>Male</td>
+      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>control</td>
-      <td>NeuroBioBank</td>
-      <td>NaN</td>
     </tr>
     <tr>
       <th>1</th>
       <td>3284</td>
-      <td>8</td>
-      <td>7</td>
-      <td>1</td>
-      <td>0</td>
       <td>1</td>
       <td>78</td>
       <td>11.5</td>
-      <td>German</td>
-      <td>European</td>
-      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>Female</td>
+      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>control</td>
-      <td>NeuroBioBank</td>
-      <td>NaN</td>
     </tr>
     <tr>
       <th>2</th>
       <td>6384</td>
-      <td>21</td>
-      <td>15</td>
-      <td>3</td>
-      <td>0</td>
       <td>3</td>
       <td>50</td>
       <td>22.3</td>
-      <td>NaN</td>
-      <td>Asian</td>
-      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>Female</td>
+      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>PD</td>
-      <td>NeuroBioBank</td>
-      <td>NaN</td>
     </tr>
     <tr>
       <th>3</th>
       <td>5638</td>
-      <td>22</td>
-      <td>16</td>
-      <td>3</td>
-      <td>0</td>
       <td>3</td>
       <td>77</td>
       <td>19.3</td>
-      <td>NaN</td>
-      <td>Black or African-American</td>
-      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>Male</td>
+      <td>Human Brain and Spinal Fluid Resource Center</td>
       <td>PD</td>
-      <td>NeuroBioBank</td>
-      <td>NaN</td>
     </tr>
   </tbody>
 </table>
@@ -195,11 +155,6 @@ This will run for a while for each sample. Make sure you are in the desired samp
 step_1_files = [data_dir + f'/batch{batches[i]}/Multiome/{samples[i]}-ARC/outs/cellbender_gex_counts_filtered.h5' for i in range(len(samples))]
 # Define the output files (corresponding to sample)
 step_2_adatas = {}
-```
-
-
-```python
-
 ```
 
 
