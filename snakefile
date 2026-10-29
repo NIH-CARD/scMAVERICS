@@ -49,6 +49,7 @@ min_tsse = config['min_tsse'] # Minimum transcription start site enrichment
 envs = {
     'singlecell': 'envs/single_cell_gpu.sif',
     'multiome': 'envs/multiome.sif',
+    'scenic': 'envs/scenic.sif'
     }
 
 rule all:
@@ -287,7 +288,7 @@ rule consensus_peaks:
     output:
         consensus_bed = work_dir + 'data/consensus_regions.bed'
     singularity:
-        envs['multiome']
+        envs['scenic']
     resources:
         runtime=config['quick_time'], disk_mb=config['quick_disk_mem'], mem_mb=config['quick_disk_mem'], slurm_partition=config['quick_partition']
     script:
