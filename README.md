@@ -35,7 +35,7 @@ However, if you don't have access to an HPC or have not enough samples to justif
 ```
 git clone https://github.com/NIH-CARD/scMAVERICS.git
 cd scMAVERICS
-conda create -n multiome pip
+conda create -n multiome pip python=3.11.16
 conda activate multiome
 pip install -r requirements.txt
 ```
