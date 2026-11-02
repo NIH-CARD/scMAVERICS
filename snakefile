@@ -279,7 +279,7 @@ rule atac_celltype_call_peaks:
     shell:
         "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
-rule consensus_peaks:
+rule atac_consensus_peaks:
     input:
         narrow_peaks = expand(
             work_dir + "data/celltypes/{cell_type}/{cell_type}_peaks.narrowPeak",
@@ -294,7 +294,7 @@ rule consensus_peaks:
     script:
         'scripts/atac_peak_consensus.py'
 
-rule merged_consensus_peak_anndata:
+rule atac_merged_consensus_peak:
     input:
         consensus_bed = work_dir + 'data/consensus_regions.bed',
         fragment_file=expand(
@@ -341,7 +341,7 @@ rule atac_spectral:
 """                               MULTI portion                             """
 """========================================================================="""
 
-rule merge_multiome:
+rule multiome_merge:
     input:
         merged_atac_anndata = work_dir+'atlas/04_modeled_anndata_atac.h5ad',
         merged_rna_anndata = work_dir+'atlas/06_QC_filtered_anndata_rna.h5ad'
