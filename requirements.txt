@@ -42,7 +42,6 @@ defusedxml==0.7.1
 Deprecated==1.3.1
 dill==0.4.1
 distributed==2026.8.0
-docrep==0.3.2
 docutils==0.23
 donfig==0.8.1.post1
 executing==2.2.1
@@ -177,9 +176,6 @@ pyrle==0.0.44
 pyro-api==0.1.2
 pyro-ppl==1.9.1
 pysam==0.24.1
-PySide6==6.11.2
-PySide6_Addons==6.11.2
-PySide6_Essentials==6.11.2
 PySocks==1.7.1
 pytest==9.1.1
 python-dateutil==2.9.0.post0
@@ -203,7 +199,6 @@ scvi-tools==1.4.2
 seaborn==0.13.2
 session-info2==0.4.1
 setuptools==84.0.0
-shiboken6==6.11.2
 simplejson==4.1.2
 six==1.17.0
 snapatac2==2.9.0
