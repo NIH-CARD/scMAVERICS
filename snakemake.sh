@@ -14,6 +14,7 @@ git clone https://github.com/NIH-HPC/snakemake_profile.git
 # Pull the containers
 apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatchingdti/single_cell_gpu.sif:1.0
 apptainer pull --disable-cache envs/multiome.sif oras://quay.io/adamcatchingdti/multiome.sif:1.2
+apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 
 # Load singularity
 module load singularity

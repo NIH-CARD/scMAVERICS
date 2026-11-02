@@ -25,7 +25,7 @@ snap.metrics.tsse(adatas, snap.genome.hg38, n_jobs=snakemake.threads)
 snap.pp.filter_cells(adatas, min_tsse=2.5, n_jobs = snakemake.threads)
 
 adataset = snap.AnnDataSet(
-    adatas=[(sample_names[i], adatas[i]) for i in (rangelen(adatas))],
+    adatas=[(sample_names[i], adatas[i]) for i in (range(len(adatas)))],
     filename=snakemake.output.temp_merged_anndate
 )
 print('Dataset merged')

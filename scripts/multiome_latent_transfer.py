@@ -20,7 +20,7 @@ sc.tl.leiden(mdata, key_added='leiden', flavor = 'igraph')
 # Transfer leiden clusters to rna and atac modalities
 barcode2leiden = mdata.obs['leiden'].to_dict()
 mdata.mod['rna'].obs['leiden'] = [barcode2leiden[x] for x in mdata.mod['rna'].obs_names]
-mdata.mod['atad'].obs['leiden'] = [barcode2leiden[x] for x in mdata.mod['atac'].obs_names]
+mdata.mod['atac'].obs['leiden'] = [barcode2leiden[x] for x in mdata.mod['atac'].obs_names]
 
 # Save the anndata object
 mdata.write(snakemake.output.multiome_object, compression='gzip')
