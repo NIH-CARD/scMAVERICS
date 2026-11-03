@@ -15,6 +15,6 @@ atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
 mdata = mu.MuData({"rna": rna, "atac": atac})
 
 # Create sample key for batch-corrected MultiVI
-mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[0]) for x in mdata.obs_names]
+mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[1]) for x in mdata.obs_names]
 
 mdata.write(snakemake.output.multiome_object, compression ='gzip')

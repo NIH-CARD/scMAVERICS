@@ -82,6 +82,6 @@ mdata.obs["modality_group"] = pd.Categorical(
 )
 
 # Create sample key for batch-corrected MultiVI
-mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[0]) for x in mdata.obs_names]
+mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[1]) for x in mdata.obs_names]
 # Save object
 mdata.write_h5mu(snakemake.output.multiome_object)
