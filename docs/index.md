@@ -28,3 +28,4 @@ The modules of [Scanpy](https://github.com/scverse/scanpy), [scVI/MultiVI](https
 5. [Peak calling](peaks.md)
 6. [Differential analysis](differential.md)
 7. [ATAC fragment analysis](fragment.md)
+8. [Example figures](figures.md)
