@@ -616,12 +616,16 @@ snap.tl.umap(
 
 
 ```python
-snap.pl.umap(
+sc.pl.umap(
     atac,
     color = 'sample'
 )
 ```
 
+
+    
+![png](snATACseq_files/snATACseq_47_0.png)
+    
 
 
 
@@ -631,8 +635,3 @@ atac.write_h5ad(work_dir + '/atlas/04_modeled_anndata_atac.h5ad', compression = 
 
     ... storing 'sample' as categorical
 
-
-
-```python
-
-```
