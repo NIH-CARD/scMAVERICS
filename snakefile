@@ -1,5 +1,6 @@
-import pandas as pd
 import os
+import pandas as pd
+
 
 """========================================================================="""
 """                                 Parameters                              """
@@ -530,7 +531,6 @@ rule cell_cell_communication:
 rule differntially_enriched_motifs:
     input:
         pseudobulked_chromvar = work_dir+'atlas/pseudobulked_chromvar.h5mu',
-         = metadata_table
     output:
         diff_enrich_motif = work_dir + 'data/DEM_results.csv'
     params:
