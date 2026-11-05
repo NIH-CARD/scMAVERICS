@@ -22,8 +22,4 @@ nav:
   - 5. Peak calling: peaks.md
   - 6. Differential analysis: differential.md
   - 7. ATAC fragment analysis: fragment.md
-<<<<<<< HEAD
-  - 8. Example figures: figures.html
-=======
   - 8. Example figures: figures.md
->>>>>>> 50cbcfe2403f3368259f0bdcbc2a8b8192157992
