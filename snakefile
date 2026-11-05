@@ -529,8 +529,7 @@ rule cell_cell_communication:
 
 rule differntially_enriched_motifs:
     input:
-        pseudobulked_chromvar = work_dir+'atlas/pseudobulked_chromvar.h5mu',
-         = metadata_table
+        merged_multiome = work_dir+'/atlas/08_multiome.h5mu'
     output:
         diff_enrich_motif = work_dir + 'data/DEM_results.csv'
     params:
