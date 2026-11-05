@@ -6,7 +6,7 @@
 
 module purge
 module load apptainer
-module load snakemake/7.7.0
+module load snakemake
 
 # Pull profile, this will only run once, and is required for running on Biowulf
 git clone https://github.com/NIH-HPC/snakemake_profile.git
@@ -16,8 +16,6 @@ apptainer pull --disable-cache envs/single_cell_gpu.sif oras://quay.io/adamcatch
 apptainer pull --disable-cache envs/multiome.sif oras://quay.io/adamcatchingdti/multiome.sif:1.2
 apptainer pull --disable-cache envs/scenicplus.sif docker://litd/docker-scenicplus:latest 
 
-# Load singularity
-module load singularity
 
 # Bind external directories on Biowulf
 . /usr/local/current/singularity/app_conf/sing_binds
