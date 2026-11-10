@@ -33,7 +33,6 @@ combined_bed = pr.PyRanges(
     chromosomes=pseudo_fragment['chrom'].to_pandas(),
     starts=pseudo_fragment['chromStart'].to_pandas(),
     ends=pseudo_fragment['chromEnd'].to_pandas(),
-    score=pseudo_fragment['score'].to_pandas()
 )
 
 chrom_sizes_dict = dict(zip(chromosizes['Chromosome'], chromosizes['length']))
@@ -52,7 +51,6 @@ for chrom, group in df_sorted.groupby("Chromosome"):
         [str(chrom)] * len(group),
         group["Start"].tolist(),
         ends=group["End"].tolist(),
-        values=group["score"].astype(float).tolist() 
     )
 
 combined_bed.to_bigwig(
