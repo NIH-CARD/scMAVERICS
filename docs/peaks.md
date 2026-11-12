@@ -1,4 +1,0 @@
-# scMAVERICS
-
-
-**Webpage in progress**
