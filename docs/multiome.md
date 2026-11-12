@@ -1270,6 +1270,18 @@ chromvar
 
     /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/pychromvar/compute_deviations.py:40: FutureWarning: The method varm_keys is deprecated and will be removed in the future. Use varm instead of varm_keys. (e.g. `k in adata.varm` or `adata.varm.keys() | {'u'}`)
       assert "bg_peaks" in adata.varm_keys(
+    2026-11-05 12:32:56 - INFO - computing expectation reads per cell and peak...
+    2026-11-05 12:34:39 - INFO - computing observed motif deviations...
+    2026-11-05 12:35:38 - INFO - computing background deviations...
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/legacy_api_wrap/__init__.py:88: FutureWarning: The dtype argument is deprecated and will be removed in late 2024.
+      return fn(*args_all, **kw)
+
+
+
+
+
+    AnnData object with n_obs × n_vars = 34934 × 857
+
 
 
 
@@ -1280,13 +1292,91 @@ mdata.mod['chromvar'] = chromvar
 
 
 ```python
+mdata.mod['chromvar'].var
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>MA0069.1.PAX6</th>
+    </tr>
+    <tr>
+      <th>MA0071.1.RORA</th>
+    </tr>
+    <tr>
+      <th>MA0074.1.RXRA::VDR</th>
+    </tr>
+    <tr>
+      <th>MA0101.1.REL</th>
+    </tr>
+    <tr>
+      <th>MA0107.1.RELA</th>
+    </tr>
+    <tr>
+      <th>...</th>
+    </tr>
+    <tr>
+      <th>MA2330.2.ZBTB24</th>
+    </tr>
+    <tr>
+      <th>MA1589.3.ZNF140</th>
+    </tr>
+    <tr>
+      <th>MA0088.3.ZNF143</th>
+    </tr>
+    <tr>
+      <th>MA1976.3.ZNF320</th>
+    </tr>
+    <tr>
+      <th>MA0116.2.ZNF423</th>
+    </tr>
+  </tbody>
+</table>
+<p>857 rows × 0 columns</p>
+</div>
+
+
+
+
+```python
 mu.pl.umap(
     mdata,
-    color = 'MA0473.4.ELF1',
-    palette = 'PuOr_r',
+    color = ['MA0473.4.ELF1', 'celltype'],
+    cmap = 'PuOr_r',
     vcenter = 0
 )
 ```
+
+    ... storing 'celltype' as categorical
+
+
+
+    
+![png](multiome_files/multiome_76_1.png)
+    
+
 
 ## Export the dataset
 
@@ -1295,7 +1385,9 @@ mu.pl.umap(
 mdata.write_h5mu(work_dir + 'data/08_multiome.h5mu', compression = 'gzip')
 ```
 
+    ... storing 'celltype' as categorical
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/mudata/_core/mudata.py:1471: FutureWarning: From 0.4 .update() will not pull obs/var columns from individual modalities by default anymore. Set mudata.set_options(pull_on_update=False) to adopt the new behaviour, which will become the default. Use new pull_obs/pull_var and push_obs/push_var methods for more flexibility.
+      self._update_attr("var", axis=0, join_common=join_common)
+    /data/catchingba/.conda/envs/multiome/lib/python3.11/site-packages/mudata/_core/mudata.py:1322: FutureWarning: From 0.4 .update() will not pull obs/var columns from individual modalities by default anymore. Set mudata.set_options(pull_on_update=False) to adopt the new behaviour, which will become the default. Use new pull_obs/pull_var and push_obs/push_var methods for more flexibility.
+      self._update_attr("obs", axis=1, join_common=join_common)
 
-```python
-
-```
