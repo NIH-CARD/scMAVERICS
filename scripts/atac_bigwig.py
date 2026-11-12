@@ -12,8 +12,6 @@ pseudo_fragment = pl.read_csv(
     n_threads=snakemake.threads)
 pseudo_fragment.columns = ['chrom', 'chromStart', 'chromEnd', 'name', 'score']
 
-# Filter for only the main 23 chromosomes
-pseudo_fragment = pseudo_fragment.filter(pseudo_fragment['chrom'].is_in(pr.data.chromsizes().df['Chromosome'].to_list()))
 # Convert to pyranges
 combined_bed = pr.PyRanges(
     chromosomes = pseudo_fragment['chrom'],
@@ -37,23 +35,12 @@ combined_bed = pr.PyRanges(
 
 chrom_sizes_dict = dict(zip(chromosizes['Chromosome'], chromosizes['length']))
 
-bw = pyBigWig.open(snakemake.output.celltype_bigwig, "w")
-bw.addHeader([(chrom, int(size)) for chrom, size in chrom_sizes_dict.items()])
-
-df_sorted = combined_bed.df.sort_values(by=["Chromosome", "Start"])
-
-# Stream entries chromosome by chromosome straight to disk
-for chrom, group in df_sorted.groupby("Chromosome"):
-    if chrom not in chrom_sizes_dict:
-        continue
-        
-    bw.addEntries(
-        [str(chrom)] * len(group),
-        group["Start"].tolist(),
-        ends=group["End"].tolist(),
-    )
+combined_bed.to_bigwig(
+    snakemake.output.celltype_bigwig,
+    chromosome_sizes = chrom_sizes_dict,
+    rpm=False)
 
 combined_bed.to_bigwig(
     snakemake.output.celltype_normalized_bigwig,
-    chromosome_sizes = dict(zip(chromosizes['Chromosome'], chromosizes['length'])),
+    chromosome_sizes = chrom_sizes_dict,
     rpm=True)
