@@ -590,7 +590,7 @@ rule differential_cell_cell_communication:
 
 rule disease_gsea:
     input:
-        adata_path = work_dir+'atlas/07_polished_anndata_rna.h5ad',
+        adata_path = work_dir+'atlas/08_multiome.h5mu',
         ontologies = work_dir+'input/ontologies.csv'
     output:
         cell_disease_GSEA =  work_dir+'data/GSEA/{separating_cluster}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv'
