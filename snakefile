@@ -633,7 +633,7 @@ rule SPL_disease_gsea:
     threads:
         64
     resources:
-        mem_mb=250000, runtime=960
+        mem_mb=500000, runtime=960,  slurm_partition='largemem'
     script:
         'scripts/rna_GSEA.py'
 
@@ -727,6 +727,6 @@ rule STL_disease_gsea:
     threads:
         64
     resources:
-        mem_mb=250000, runtime=960
+        mem_mb=500000, runtime=960,  slurm_partition='largemem'
     script:
         'scripts/rna_GSEA.py'
