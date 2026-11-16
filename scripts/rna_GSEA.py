@@ -9,18 +9,19 @@ import muon as mu
 # Load in cell type AnnData object
 adata = mu.read_h5mu(snakemake.input.adata_path).mod['rna']
 
-adata = adata[adata.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type]
-
 # Filter based on condition to test
-diseaes_adata = adata[adata.obs[snakemake.params.disease_param].isin([snakemake.params.control, snakemake.params.disease])]
+disease_adata = adata[
+    (adata.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type) &
+    (adata.obs[snakemake.params.disease_param].isin([snakemake.params.control, snakemake.params.disease]))
+    ].copy()
 
 # Add one-hot column for disease comparison, sort the AnnData object
-diseaes_adata.obs['disease'] = pd.Categorical(
-    diseaes_adata.obs[snakemake.params.disease_param], 
+disease_adata.obs['disease'] = pd.Categorical(
+    disease_adata.obs[snakemake.params.disease_param], 
     categories=[snakemake.params.disease, snakemake.params.control], 
     ordered=True)
-indices = diseaes_adata.obs.sort_values(['disease']).index
-diseaes_adata = diseaes_adata[indices,:].copy()
+indices = disease_adata.obs.sort_values(['disease']).index
+disease_adata = disease_adata[indices,:].copy()
 
 # Import same ontology dataset as used in GREAT, reformat for GSEA
 greatpy_go_set_df = pd.read_csv(snakemake.input.ontologies, delimiter=';')
@@ -29,9 +30,9 @@ go_mf = greatpy_go_set_df[['key', 'symbol']].groupby('key')['symbol'].apply(list
 
 # Calculate GSEA enrichment
 res = gp.gsea(
-    data=diseaes_adata.to_df().T, # row -> genes, column-> samples
+    data=disease_adata.to_df().T, # row -> genes, column-> samples
     gene_sets = go_mf,
-    cls=[snakemake.params.disease, snakemake.params.control],
+    cls=disease_adata.obs.disease,
     permutation_num=1000,
     permutation_type='phenotype',
     outdir=None,
