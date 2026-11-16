@@ -16,7 +16,7 @@ motif_file: 'input/jaspar_2024_hsapiens.meme'
 # Sample parameters
 seq_batch_key: 'batch'
 sample_key: 'CARD_ID' 
-disease_param: 'Neurological_dx'
+disease_param: 'Path Diag'
 control_key: 'control'
 diagnoses:
     - PSP

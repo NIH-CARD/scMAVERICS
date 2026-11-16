@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scanpy as sc
 import gseapy as gp
+import muon as mu
 
 # Load in cell type AnnData object
-adata = sc.read_h5ad(snakemake.input.adata_path)
+adata = mu.read_h5mu(snakemake.input.adata_path).mod['rna']
 
 adata = adata[adata.obs[snakemake.params.separating_cluster] == snakemake.params.cell_type]
 
@@ -30,7 +31,7 @@ go_mf = greatpy_go_set_df[['key', 'symbol']].groupby('key')['symbol'].apply(list
 res = gp.gsea(
     data=diseaes_adata.to_df().T, # row -> genes, column-> samples
     gene_sets = go_mf,
-    classes=[snakemake.params.disease, snakemake.params.control],
+    cls=[snakemake.params.disease, snakemake.params.control],
     permutation_num=1000,
     permutation_type='phenotype',
     outdir=None,

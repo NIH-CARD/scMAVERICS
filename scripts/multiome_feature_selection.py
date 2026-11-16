@@ -6,12 +6,16 @@ import scipy
 import numpy as np
 import muon as mu
 import snapatac2 as snap
+import scipy.sparse as sp
+ad.settings.allow_write_nullable_strings = True
 
 # Read in RNA dataset
 rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
+rna = rna[(rna.obs['celltype'] != 'NA') & ~(rna.obs['CARD_ID'] == 'PCA-008')].copy()
 
 # Read in ATAC dataset
 atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
+atac = atac[~(atac.obs['sample'] == 'PCA-008') & (atac.obs['n_fragment'] > 4000)].copy()
 
 # Select for the most variable genes
 sc.pp.highly_variable_genes(
@@ -82,6 +86,6 @@ mdata.obs["modality_group"] = pd.Categorical(
 )
 
 # Create sample key for batch-corrected MultiVI
-mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[0]) for x in mdata.obs_names]
+mdata.obs[snakemake.params.sample_key] = [(x.split('-1_')[1]) for x in mdata.obs_names]
 # Save object
 mdata.write_h5mu(snakemake.output.multiome_object)

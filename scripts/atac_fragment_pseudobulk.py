@@ -3,9 +3,10 @@ import pandas as pd
 import scanpy as sc
 import polars as pl
 import pyranges as pr
+import muon as mu
 
 # Read in rna observation data
-rna = sc.read_h5ad(snakemake.input.merged_rna_anndata)
+rna = mu.read(snakemake.input.merged_rna_anndata)
 
 # Read in atac observation data
 atac = sc.read_h5ad(snakemake.input.merged_atac_anndata)
@@ -22,6 +23,9 @@ sample_value = snakemake.params.sample_param_name
 
 # Get sample list
 samples = snakemake.params.samples
+
+# Make sure the samples line up
+cell_df = cell_df[cell_df[sample_value].isin(samples)]
 
 # For sample in samples
 for i, sample in enumerate(samples):

@@ -31,14 +31,17 @@ mvi_model = scvi.model.MULTIVI(
     mdata,
     n_genes=mdata.mod["rna"].n_vars,
     n_regions=mdata.mod["atac"].n_vars,
+    n_latent=30
 )
 
 mvi_model.train(
     accelerator="gpu",
     max_epochs=1000,
     lr=1e-3,
+    batch_size=4096,
     early_stopping=True,
-    batch_size=256
+    early_stopping_patience=45,
+    early_stopping_monitor="validation_loss"
 )
 
 # Extract the elbo plot of the model and save the values

@@ -6,6 +6,8 @@ import muon as mu
 import pychromvar as pc
 from pyjaspar import jaspardb
 import scipy.sparse as sp
+import anndata as ad
+ad.settings.allow_write_nullable_strings = True
 
 # Load MuData object
 mdata = mu.read(snakemake.input.merged_multiome)
