@@ -1,8 +1,12 @@
 import scanpy as sc
 import decoupler as dc
+import muon as mu
 
 # Open atac
-adata = sc.read_h5ad(snakemake.input.merged_atac_anndata)
+adata = mu.read(snakemake.input.mdata + "/mod/atac")
+region = snakemake.params.region
+adata = adata[adata.obs[snakemake.params.region_param] == region]
+
 
 # Get pseudo-bulk profile, summing all raw counts by cell type and sample
 pdata = dc.pp.pseudobulk(

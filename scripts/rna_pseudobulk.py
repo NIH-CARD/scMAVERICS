@@ -5,11 +5,20 @@ import seaborn as sns
 import numpy as np
 import scanpy as sc
 import decoupler as dc
+import muon as mu
 from pydeseq2.dds import DeseqDataSet, DefaultInference
 from pydeseq2.ds import DeseqStats
 
-# Open rna
-adata = sc.read_h5ad(snakemake.input.rna_anndata)
+# Open multiome object
+mdata = mu.read_h5mu(snakemake.input.mdata)
+
+# Slice out and save region data
+region = snakemake.params.region
+mdata = mdata[mdata.obs[snakemake.params.region_param] == region].copy()
+mdata.write_h5mu(snakemake.output.region_mdata, compression = 'gzip')
+
+# Use only the rna modality
+adata = mdata.mod['rna']
 
 # Get pseudo-bulk profile, summing all raw counts by cell type and sample
 pdata = dc.pp.pseudobulk(
@@ -49,3 +58,7 @@ dc.pp.filter_by_prop(
 )
 
 pdata.write_h5ad(snakemake.output.pseudo_rna, compression='gzip')
+
+work_dir+'atlas/STL_pseudobulked_rna.h5ad'
+work_dir+'atlas/STL_pseudobulked_chromvar.h5ad'
+work_dir+'atlas/STL_pseudobulked_atac.h5ad'

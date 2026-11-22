@@ -67,34 +67,40 @@ envs = {
 
 rule all:
     input:
-        expand(
-            work_dir+'data/STL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            cell_type = cell_types,
-            separating_cluster = 'celltype',
-            control = 'Control',
-            disease = ['AD', 'AD (PCA)']
-        ),
-        expand(
-            work_dir+'data/STL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            cell_type = cell_types,
-            separating_cluster = 'celltype',
-            control = 'AD',
-            disease = 'AD (PCA)'
-            ),
-        expand(
-            work_dir+'data/SPL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            cell_type = cell_types,
-            separating_cluster = 'celltype',
-            control = 'Control',
-            disease = ['AD', 'AD (PCA)']
-            ),
-        expand(
-            work_dir+'data/SPL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
-            cell_type = cell_types,
-            separating_cluster = 'celltype',
-            control = 'AD',
-            disease = 'AD (PCA)'
-            ),
+        work_dir+'atlas/STL_pseudobulked_rna.h5ad',
+        work_dir+'atlas/STL_pseudobulked_chromvar.h5ad',
+        work_dir+'atlas/STL_pseudobulked_atac.h5ad',
+        work_dir+'atlas/SPL_pseudobulked_rna.h5ad',
+        work_dir+'atlas/SPL_pseudobulked_chromvar.h5ad',
+        work_dir+'atlas/SPL_pseudobulked_atac.h5ad'
+"""expand(
+work_dir+'data/STL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+cell_type = cell_types,
+separating_cluster = 'celltype',
+control = 'Control',
+disease = ['AD', 'AD (PCA)']
+),
+expand(
+work_dir+'data/STL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+cell_type = cell_types,
+separating_cluster = 'celltype',
+control = 'AD',
+disease = 'AD (PCA)'
+),
+expand(
+work_dir+'data/SPL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+cell_type = cell_types,
+separating_cluster = 'celltype',
+control = 'Control',
+disease = ['AD', 'AD (PCA)']
+),
+expand(
+work_dir+'data/SPL_celltypes/{cell_type}/GSEA_{separating_cluster}_{cell_type}_{control}_{disease}_results.csv',
+cell_type = cell_types,
+separating_cluster = 'celltype',
+control = 'AD',
+disease = 'AD (PCA)'
+),"""
        
 
 
@@ -587,6 +593,60 @@ rule SPL_atac_celltype_call_peaks:
     shell:
         "macs3 callpeak --treatment {input.pseudo_fragment_files} --name {wildcards.cell_type} --outdir {params.out_dir} --format BEDPE --gsize hs --qvalue 0.001 --nomodel --shift 73 --extsize 146 --keep-dup all"
 
+rule SPL_rna_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudo_rna = work_dir+'atlas/SPL_pseudobulked_rna.h5ad',
+        region_mdata = work_dir+'atlas/SPL_multiome.h5mu'
+    params:
+        sample_key = config['sample_key'],
+        separating_cluster = 'celltype',
+        region = 'Superior Parietal',
+        region_param = 'Brain region',
+        min_cells = 10
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/rna_pseudobulk.py'
+
+rule SPL_atac_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudo_atac = work_dir+'atlas/SPL_pseudobulked_atac.h5ad'
+    params:
+        sample_key = config['sample_key'],
+        separating_cluster = 'celltype',
+        region = 'Superior Parietal',
+        region_param = 'Brain region',
+        min_cells = 10
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/atac_pseudobulk.py'
+
+rule SPL_chromvar_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudobulk_chromvar = work_dir+'atlas/SPL_pseudobulked_chromvar.h5ad'
+    params:
+        sample_key = config['sample_key'],
+        region = 'Superior Parietal',
+        region_param = 'Brain region',
+        separating_cluster = 'celltype'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/chromvar_pseudobulk.py'
+
 rule SPL_create_bigwig:
     input:
         pseudo_fragment_file = work_dir + 'data/SPL_celltypes/{cell_type}/{cell_type}_fragments.bed',
@@ -730,3 +790,57 @@ rule STL_disease_gsea:
         mem_mb=500000, runtime=960,  slurm_partition='largemem'
     script:
         'scripts/rna_GSEA.py'
+
+rule STL_rna_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudo_rna = work_dir+'atlas/STL_pseudobulked_rna.h5ad',
+        region_mdata = work_dir+'atlas/STL_multiome.h5mu'
+    params:
+        sample_key = config['sample_key'],
+        separating_cluster = 'celltype',
+        region = 'Superior Temporal',
+        region_param = 'Brain region',
+        min_cells = 10
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/rna_pseudobulk.py'
+
+rule STL_atac_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudo_atac = work_dir+'atlas/STL_pseudobulked_atac.h5ad'
+    params:
+        sample_key = config['sample_key'],
+        separating_cluster = 'celltype',
+        region = 'Superior Temporal',
+        region_param = 'Brain region',
+        min_cells = 10
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/atac_pseudobulk.py'
+
+rule STL_chromvar_pseudobulk:
+    input:
+        mdata = work_dir + '/atlas/08_multiome.h5mu'
+    output:
+        pseudobulk_chromvar = work_dir+'atlas/STL_pseudobulked_chromvar.h5ad'
+    params:
+        sample_key = config['sample_key'],
+        region = 'Superior Temporal',
+        region_param = 'Brain region',
+        separating_cluster = 'celltype'
+    singularity:
+        envs['multiome']
+    resources:
+        runtime=240, mem_mb=1000000, slurm_partition='largemem' 
+    script:
+        'scripts/chromvar_pseudobulk.py'

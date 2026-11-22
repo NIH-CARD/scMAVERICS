@@ -1,7 +1,9 @@
 import muon as mu
 import scanpy as sc
 
-chromvar  = mu.read(snakemake.input.merged_multiome + "/mod/chromvar")
+chromvar  = mu.read(snakemake.input.mdata + "/mod/chromvar")
+region = snakemake.params.region
+chromvar = chromvar[chromvar.obs[snakemake.params.region_param] == region]
 
 chromvar.obs['Sample-celltype'] = chromvar.obs[snakemake.params.sample_key].astype(str) + '_' + chromvar.obs[snakemake.params.separating_cluster].astype(str)
 pchromvar = sc.get.aggregate(
